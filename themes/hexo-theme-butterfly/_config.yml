@@ -1058,8 +1058,10 @@ css_prefix: true
 inject:
   head:
     # - <link rel="stylesheet" href="/xxx.css">
+    - <link rel="stylesheet" href="/custom/theme-reveal.css">
   bottom:
     # - <script src="xxxx"></script>
+    - <script src="/custom/theme-reveal.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work

@@ -1,0 +1,33 @@
+/* ============================================================
+   Theme switch: circular reveal animation (custom inject)
+   主题切换：以切换按钮为圆心，圆形向外扩散新主题
+   ============================================================ */
+
+:root {
+  --theme-reveal-x: 50%;
+  --theme-reveal-y: 50%;
+}
+
+/* 关闭 View Transitions 默认的交叉淡入淡出，改成“覆盖式”扩散 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: theme-circle-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* 新主题从按钮圆心(0)扩散到足够覆盖视口的半径 */
+@keyframes theme-circle-reveal {
+  from {
+    clip-path: circle(0px at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
+  }
+  to {
+    clip-path: circle(200vmax at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
+  }
+}
