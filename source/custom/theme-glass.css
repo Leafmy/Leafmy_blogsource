@@ -16,18 +16,20 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  /* light：低饱和淡彩柔光，避免高纯光斑透过卡片刺眼 */
+  /* light：低饱和淡彩柔光，避免高纯光斑透过卡片刺眼。
+     重要：radial 的 transparent 停点拉长、光斑透明度调低，
+     让色阶过渡更缓，减少颜色断层(banding)。 */
   background-image:
-    radial-gradient(1500px 1150px at 10% 6%, rgba(150, 185, 255, .34), transparent 62%),
-    radial-gradient(1700px 1300px at 92% 12%, rgba(235, 160, 215, .26), transparent 62%),
-    radial-gradient(1800px 1400px at 76% 86%, rgba(150, 215, 200, .24), transparent 64%),
-    radial-gradient(1600px 1250px at 14% 92%, rgba(245, 205, 160, .22), transparent 64%),
-    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .35), transparent 72%),
-    linear-gradient(160deg, #e3eaf6 0%, #d4dfef 48%, #e2e9f4 100%);
-  /* 液态流动动画：光斑位置缓慢漂移，模拟液体流动融合 */
-  background-size: 180% 180%;
+    radial-gradient(1500px 1150px at 10% 6%, rgba(150, 185, 255, .22), transparent 70%),
+    radial-gradient(1700px 1300px at 92% 12%, rgba(235, 160, 215, .17), transparent 70%),
+    radial-gradient(1800px 1400px at 76% 86%, rgba(150, 215, 200, .16), transparent 72%),
+    radial-gradient(1600px 1250px at 14% 92%, rgba(245, 205, 160, .15), transparent 72%),
+    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .28), transparent 78%),
+    linear-gradient(160deg, #e8eef9 0%, #dbe4f2 48%, #e6ecf7 100%);
+  /* 液态流动动画：光斑位置缓慢漂移，模拟液体流动融合（放缓到 46s） */
+  background-size: 170% 170%;
   background-position: 0% 0%;
-  animation: glass-liquid-drift 26s ease-in-out infinite alternate;
+  animation: glass-liquid-drift 46s ease-in-out infinite alternate;
 }
 
 /* 液态玻璃的光斑漂移 */
@@ -36,11 +38,26 @@
     background-position: 0% 0%;
   }
   50% {
-    background-position: 100% 100%;
+    background-position: 45% 55%;
   }
   100% {
-    background-position: 0% 100%;
+    background-position: 100% 100%;
   }
+}
+
+/* 噪点抖动(dither)：细微随机噪点打散 8-bit 渐变色带(banding)。
+   用内联 SVG feTurbulence 生成噪声，低透明度叠加，肉眼几乎不可见，
+   但足以让相邻色阶间的生硬边界被填平。 */
+.glass-bg::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
+  opacity: .045;
+  mix-blend-mode: overlay;
+  animation: glass-liquid-drift 60s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
 /* 液态纹理/噪点：叠加一层细微的斑驳，增强"液体"质感（如玻璃上的水渍） */
@@ -49,11 +66,11 @@
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(380px 280px at 18% 24%, rgba(255, 255, 255, .10), transparent 70%),
-    radial-gradient(520px 380px at 78% 58%, rgba(255, 255, 255, .07), transparent 70%),
-    radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .06), transparent 70%);
+    radial-gradient(380px 280px at 18% 24%, rgba(255, 255, 255, .07), transparent 72%),
+    radial-gradient(520px 380px at 78% 58%, rgba(255, 255, 255, .05), transparent 72%),
+    radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .04), transparent 72%);
   mix-blend-mode: soft-light;
-  animation: glass-liquid-swirl 18s ease-in-out infinite alternate;
+  animation: glass-liquid-swirl 34s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
@@ -63,27 +80,32 @@
     transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   }
   100% {
-    transform: translate3d(2%, -1%, 0) rotate(6deg) scale(1.06);
+    transform: translate3d(1.5%, -.8%, 0) rotate(4deg) scale(1.04);
   }
 }
 
-/* dark：背景层换深色光斑 */
+/* dark：背景层换深色光斑（同样降透明度、拉长过渡去 banding） */
 html[data-theme='dark'] .glass-bg {
   background-image:
-    radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .55), transparent 62%),
-    radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .48), transparent 62%),
-    radial-gradient(1700px 1300px at 78% 82%, rgba(50, 200, 170, .44), transparent 64%),
-    radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .38), transparent 64%),
-    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .08), transparent 70%),
-    linear-gradient(160deg, #161d31 0%, #0d1226 45%, #0a0e1d 100%);
+    radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .38), transparent 70%),
+    radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .33), transparent 70%),
+    radial-gradient(1700px 1300px at 78% 82%, rgba(50, 200, 170, .30), transparent 72%),
+    radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .26), transparent 72%),
+    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .06), transparent 78%),
+    linear-gradient(160deg, #1a2138 0%, #121728 45%, #12182a 100%);
+}
+
+/* dark 的噪点抖动调低亮度 */
+html[data-theme='dark'] .glass-bg::before {
+  opacity: .04;
 }
 
 /* dark 的液态纹理降低亮度 */
 html[data-theme='dark'] .glass-bg::after {
   background-image:
-    radial-gradient(380px 280px at 18% 24%, rgba(255, 255, 255, .05), transparent 70%),
-    radial-gradient(520px 380px at 78% 58%, rgba(120, 160, 255, .05), transparent 70%),
-    radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .04), transparent 70%);
+    radial-gradient(380px 280px at 18% 24%, rgba(255, 255, 255, .035), transparent 72%),
+    radial-gradient(520px 380px at 78% 58%, rgba(120, 160, 255, .035), transparent 72%),
+    radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .03), transparent 72%);
 }
 
 /* 降低动画前提：用户开启减少动效时关闭流动 */
@@ -91,6 +113,7 @@ html[data-theme='dark'] .glass-bg::after {
   .glass-bg {
     animation: none;
   }
+  .glass-bg::before,
   .glass-bg::after {
     animation: none;
   }
