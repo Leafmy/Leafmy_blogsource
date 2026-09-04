@@ -34,6 +34,16 @@
   color: inherit;
 }
 
+/* ---- 喇叭标识：默认静止，仅"新公告"时才播放 shake 动画 ---- */
+/* 覆盖 Font Awesome 的 .fa-shake，默认不播 */
+.card-announcement .item-headline i.fa-bullhorn.fa-shake {
+  animation: none !important;
+}
+/* 当 JS 判定为新公告时，加上 .is-new 类才允许晃 */
+.card-announcement .item-headline i.fa-bullhorn.fa-shake.is-new {
+  animation: fa-shake 1s ease-in-out !important;
+}
+
 /* ---- 常驻公告标题（首段）---- */
 .card-announcement .announcement_title {
   display: block;

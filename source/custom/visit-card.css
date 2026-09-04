@@ -1,7 +1,7 @@
 /* ============================================================
-   Visit card — swap text in place (custom inject, v7)
+   Visit card — swap text (custom inject, v8)
    双人切换：默认站主 l3AFovxs，hover 换 HexShane 头像+名字+简介「卡密」。
-   名字/简介单一元素原位变换，头像渐隐切换。无 Follow 按钮，无整卡遮罩。
+   无动画，hover 直接瞬间切换。无 Follow 按钮，无整卡遮罩。
    ============================================================ */
 
 /* 卡片保持相对定位，避免换字时布局跳动 */
@@ -12,40 +12,9 @@ html.js .card-info {
 /* 文字区容器：相对定位，承载单一文本元素 */
 html.js .card-info .swap-text {
   position: relative;
-  overflow: hidden;
-  /* 高度走非线性曲线：变小/变大先快后缓，不生硬 */
-  transition: filter 0.3s ease,
-              opacity 0.3s ease,
-              transform 0.3s ease,
-              height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform, filter, opacity, height;
 }
 
-/* 单一文本元素：默认清晰显示（站主文字） */
-html.js .card-info .swap-text {
-  filter: blur(0);
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* 换字动画：先模糊淡出 + 轻微上移 */
-html.js .card-info .swap-text.swapping {
-  filter: blur(6px);
-  opacity: .2;
-  transform: translateY(-4px);
-  pointer-events: none;
-}
-
-/* 头像渐隐切换 */
-html.js .card-info .avatar-img img {
-  transition: opacity 0.4s ease;
-}
-html.js .card-info.swapping .avatar-img img {
-  opacity: 0;
-}
-
-/* ---------- 名片文字（复用主题 .author-info-name / .author-info-description） ---------- */
-/* 确保名片态名字与简介的视觉与站主态一致 */
+/* 名片文字复用主题样式，确保视觉一致 */
 html.js .card-info .swap-text .author-info-name {
   font-weight: 500;
 }
