@@ -41,36 +41,38 @@ html.js body {
 
 /* ---------- 分层排版结构 ---------- */
 
-/* 整体：footer-other 作为相对定位容器，版权/框架居中，声明靠右下 */
+/* 整体：footer-other 用 flex 纵向排布，内容靠右下沉对齐（版权/框架/声明都到右下） */
 #footer .footer-other {
-  position: relative;
-  padding: 34px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  min-height: 96px;
+  padding: 28px 24px 14px;
+  text-align: right;
 }
 
-/* 第一层：版权行（© 年份 By 站主） */
+/* 版权行（© 年份 By 站主）+ 框架行（Hexo | Butterfly）：都右对齐靠底 */
 #footer .footer-copyright {
-  margin-bottom: 4px;
   line-height: 1.9;
 }
 
-/* 第二层：框架/主题信息行（Hexo | Butterfly），与版权分离更清晰 */
+/* 框架/主题信息行单独成块，随版权一起右对齐 */
 #footer .framework-info {
-  display: inline-block;
+  display: block;
 }
 
-/* 声明区：来自 custom_text，靠右下角 */
+/* 声明区：来自 custom_text，跟版权一样右对齐，叠在其下方 */
 #footer .footer_custom_text {
-  margin-top: 12px;
+  margin-top: 6px;
 }
 
 #footer .footer-site-meta {
-  position: absolute;
-  right: 24px;
-  bottom: 14px;
+  position: static;
   font-size: .88em;
   line-height: 1.8;
   text-align: right;
-  max-width: 60%;
+  max-width: 100%;
 }
 #footer .footer-statement {
   opacity: .82;
@@ -102,17 +104,14 @@ html.js body {
   color: #7aa2f0 !important;
 }
 
-/* 移动端：声明改回文档流居中（窄屏右下角绝对定位会与版权重叠、太挤） */
+/* 移动端：收紧内边距，内容仍靠右居中（flex 对齐不变） */
 @media (max-width: 768px) {
   #footer .footer-other {
-    padding: 26px 16px 32px;
+    padding: 22px 16px 18px;
+    min-height: 0;
   }
-  #footer .footer_site-meta,
   #footer .footer-site-meta {
-    position: static;
-    margin-top: 10px;
-    text-align: center;
-    max-width: 100%;
+    margin-top: 8px;
   }
 }
 
