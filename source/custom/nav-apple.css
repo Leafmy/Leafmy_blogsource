@@ -24,10 +24,10 @@
   border-radius: 14px !important;
   box-shadow: 0 8px 24px rgba(15, 25, 50, .14) !important;
   opacity: 1 !important;
-  overflow: hidden !important;
-
-  /* 覆盖主题滚动时的位移与过渡（.nav-visible/.nav-fixed 会给 nav 加
-     transform: translate3d 把它移出视口；我们让它始终悬浮在顶部） */
+  /* 注意：不能设 overflow:hidden！它会把挂在 .menus_item 下的
+     悬浮下拉 .nav-drop（top:calc(100%+14px)，超出 nav 边界）裁掉，
+     导致"向下展开没了"。光斑 ::after / 边缘环 ::before 都在 nav 内部
+     (inset:0)，用自身 border-radius 即可，无需靠 overflow 裁剪。 */
   transform: none !important;
   transition: opacity .3s ease !important;
   display: flex !important;
@@ -321,21 +321,21 @@ html[data-theme='dark'] #nav #toggle-menu i {
 }
 #nav .nav-drop {
   position: absolute;
-  top: calc(100% + 14px);
+  top: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%) translateY(-6px);
-  min-width: 220px;
-  max-width: 320px;
+  min-width: 240px;
+  max-width: 340px;
   max-height: 420px;
   overflow: hidden auto;
-  padding: 8px;
-  border-radius: 14px;
-  box-shadow: 0 16px 44px rgba(15, 25, 50, .22);
-  border: 1px solid rgba(255, 255, 255, .60);
+  padding: 10px;
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(15, 25, 50, .24);
+  border: 1px solid rgba(255, 255, 255, .62);
 
-  background: linear-gradient(150deg, rgba(246, 248, 252, .92), rgba(238, 243, 250, .88)) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
+  background: linear-gradient(150deg, rgba(246, 248, 252, .94), rgba(238, 243, 250, .90)) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(185%);
+  backdrop-filter: blur(26px) saturate(185%);
 
   opacity: 0;
   visibility: hidden;
@@ -343,14 +343,14 @@ html[data-theme='dark'] #nav #toggle-menu i {
   transition: opacity .22s ease, transform .22s ease, visibility .22s;
   z-index: 1000;
 }
-/* 悬停桥：填补菜单按钮与面板之间 14px 空隙，避免鼠标下滑时 :hover 丢失造成闪烁 */
+/* 悬停桥：填补菜单按钮与面板之间 12px 空隙，避免鼠标下滑时 :hover 丢失造成闪烁 */
 #nav .nav-drop::before {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  top: -14px;
-  height: 14px;
+  top: -12px;
+  height: 12px;
 }
 /* 显示：桌面用 :hover，触屏用 .open（JS 点击切换）。
    不用 @media (hover:hover) 包裹（它在触屏/部分设备误判为 none，
@@ -365,16 +365,18 @@ html[data-theme='dark'] #nav #toggle-menu i {
 
 /* 面板头部 */
 #nav .nav-drop-head {
-  font-size: 12px;
-  letter-spacing: .04em;
-  padding: 4px 12px 8px;
-  color: rgba(70, 80, 110, .72);
-  border-bottom: 1px solid rgba(120, 140, 180, .18);
-  margin-bottom: 4px;
+  font-size: 11.5px;
+  letter-spacing: .06em;
+  padding: 6px 14px 10px;
+  color: rgba(90, 100, 130, .68);
+  border-bottom: 1px solid rgba(120, 140, 180, .16);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  font-weight: 600;
 }
 html[data-theme='dark'] #nav .nav-drop-head {
-  color: rgba(200, 210, 240, .68);
-  border-bottom-color: rgba(140, 160, 210, .16);
+  color: rgba(200, 210, 240, .60);
+  border-bottom-color: rgba(140, 160, 210, .14);
 }
 
 /* 文章列表 */
@@ -389,7 +391,7 @@ html[data-theme='dark'] #nav .nav-drop-head {
 }
 #nav .nav-drop-list a {
   display: block;
-  padding: 9px 12px;
+  padding: 10px 14px;
   border-radius: 9px;
   font-size: 13.5px;
   line-height: 1.45;
@@ -401,12 +403,12 @@ html[data-theme='dark'] #nav .nav-drop-head {
   transition: background-color .18s ease, color .18s ease, transform .18s ease;
 }
 #nav .nav-drop-list a:hover {
-  background: linear-gradient(150deg, rgba(120, 180, 250, .28), rgba(160, 210, 255, .20));
+  background: linear-gradient(150deg, rgba(120, 180, 250, .20), rgba(160, 210, 255, .14));
   color: var(--theme-color, #49b1f5) !important;
-  transform: translateX(2px);
+  transform: translateX(3px);
 }
 #nav .nav-drop-list a:active {
-  transform: translateX(2px) scale(.98);
+  transform: translateX(3px) scale(.985);
 }
 html[data-theme='dark'] #nav .nav-drop-list a {
   color: rgba(255, 255, 255, .88) !important;
