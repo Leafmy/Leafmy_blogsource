@@ -25,12 +25,28 @@
      transform: translate3d 把它移出视口；我们让它始终悬浮在顶部） */
   transform: none !important;
   transition: opacity .3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
 
   /* light：macOS 毛玻璃 */
   background: linear-gradient(150deg, rgba(246, 248, 252, .58), rgba(232, 238, 248, .48)) !important;
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, .60);
+}
+
+/* ---- 菜单移到左侧（站名之前），站名紧随其后 ---- */
+#nav #menus {
+  order: -1 !important;
+  margin-right: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#nav #blog-info {
+  order: 0 !important;
+  margin-right: auto !important;
 }
 
 /* ---- dark：深色毛玻璃 ---- */
@@ -88,6 +104,38 @@ html[data-theme='dark'] #nav span.site-page:hover {
   color: var(--theme-color, #49b1f5) !important;
 }
 
+/* ---- 指针悬浮光效（macOS 毛玻璃高亮斑点） ----
+   菜单项悬浮时呈现一个圆角高亮胶囊光斑，类似 macOS 菜单栏 hover 的高亮。
+   用 ::after 做高亮光斑，hover 时淡入 + 轻微上浮。
+   注意：/ 和 /archives/ 两个菜单有下拉面板，悬浮时保持光斑常亮。 */
+#nav .menus_item {
+  position: relative;
+  padding: 7px 14px;
+  border-radius: 9px;
+  transition: background-color .25s ease, color .25s ease;
+}
+#nav .menus_item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: linear-gradient(150deg, rgba(120, 180, 250, .18), rgba(160, 210, 255, .10));
+  opacity: 0;
+  transform: scale(.92);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+#nav .menus_item:hover::after,
+#nav .menus_item:focus-within::after,
+#nav .menus_item.open::after {
+  opacity: 1;
+  transform: scale(1);
+}
+html[data-theme='dark'] #nav .menus_item::after {
+  background: linear-gradient(150deg, rgba(90, 150, 255, .28), rgba(70, 110, 200, .16));
+}
+
 /* ---- 菜单子项（下拉）毛玻璃 ---- */
 #nav .menus_item_child {
   background: linear-gradient(150deg, rgba(246, 248, 252, .90), rgba(238, 243, 250, .86)) !important;
@@ -111,7 +159,130 @@ html[data-theme='dark'] #nav #toggle-menu i {
   color: rgba(255, 255, 255, .88) !important;
 }
 
-/* ---- 移动端：胶囊变窄，保留毛玻璃 ---- */
+/* ---- 悬浮下拉：最新文章 / 归档 ----
+   .menus_item:hover 时向下展开一个毛玻璃面板，列出文章链接。
+   PC 用 CSS :hover 触发显示；面板由 nav-apple.js 动态构建（.nav-drop）。
+   面板挂在 .menus_item 内，随其一起定位，避免被 nav 其它元素裁剪。 */
+#nav .menus_item {
+  position: relative;
+}
+#nav .nav-drop {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 420px;
+  overflow: hidden auto;
+  padding: 8px;
+  border-radius: 14px;
+  box-shadow: 0 16px 44px rgba(15, 25, 50, .22);
+  border: 1px solid rgba(255, 255, 255, .60);
+
+  background: linear-gradient(150deg, rgba(246, 248, 252, .92), rgba(238, 243, 250, .88)) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease, visibility .22s;
+  z-index: 1000;
+}
+/* 悬停桥：填补菜单按钮与面板之间 14px 空隙，避免鼠标下滑时 :hover 丢失造成闪烁 */
+#nav .nav-drop::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -14px;
+  height: 14px;
+}
+/* 显示：PC（可悬停）用 :hover；触屏用 .open（JS 点击切换）。
+   两个选择器分开，避免触屏长按的 :hover 残留与点击 toggle 冲突。 */
+@media (hover: hover) and (pointer: fine) {
+  #nav .menus_item:hover .nav-drop {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+#nav .menus_item.open .nav-drop {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 面板头部 */
+#nav .nav-drop-head {
+  font-size: 12px;
+  letter-spacing: .04em;
+  padding: 4px 12px 8px;
+  color: rgba(70, 80, 110, .72);
+  border-bottom: 1px solid rgba(120, 140, 180, .18);
+  margin-bottom: 4px;
+}
+html[data-theme='dark'] #nav .nav-drop-head {
+  color: rgba(200, 210, 240, .68);
+  border-bottom-color: rgba(140, 160, 210, .16);
+}
+
+/* 文章列表 */
+#nav .nav-drop-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#nav .nav-drop-list li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#nav .nav-drop-list a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba(40, 44, 60, .90) !important;
+  transition: background-color .18s ease, color .18s ease;
+}
+#nav .nav-drop-list a:hover {
+  background: linear-gradient(150deg, rgba(120, 180, 250, .18), rgba(160, 210, 255, .10));
+  color: var(--theme-color, #49b1f5) !important;
+}
+html[data-theme='dark'] #nav .nav-drop-list a {
+  color: rgba(255, 255, 255, .88) !important;
+}
+html[data-theme='dark'] #nav .nav-drop-list a:hover {
+  background: linear-gradient(150deg, rgba(90, 150, 255, .26), rgba(70, 110, 200, .14));
+  color: var(--theme-color, #49b1f5) !important;
+}
+
+/* 空态 */
+#nav .nav-drop-empty {
+  padding: 12px;
+  font-size: 13px;
+  text-align: center;
+  color: rgba(70, 80, 110, .60);
+}
+html[data-theme='dark'] #nav .nav-drop-empty {
+  color: rgba(200, 210, 240, .55);
+}
+
+/* 深色模式面板 */
+html[data-theme='dark'] #nav .nav-drop {
+  background: linear-gradient(150deg, rgba(34, 40, 58, .96), rgba(20, 24, 36, .93)) !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, .55);
+  border: 1px solid rgba(255, 255, 255, .12);
+}
+
+/* ---- 移动端：胶囊变窄，保留毛玻璃；下拉改点击触发 + 全宽面板 ---- */
 @media (max-width: 768px) {
   #nav {
     left: 10px !important;
@@ -119,5 +290,16 @@ html[data-theme='dark'] #nav #toggle-menu i {
     height: 50px !important;
     padding: 0 16px !important;
     border-radius: 12px !important;
+  }
+  #nav .nav-drop {
+    left: 0 !important;
+    right: 0 !important;
+    transform: translateY(-6px) !important;
+    max-width: none;
+    max-height: 300px;
+  }
+  /* 触屏 .open 生效时也要去掉 translateX(-50%)，用全宽定位 */
+  #nav .menus_item.open .nav-drop {
+    transform: translateY(0) !important;
   }
 }

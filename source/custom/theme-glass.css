@@ -28,13 +28,17 @@
   position: absolute;
   inset: -40%;
   will-change: transform;
+  /* 白色模式：天蓝气泡感（bubble）
+     天蓝底色渐变 + 多个大小不一的圆形"气泡"光斑（带柔边高光），
+     仿佛清澈天蓝水里漂浮的气泡。 */
   background-image:
-    radial-gradient(1500px 1150px at 10% 6%, rgba(150, 185, 255, .22), transparent 70%),
-    radial-gradient(1700px 1300px at 92% 12%, rgba(235, 160, 215, .17), transparent 70%),
-    radial-gradient(1800px 1400px at 76% 86%, rgba(150, 215, 200, .16), transparent 72%),
-    radial-gradient(1600px 1250px at 14% 92%, rgba(245, 205, 160, .15), transparent 72%),
-    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .28), transparent 78%),
-    linear-gradient(160deg, #e8eef9 0%, #dbe4f2 48%, #e6ecf7 100%);
+    radial-gradient(520px 520px at 16% 22%, rgba(120, 200, 250, .30), rgba(120, 200, 250, .10) 55%, transparent 70%),
+    radial-gradient(700px 700px at 82% 68%, rgba(90, 190, 250, .26), rgba(90, 190, 250, .08) 55%, transparent 70%),
+    radial-gradient(340px 340px at 30% 78%, rgba(160, 220, 255, .34), rgba(160, 220, 255, .12) 55%, transparent 70%),
+    radial-gradient(430px 430px at 68% 30%, rgba(110, 205, 255, .30), rgba(110, 205, 255, .10) 55%, transparent 70%),
+    radial-gradient(360px 360px at 48% 52%, rgba(180, 235, 255, .28), rgba(180, 235, 255, .10) 55%, transparent 72%),
+    radial-gradient(260px 260px at 88% 20%, rgba(140, 215, 255, .32), rgba(140, 215, 255, .12) 55%, transparent 72%),
+    linear-gradient(165deg, #cdeafb 0%, #aeddff 45%, #c8ecff 100%);
   /* 液态流动：transform 平移（合成友好），幅度控制在层自身范围内、
      不露出边缘（层每侧有 40% 越界量，平移 <=20% 安全）。 */
   animation: glass-liquid-drift 46s ease-in-out infinite alternate;
