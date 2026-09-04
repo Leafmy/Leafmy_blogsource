@@ -289,9 +289,10 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
   ) !important;
 }
 
-/* ---- dark：hero 底部羽化（fade-out），与下方内容区柔和融合 ----
-   用 mask 渐变让 hero 玻璃在底部渐透明，消除与内容区相切的生硬水平分界线。 */
-html[data-theme='dark'] #page-header.full_page {
+/* ---- hero 底部羽化（fade-out），与下方内容区柔和融合 ----
+   用 mask 渐变让 hero 玻璃在底部渐透明，消除与内容区相切的生硬水平分界线。
+   同时作用于 light（白模式）与 dark（黑模式）。 */
+#page-header.full_page {
   -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 150px), transparent 100%);
   mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 150px), transparent 100%);
   -webkit-mask-size: 100% 100%;

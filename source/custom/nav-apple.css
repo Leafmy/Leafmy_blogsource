@@ -1,0 +1,123 @@
+/* ============================================================
+   顶部导航栏 Apple/macOS 毛玻璃样式 (custom inject)
+   - 悬浮 fixed 顶部，左右留边距，圆角胶囊
+   - 半透明背景 + backdrop-filter 高斯模糊 + 高饱和（macOS 毛玻璃）
+   - light/dark 双模式适配
+   覆盖主题默认 #nav（absolute、透明、无背景模糊）
+   ============================================================ */
+
+/* ---- 基础：悬浮 + 毛玻璃胶囊 ---- */
+#nav {
+  position: fixed !important;
+  top: 12px !important;
+  left: 16px !important;
+  right: 16px !important;
+  width: auto !important;
+  height: 54px !important;
+  margin: 0 !important;
+  padding: 0 24px !important;
+  z-index: 999 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(15, 25, 50, .14) !important;
+  opacity: 1 !important;
+
+  /* 覆盖主题滚动时的位移与过渡（.nav-visible/.nav-fixed 会给 nav 加
+     transform: translate3d 把它移出视口；我们让它始终悬浮在顶部） */
+  transform: none !important;
+  transition: opacity .3s ease !important;
+
+  /* light：macOS 毛玻璃 */
+  background: linear-gradient(150deg, rgba(246, 248, 252, .58), rgba(232, 238, 248, .48)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, .60);
+}
+
+/* ---- dark：深色毛玻璃 ---- */
+html[data-theme='dark'] #nav {
+  background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .40) !important;
+}
+
+/* ---- 滚动后（#page-header.nav-fixed）：主题会把 nav 移到 top:-60px 隐藏、
+     背景改 rgba(255,255,255,.7)、blur(7px)。我们让它始终悬浮在顶、保留毛玻璃。 ---- */
+#page-header.nav-fixed #nav,
+#page-header.full_page #nav {
+  top: 12px !important;
+  transform: none !important;
+  transition: opacity .3s ease !important;
+  background: linear-gradient(150deg, rgba(246, 248, 252, .58), rgba(232, 238, 248, .48)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, .60);
+}
+html[data-theme='dark'] #page-header.nav-fixed #nav,
+html[data-theme='dark'] #page-header.full_page #nav {
+  background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .40) !important;
+}
+
+/* ---- 文字颜色（毛玻璃会改变底色，需同步） ---- */
+#nav .site-name,
+#nav .site-page,
+#nav a,
+#nav span.site-page {
+  color: rgba(40, 44, 60, .90) !important;
+  text-shadow: none;
+}
+html[data-theme='dark'] #nav .site-name,
+html[data-theme='dark'] #nav .site-page,
+html[data-theme='dark'] #nav a,
+html[data-theme='dark'] #nav span.site-page {
+  color: rgba(255, 255, 255, .88) !important;
+}
+
+/* 导航项 hover：主题色 */
+#nav a:hover,
+#nav span.site-page:hover {
+  color: var(--theme-color, #49b1f5) !important;
+}
+html[data-theme='dark'] #nav a:hover,
+html[data-theme='dark'] #nav span.site-page:hover {
+  color: var(--theme-color, #49b1f5) !important;
+}
+
+/* ---- 菜单子项（下拉）毛玻璃 ---- */
+#nav .menus_item_child {
+  background: linear-gradient(150deg, rgba(246, 248, 252, .90), rgba(238, 243, 250, .86)) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  box-shadow: 0 10px 30px rgba(15, 25, 50, .18);
+  border: 1px solid rgba(255, 255, 255, .60);
+  border-radius: 10px !important;
+}
+html[data-theme='dark'] #nav .menus_item_child {
+  background: linear-gradient(150deg, rgba(34, 40, 58, .94), rgba(20, 24, 36, .92)) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .50);
+  border: 1px solid rgba(255, 255, 255, .12);
+}
+
+/* 收起菜单图标颜色 */
+#nav #toggle-menu i {
+  color: rgba(40, 44, 60, .90) !important;
+}
+html[data-theme='dark'] #nav #toggle-menu i {
+  color: rgba(255, 255, 255, .88) !important;
+}
+
+/* ---- 移动端：胶囊变窄，保留毛玻璃 ---- */
+@media (max-width: 768px) {
+  #nav {
+    left: 10px !important;
+    right: 10px !important;
+    height: 50px !important;
+    padding: 0 16px !important;
+    border-radius: 12px !important;
+  }
+}

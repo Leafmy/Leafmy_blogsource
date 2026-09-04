@@ -22,6 +22,8 @@ menu:
   # List||fas fa-list:
   #   Music: /music/ || fas fa-music
   #   Movie: /movies/ || fas fa-video
+  最新文章: / || fas fa-fire
+  归档: /archives/ || fas fa-box-archive
 
 # --------------------------------------
 # Code Blocks Settings
@@ -1073,11 +1075,13 @@ inject:
     # - <link rel="stylesheet" href="/xxx.css">
     - <link rel="stylesheet" href="/custom/theme-reveal.css">
     - <link rel="stylesheet" href="/custom/theme-glass.css">
+    - <link rel="stylesheet" href="/custom/nav-apple.css">
     - <link rel="stylesheet" href="/custom/footer-reveal.css">
     - <link rel="stylesheet" href="/custom/announce-hover.css">
     - <link rel="stylesheet" href="/custom/visit-card.css">
   bottom:
     # - <script src="xxxx"></script>
+    - <script src="/custom/nav-apple.js"></script>
     - <script src="/custom/glass-bg.js"></script>
     - <script src="/custom/theme-reveal.js"></script>
     - <script src="/custom/footer-reveal.js"></script>
