@@ -1,12 +1,11 @@
 /* ============================================================
-   Visit card — swap text in place (custom inject, v5)
+   Visit card — swap text in place (custom inject, v6)
    个人信息卡（.card-info，站主 Leaf 卡）：
    - 只改变"文字信息区"，头像与卡片背景/布局完全不动
-   - 默认：显示站主原文字（名字、描述、文章/标签/分类、Follow）
-   - 鼠标移入：原文字高斯模糊淡出，名片文字原位淡入
-     （名字→名字、描述→邮箱、数据→联系方式、按钮→Follow）
-   - 鼠标移出：恢复原文字
-   头像(.avatar-img)不参与变换，纯 CSS :hover，无整卡遮罩。
+   - 单一文本元素原位变换：默认显示站主文字；鼠标移入时
+     文字先高斯模糊淡出 → 同一位置换成名片文字 → 再清晰浮现
+   - 鼠标移出：同样先模糊 → 换回站主文字 → 清晰浮现
+   全程只有一段文字在变，无两层叠放、无整卡遮罩。
    ============================================================ */
 (function () {
   'use strict'
@@ -15,7 +14,7 @@
 
   const card = document.querySelector('.card-info')
   if (!card) return
-  if (card.querySelector('.text-swap')) return
+  if (card.querySelector('.swap-text')) return
 
   // ---------- 名片信息（可按需修改） ----------
   const config = {
@@ -29,31 +28,44 @@
   const btn = card.querySelector('#card-info-btn')
   const btnHref = btn ? btn.getAttribute('href') : (config.github || '')
 
-  // 把原卡的"文字信息区"打包成一层（不含头像）
-  const textLayer = document.createElement('div')
-  textLayer.className = 'owner-text'
-  // 依次移动：名字、描述、数据、按钮
+  // 单一文本容器，包住文字信息区（不含头像）
+  const swap = document.createElement('div')
+  swap.className = 'swap-text'
   ;['.author-info-name', '.author-info-description', '.site-data', '#card-info-btn'].forEach(function (sel) {
     const el = card.querySelector(sel)
-    if (el) textLayer.appendChild(el)
+    if (el) swap.appendChild(el)
   })
 
-  // 名片文字层（与原文字层同位置叠放）
-  const visitLayer = document.createElement('div')
-  visitLayer.className = 'visit-text'
-  visitLayer.innerHTML = [
+  // 存档"站主"与"名片"两套文案（换字用）
+  const ownerHTML = swap.innerHTML
+  const visitHTML = [
     '<div class="vt-name">' + name + '</div>',
     '<div class="vt-desc">' + config.email + '</div>',
     '<div class="vt-data">' + config.wechat + '</div>',
     '<a class="vt-follow" target="_blank" rel="noopener" href="' + btnHref + '"><i class="fab fa-github"></i><span>Follow Me</span></a>'
   ].join('')
 
-  // 组装：两层叠放进 swap 容器，头像保持在上方
-  const swap = document.createElement('div')
-  swap.className = 'text-swap'
-  swap.appendChild(textLayer)
-  swap.appendChild(visitLayer)
-
-  // 把 swap 插到头像之后（头像不动），其余不动
+  // 把 swap 插到头像之后（头像不动）
   avatar ? avatar.insertAdjacentElement('afterend', swap) : card.appendChild(swap)
+
+  // ---------- 换字逻辑：先模糊 → 换字 → 再清晰 ----------
+  let state = 'owner'   // owner | visit
+  let timer = null
+
+  const swapTo = function (nextHTML, nextState) {
+    swap.classList.add('swapping')            // ① 开始模糊淡出
+    clearTimeout(timer)
+    timer = setTimeout(function () {
+      swap.innerHTML = nextHTML              // ② 模糊到看不清时，同一位置换字
+      swap.classList.remove('swapping')      // ③ 文字清晰浮现
+      state = nextState
+    }, 320)
+  }
+
+  card.addEventListener('mouseenter', function () {
+    if (state !== 'visit') swapTo(visitHTML, 'visit')
+  })
+  card.addEventListener('mouseleave', function () {
+    if (state !== 'owner') swapTo(ownerHTML, 'owner')
+  })
 })()

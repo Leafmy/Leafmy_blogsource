@@ -1,8 +1,7 @@
 /* ============================================================
-   Visit card — swap text in place (custom inject, v5)
-   只改变"文字信息区"，头像/卡片背景/布局不动。
-   原文字层与名片文字层叠放，hover 时原文字模糊淡出、名片淡入。
-   纯 CSS :hover，无整卡遮罩。
+   Visit card — swap text in place (custom inject, v6)
+   单一文本元素原位变换：鼠标移入文字先高斯模糊淡出，同一位置
+   换成名片文字再清晰浮现；移出同理换回。无两层叠放、无整卡遮罩。
    ============================================================ */
 
 /* 头部头像保留原样，只对文字区做变换 */
@@ -10,72 +9,52 @@ html.js .card-info {
   position: relative;
 }
 
-/* 文字区容器：相对定位，叠放两层 */
-html.js .card-info .text-swap {
+/* 文字区容器：相对定位，承载单一文本元素 */
+html.js .card-info .swap-text {
   position: relative;
-}
-
-/* 原文字层 & 名片文字层叠放在同一位置，统一平滑缓动（接近公告栏舒缓换字） */
-html.js .card-info .text-swap .owner-text,
-html.js .card-info .text-swap .visit-text {
-  transition: filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: filter 0.3s ease,
+              opacity 0.3s ease,
+              transform 0.3s ease;
   will-change: transform, filter, opacity;
 }
 
-/* 原文字默认显示 */
-html.js .owner-text {
+/* 单一文本元素：默认清晰显示（站主文字） */
+html.js .card-info .swap-text {
+  filter: blur(0);
   opacity: 1;
   transform: translateY(0);
 }
 
-/* 名片文字默认隐藏，绝对定位叠在原文字上方，从下方 14px 准备上浮 */
-html.js .visit-text {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transform: translateY(14px);
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-}
-
-/* hover：原文字模糊 + 上移淡出，名片文字从下方浮上来 */
-html.js .card-info:hover .owner-text {
+/* 换字动画：先模糊淡出 + 轻微上移 */
+html.js .card-info .swap-text.swapping {
   filter: blur(6px);
-  opacity: .25;
-  transform: translateY(-6px);
-}
-html.js .card-info:hover .visit-text {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+  opacity: .2;
+  transform: translateY(-4px);
+  pointer-events: none;
 }
 
-/* ---------- 名片文字样式 ---------- */
-html.js .visit-text .vt-name {
+/* ---------- 名片文字样式（换字后的内容） ---------- */
+html.js .card-info .swap-text .vt-name {
   font-size: 19px;
   font-weight: 700;
   color: #2c3050;
+  margin-bottom: 6px;
 }
-html.js .visit-text .vt-desc {
+html.js .card-info .swap-text .vt-desc {
   font-size: 13px;
   color: #5079d6;
+  margin-bottom: 4px;
 }
-html.js .visit-text .vt-data {
+html.js .card-info .swap-text .vt-data {
   font-size: 14px;
   color: #3a4060;
+  margin-bottom: 6px;
 }
-html.js .visit-text .vt-follow {
+html.js .card-info .swap-text .vt-follow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
   padding: 8px 24px;
   border-radius: 22px;
   background: #5079d6;
@@ -84,20 +63,20 @@ html.js .visit-text .vt-follow {
   text-decoration: none !important;
   transition: background 0.3s ease;
 }
-html.js .visit-text .vt-follow:hover {
+html.js .card-info .swap-text .vt-follow:hover {
   background: #3a63c0;
 }
-html.js .visit-text .vt-follow i {
+html.js .card-info .swap-text .vt-follow i {
   color: #fff;
 }
 
 /* dark 下名片文字用浅色 */
-html[data-theme='dark'].js .visit-text .vt-name {
+html[data-theme='dark'].js .card-info .swap-text .vt-name {
   color: #f0f2fa;
 }
-html[data-theme='dark'].js .visit-text .vt-desc {
+html[data-theme='dark'].js .card-info .swap-text .vt-desc {
   color: #7aa2f0;
 }
-html[data-theme='dark'].js .visit-text .vt-data {
+html[data-theme='dark'].js .card-info .swap-text .vt-data {
   color: rgba(255, 255, 255, .88);
 }
