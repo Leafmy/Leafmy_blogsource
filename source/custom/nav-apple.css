@@ -36,6 +36,31 @@
   border: 1px solid rgba(255, 255, 255, .60);
 }
 
+/* ---- 指针悬浮整条导航栏 → 边缘泛光（HarmonyOS 式悬浮提亮） ----
+   指针进入导航栏时，整条导航栏泛起柔和冷色外发光 + 边框更亮 + 轻微提亮。
+   只用 box-shadow / border / filter 增强，不做 transform/位移/缩放，避免错位。 */
+#nav:hover {
+  box-shadow:
+    0 8px 24px rgba(15, 25, 50, .14),
+    0 0 0 1px rgba(120, 180, 250, .28),
+    0 0 22px rgba(120, 180, 250, .28),
+    0 0 46px rgba(120, 180, 250, .14) !important;
+  border-color: rgba(120, 180, 250, .55) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(200%) brightness(1.03);
+  backdrop-filter: blur(26px) saturate(200%) brightness(1.03);
+  transition: box-shadow .25s ease, border-color .25s ease, -webkit-backdrop-filter .25s ease, backdrop-filter .25s ease !important;
+}
+html[data-theme='dark'] #nav:hover {
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, .40),
+    0 0 0 1px rgba(90, 150, 255, .30),
+    0 0 26px rgba(90, 150, 255, .30),
+    0 0 54px rgba(90, 150, 255, .16) !important;
+  border-color: rgba(90, 150, 255, .55) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(170%) brightness(1.05);
+  backdrop-filter: blur(26px) saturate(170%) brightness(1.05);
+}
+
 /* ---- 布局：站名(标题)在最左，然后是最新文章/归档，汉堡按钮靠右 ----
    用户要求：标题在最左，之后紧跟菜单项。
    注意覆盖主题默认为 #menus 设置的 margin-left:auto（会把菜单推到最右），
