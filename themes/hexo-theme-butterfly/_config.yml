@@ -1074,6 +1074,7 @@ inject:
     - <link rel="stylesheet" href="/custom/announce-hover.css">
   bottom:
     # - <script src="xxxx"></script>
+    - <script src="/custom/glass-bg.js"></script>
     - <script src="/custom/theme-reveal.js"></script>
     - <script src="/custom/footer-reveal.js"></script>
     - <script src="/custom/announce-hover.js"></script>

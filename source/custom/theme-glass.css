@@ -1,89 +1,127 @@
 /* ============================================================
-   Glass panels (custom inject, v3)
-   板块玻璃化：白色模式=高斯模糊玻璃 / 黑色模式=磨砂玻璃
-   v3：背景加入噪点颗粒(高频细节)，卡片内外的模糊差异变得
-       清晰可见，玻璃通透感明显；light 更通透、dark 更雾面。
+   Glass panels (custom inject, v5)
+   板块玻璃化：白色模式=通透玻璃 / 黑色模式=磨砂玻璃
+   v5 核心修复：backdrop-filter 只能模糊其后方的【真实 DOM
+   内容层】，body/html 的 background 不参与采样（此前 v3/v4
+   玻璃感不足的真正根因）。方案：由 glass-bg.js 注入的
+   .glass-bg 固定层承载全部彩色光斑 + 噪点，卡片透过它模糊，
+   玻璃感才真实可见。
    ============================================================ */
 
-/* 兜底底色（body 透明后露出 html；色值与历史 modeBg 一致） */
-html {
+/* ---------- 背景装饰层（body 首子元素，垫在所有内容下方） ---------- */
+.glass-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-image:
+    radial-gradient(1400px 1100px at 12% 8%, rgba(70, 130, 255, .52), transparent 60%),
+    radial-gradient(1600px 1200px at 90% 15%, rgba(255, 96, 195, .44), transparent 60%),
+    radial-gradient(1700px 1300px at 78% 82%, rgba(45, 205, 175, .42), transparent 62%),
+    radial-gradient(1500px 1150px at 15% 90%, rgba(255, 170, 80, .40), transparent 62%),
+    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .55), transparent 70%),
+    linear-gradient(160deg, #b8cdee 0%, #9db8e6 45%, #c2d3ee 100%);
+}
+
+/* dark：背景层换深色光斑 */
+html[data-theme='dark'] .glass-bg {
+  background-image:
+    radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .55), transparent 62%),
+    radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .48), transparent 62%),
+    radial-gradient(1700px 1300px at 78% 82%, rgba(50, 200, 170, .44), transparent 64%),
+    radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .38), transparent 64%),
+    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .08), transparent 70%),
+    linear-gradient(160deg, #161d31 0%, #0d1226 45%, #0a0e1d 100%);
+}
+
+/* ---------- 内容层：垫在背景层之上 ---------- */
+#body-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- body 兜底 ---------- */
+body {
   background-color: #e9eef8;
 }
-[data-theme='dark'] html {
+html[data-theme='dark'] body {
   background-color: #0f1116;
-}
-
-/* 噪点纹理（颗粒细节 -> backdrop blur 前后差异可见） */
-:root {
-  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.72 0 0 0 0 0.75 0 0 0 0 0.80 0 0 0 0.55 0'/></filter><rect width='150' height='150' filter='url(%23n)' opacity='0.30'/></svg>");
-}
-
-/* ================= 页面背景：light ================= */
-body {
-  background-color: transparent !important;
-  background-attachment: fixed !important;
-  background-image:
-    var(--grain),
-    radial-gradient(560px 420px at 12% 6%, rgba(96, 142, 255, .22), transparent 60%),
-    radial-gradient(660px 480px at 90% 12%, rgba(255, 118, 196, .17), transparent 60%),
-    radial-gradient(800px 580px at 58% 100%, rgba(90, 224, 184, .16), transparent 62%),
-    linear-gradient(160deg, #e6ecf8 0%, #d9e3f2 55%, #e3e9f6 100%);
-  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
-  background-size: 150px 150px, auto, auto, auto, auto;
-}
-
-/* ================= 页面背景：dark ================= */
-[data-theme='dark'] body {
-  background-image:
-    var(--grain),
-    radial-gradient(580px 440px at 16% 8%, rgba(96, 120, 190, .34), transparent 62%),
-    radial-gradient(720px 540px at 86% 16%, rgba(150, 96, 220, .26), transparent 62%),
-    radial-gradient(880px 640px at 48% 96%, rgba(60, 160, 140, .22), transparent 64%),
-    linear-gradient(160deg, #12151f 0%, #10131c 55%, #0c0f16 100%);
 }
 
 /* ================= 玻璃面板 ================= */
 
-/* light：高斯模糊玻璃 —— 通透半透明 + 顶部强反光，像一块透亮的玻璃板 */
+/* ---- light：通透玻璃 ---- */
 .recent-post-item,
 .card-widget,
 #post {
   background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, .58) 0%,
-    rgba(255, 255, 255, .26) 55%,
-    rgba(255, 255, 255, .44) 100%
+    155deg,
+    rgba(255, 255, 255, .30) 0%,
+    rgba(255, 255, 255, .12) 50%,
+    rgba(255, 255, 255, .22) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(175%) brightness(1.06);
-  backdrop-filter: blur(28px) saturate(175%) brightness(1.06);
+  -webkit-backdrop-filter: blur(38px) saturate(220%) brightness(1.02);
+  backdrop-filter: blur(38px) saturate(220%) brightness(1.02);
+  border: 1px solid rgba(255, 255, 255, .75) !important;
   box-shadow:
-    0 18px 40px rgba(20, 36, 80, .20),
-    inset 0 1px 0 rgba(255, 255, 255, .85),
-    inset 0 -1px 0 rgba(255, 255, 255, .35) !important;
+    0 22px 48px rgba(20, 36, 80, .20),
+    0 4px 12px rgba(20, 36, 80, .06),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(255, 255, 255, .70) !important;
 }
 
-/* dark：磨砂玻璃 —— 顶部微反光 + 大 blur + 低饱和，厚实哑光 */
-[data-theme='dark'] .recent-post-item,
-[data-theme='dark'] .card-widget,
-[data-theme='dark'] #post {
+/* 顶部细镜面高光 */
+.recent-post-item::before,
+.card-widget::before,
+#post::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 24%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .50), transparent);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ---- dark：磨砂玻璃 ---- */
+html[data-theme='dark'] .recent-post-item,
+html[data-theme='dark'] .card-widget,
+html[data-theme='dark'] #post {
   background: linear-gradient(
-    170deg,
-    rgba(46, 52, 72, .60) 0%,
-    rgba(17, 20, 30, .46) 55%,
-    rgba(26, 30, 44, .54) 100%
+    160deg,
+    rgba(58, 66, 92, .42) 0%,
+    rgba(20, 24, 38, .38) 52%,
+    rgba(32, 38, 56, .42) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(130%) brightness(1.22);
-  backdrop-filter: blur(36px) saturate(130%) brightness(1.22);
+  -webkit-backdrop-filter: blur(46px) saturate(160%) brightness(1.4);
+  backdrop-filter: blur(46px) saturate(160%) brightness(1.4);
+  border: 1px solid rgba(255, 255, 255, .16) !important;
   box-shadow:
-    0 18px 48px rgba(0, 0, 0, .60),
-    inset 0 1px 0 rgba(255, 255, 255, .16),
-    inset 0 -1px 0 rgba(255, 255, 255, .05) !important;
+    0 24px 56px rgba(0, 0, 0, .60),
+    0 4px 16px rgba(0, 0, 0, .32),
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    inset 0 -1px 0 rgba(255, 255, 255, .08) !important;
 }
 
-/* 移动端：固定背景与 blur 开销大，退回主题原始实色卡片 */
+/* dark 高光更柔和 */
+html[data-theme='dark'] .recent-post-item::before,
+html[data-theme='dark'] .card-widget::before,
+html[data-theme='dark'] #post::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .16), transparent);
+}
+
+/* ---- 卡片定位（供 ::before 与展开浮层使用） ---- */
+.recent-post-item,
+.card-widget,
+#post {
+  position: relative;
+}
+
+/* 移动端：开销大，退回主题原始实色卡片 */
 @media (max-width: 768px) {
-  body {
-    background-attachment: scroll;
+  .glass-bg {
+    display: none;
   }
   .recent-post-item,
   .card-widget,
@@ -92,5 +130,11 @@ body {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: none !important;
+    border: none !important;
+  }
+  .recent-post-item::before,
+  .card-widget::before,
+  #post::before {
+    display: none;
   }
 }
