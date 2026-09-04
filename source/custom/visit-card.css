@@ -1,0 +1,125 @@
+/* ============================================================
+   Visit card — card stack (custom inject)
+   站主卡(.card-info) 底层 + 名片卡(.visit-card) 堆叠：
+   - 默认名片卡藏在站主卡上方 (translateY(-100%))
+   - 鼠标悬浮卡片容器时，名片卡从上方滑下盖住站主卡
+   - 鼠标移出 -> 名片卡滑回上方隐藏
+   纯 CSS :hover 实现，玻璃质感与整站一致。
+   ============================================================ */
+
+/* 站主卡作为定位上下文（JS 已设 position:relative），overflow 隐藏防止名片滑出 */
+html.js .card-info {
+  position: relative !important;
+  overflow: hidden;
+}
+
+/* 名片卡：absolute 填满站主卡，默认藏在正上方 */
+html.js .visit-card {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: inherit;
+  transform: translateY(-100%);
+  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* 悬浮站主卡 -> 名片滑下盖住 */
+html.js .card-info:hover .visit-card {
+  transform: translateY(0);
+}
+
+/* ---------- 名牌卡玻璃背景（与整站玻璃统一） ---------- */
+html.js .visit-card {
+  background: linear-gradient(170deg, rgba(156, 104, 218, .97) 0%, rgba(94, 84, 200, .96) 55%, rgba(58, 90, 180, .95) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow:
+    0 18px 42px rgba(16, 24, 70, .42),
+    inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+
+/* ---------- 名片内容 ---------- */
+html.js .visit-card-avatar img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .88);
+  background: #fff;
+  object-fit: cover;
+}
+
+html.js .visit-card-name {
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ---------- 联系方式 ---------- */
+html.js .visit-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px 0;
+}
+html.js .visit-contact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, .90);
+  text-decoration: none;
+}
+html.js .visit-contact i {
+  color: #ffd96a;
+  font-size: 15px;
+}
+html.js .visit-contact span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+/* ---------- Follow 按钮 ---------- */
+html.js .visit-follow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 8px 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .18);
+  border: 1px solid rgba(255, 255, 255, .32);
+  color: #fff !important;
+  font-size: 14px;
+  text-decoration: none !important;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+html.js .visit-follow:hover {
+  background: rgba(255, 255, 255, .30);
+  transform: translateY(-2px);
+}
+html.js .visit-follow i {
+  color: #fff;
+}
+
+/* ---------- 亮色模式下站主卡本身是浅色玻璃，名片卡用深色玻璃保证对比 ---------- */
+/* dark 下名片卡保持深色玻璃 */
+[data-theme='dark'] html.js .visit-card {
+  background: linear-gradient(170deg, rgba(40, 48, 104, .97) 0%, rgba(28, 34, 78, .96) 55%, rgba(18, 24, 56, .95) 100%);
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, .55),
+    inset 0 1px 0 rgba(255, 255, 255, .10);
+}
