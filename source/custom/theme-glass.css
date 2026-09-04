@@ -28,17 +28,18 @@
   position: absolute;
   inset: -40%;
   will-change: transform;
-  /* 白色模式：与暗色模式同构的「液态玻璃」质感，只是用天蓝/浅蓝色调。
-     取消原先的小气泡，改为大半径、低饱和度、长过渡的光斑（与 dark 一致），
-     配合下方漂移动画，呈现流动的液体玻璃；天蓝底色 + 高亮冷色光斑。
-     底层再叠一层柔和白色高光斑增加"水润"感。 */
+  /* 白色模式：与暗色模式同构的「液态玻璃」质感，用天蓝/青/白色调。
+     关键：光斑颜色必须拉开对比（深天蓝→亮青→白高光→一点暖色点缀），
+     否则色彩太接近（此前全是近似的浅天蓝）经 hero backdrop 模糊后融为一体，
+     看不出光斑层次 = "没效果"。加大色差让光斑透出、有液体流动感。 */
   background-image:
-    radial-gradient(1200px 1000px at 14% 16%, rgba(130, 200, 250, .40), transparent 72%),
-    radial-gradient(1300px 1000px at 88% 20%, rgba(150, 215, 255, .38), transparent 72%),
-    radial-gradient(1400px 1100px at 76% 82%, rgba(120, 195, 255, .34), transparent 74%),
-    radial-gradient(1250px 950px at 16% 88%, rgba(170, 225, 255, .36), transparent 74%),
-    radial-gradient(900px 700px at 50% 46%, rgba(190, 235, 255, .30), transparent 76%),
-    radial-gradient(500px 400px at 62% 66%, rgba(255, 255, 255, .28), transparent 78%),
+    radial-gradient(1200px 1000px at 14% 16%, rgba(70, 150, 230, .50), transparent 70%),
+    radial-gradient(1300px 1000px at 88% 20%, rgba(60, 175, 250, .48), transparent 70%),
+    radial-gradient(1400px 1100px at 76% 82%, rgba(40, 120, 210, .44), transparent 72%),
+    radial-gradient(1250px 950px at 16% 88%, rgba(90, 140, 210, .46), transparent 72%),
+    radial-gradient(900px 700px at 50% 46%, rgba(150, 210, 250, .50), transparent 74%),
+    radial-gradient(520px 420px at 60% 26%, rgba(255, 255, 255, .55), transparent 78%),
+    radial-gradient(380px 300px at 34% 68%, rgba(255, 190, 150, .18), transparent 80%),
     linear-gradient(160deg, #cdeafb 0%, #a5d8fb 45%, #c6ebff 100%);
   /* 液态流动：transform 平移（合成友好），幅度控制在层自身范围内、
      不露出边缘（层每侧有 40% 越界量，平移 <=20% 安全）。 */
@@ -256,12 +257,12 @@ html[data-theme='dark'] #post::before {
 #page-header.full_page {
   background: linear-gradient(
     150deg,
-    rgba(40, 60, 110, .55) 0%,
-    rgba(50, 66, 120, .50) 50%,
-    rgba(60, 70, 130, .55) 100%
+    rgba(40, 60, 110, .40) 0%,
+    rgba(52, 68, 120, .36) 50%,
+    rgba(58, 72, 128, .40) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
 }
 
 /* 原有黑色遮罩改为柔和高光渐变，保留玻璃的镜面折射感 */

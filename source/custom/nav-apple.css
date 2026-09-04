@@ -120,67 +120,68 @@ html[data-theme='dark'] #nav span.site-page:hover {
   color: var(--theme-color, #49b1f5) !important;
 }
 
-/* ---- 指针悬浮光效（macOS 毛玻璃高亮胶囊） ----
-   菜单项悬浮时呈现一个圆角高亮胶囊光斑，类似 macOS 菜单栏 hover 的高亮 / 手机点击的按压回馈。
-   用 ::after 做高亮光斑，hover 时淡入 + 轻微上浮。
-   注意 z-index/透明度问题：低透明度(.18)+ 负 z-index 会几乎看不见（用户反馈"完全没生效"），
-   因此提高透明度、用 z-index:0 让光斑在文字下方但不被 nav 背景盖住，并加内发光增强可见性。 */
+/* ---- 悬浮光感（HarmonyOS 6.0 按压光感，但触发改为指针悬浮） ----
+   HarmonyOS 的"按压光感"是一种柔和、漫射的辉光（软光晕，非硬边框胶囊）：
+   从上往下透出的浅色亮晕 + 轻微内发光，按压/悬浮时平滑浮现。
+   这里把触发从"按压"改为"指针悬浮"(hover / focus-within)。
+   关键：光晕用 ::before 绝对定位 inset:0，不占布局、不做 scale/位移，
+   避免造成 UI 错位或把文字顶开；文字(z-index:1)保持在光晕之上。
+   布局用父级 a 的 padding，不在 .menus_item 上加会挤位的 padding。 */
 #nav .menus_item {
   position: relative;
-  padding: 7px 14px;
-  border-radius: 9px;
-  transition: background-color .25s ease, color .25s ease;
+  border-radius: 10px;
+  /* 覆盖主题默认 padding-left:14px，统一左右水平留白，避免不对称错位 */
+  padding: 0 11px !important;
+  margin: 0;
 }
-#nav .menus_item::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 9px;
-  background: linear-gradient(150deg, rgba(120, 180, 250, .42), rgba(170, 215, 255, .34));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 0 0 1px rgba(255, 255, 255, .28);
-  opacity: 0;
-  transform: scale(.9);
-  transition: opacity .22s ease, transform .22s ease;
-  pointer-events: none;
-  z-index: 0;
+/* 链接去掉主题自带的下 padding（会造成文字顶天），由 .menus_item 统一控制 */
+#nav .menus_item > a.site-page,
+#nav .menus_item > span.site-page {
+  padding: 7px 0 !important;
+  display: inline-block;
 }
+/* 光晕本体：浅色径向漫射辉光 + 顶部柔光（HarmonyOS 质感） */
 #nav .menus_item::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 9px;
-  background: radial-gradient(120% 140% at 50% 0%, rgba(255, 255, 255, .55), transparent 60%);
+  border-radius: 10px;
+  background:
+    radial-gradient(120% 160% at 50% 0%, rgba(255, 255, 255, .66), rgba(255, 255, 255, .10) 55%, transparent 78%),
+    linear-gradient(180deg, rgba(120, 180, 250, .30), rgba(150, 205, 255, .16) 55%, rgba(180, 215, 255, .12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .50), inset 0 0 14px rgba(140, 195, 255, .18);
   opacity: 0;
-  transition: opacity .22s ease;
+  transition: opacity .26s ease;
   pointer-events: none;
   z-index: 0;
 }
-#nav .menus_item:hover::after,
+/* 指针悬浮 / 聚焦时浮现光感 */
 #nav .menus_item:hover::before,
-#nav .menus_item:focus-within::after,
-#nav .menus_item:focus-within::before,
-#nav .menus_item.open::after,
-#nav .menus_item.open::before {
+#nav .menus_item:focus-within::before {
   opacity: 1;
-  transform: scale(1);
 }
-#nav .menus_item:hover::before,
-#nav .menus_item:focus-within::before,
-#nav .menus_item.open::before {
-  opacity: .6;
-}
-/* 文字浮在光斑之上 */
+/* 文字浮在光晕之上 (链接自带主题 padding，放在其父级 .menus_item 上) */
 #nav .menus_item > a,
 #nav .menus_item > span {
   position: relative;
   z-index: 1;
 }
-html[data-theme='dark'] #nav .menus_item::after {
-  background: linear-gradient(150deg, rgba(90, 150, 255, .55), rgba(70, 110, 210, .42));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .20), inset 0 0 0 1px rgba(255, 255, 255, .10);
+/* 悬浮时文字转主题色 */
+#nav .menus_item:hover > a,
+#nav .menus_item:hover > span {
+  color: var(--theme-color, #49b1f5) !important;
 }
+
+/* dark：深色的 HarmonyOS 辉光（更低透明白 + 偏蓝冷调） */
 html[data-theme='dark'] #nav .menus_item::before {
-  background: radial-gradient(120% 140% at 50% 0%, rgba(255, 255, 255, .22), transparent 60%);
+  background:
+    radial-gradient(120% 160% at 50% 0%, rgba(255, 255, 255, .22), rgba(255, 255, 255, .05) 55%, transparent 78%),
+    linear-gradient(180deg, rgba(90, 150, 255, .34), rgba(70, 115, 210, .20) 55%, rgba(80, 130, 230, .16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), inset 0 0 16px rgba(90, 150, 255, .22);
+}
+html[data-theme='dark'] #nav .menus_item:hover > a,
+html[data-theme='dark'] #nav .menus_item:hover > span {
+  color: var(--theme-color, #49b1f5) !important;
 }
 
 /* ---- 菜单子项（下拉）毛玻璃 ---- */
@@ -246,16 +247,10 @@ html[data-theme='dark'] #nav #toggle-menu i {
   top: -14px;
   height: 14px;
 }
-/* 显示：PC（可悬停）用 :hover；触屏用 .open（JS 点击切换）。
-   两个选择器分开，避免触屏长按的 :hover 残留与点击 toggle 冲突。 */
-@media (hover: hover) and (pointer: fine) {
-  #nav .menus_item:hover .nav-drop {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translateX(-50%) translateY(0);
-  }
-}
+/* 显示：桌面用 :hover，触屏用 .open（JS 点击切换）。
+   不用 @media (hover:hover) 包裹（它在触屏/部分设备误判为 none，
+   会让 hover 下拉"没生效"）。统一 :hover + .open 双通道，兼容最大。 */
+#nav .menus_item:hover .nav-drop,
 #nav .menus_item.open .nav-drop {
   opacity: 1;
   visibility: visible;

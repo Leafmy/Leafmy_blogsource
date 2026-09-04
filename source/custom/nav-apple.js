@@ -97,21 +97,22 @@
         .catch(function () { buildPanel(item, conf.label, []) })
     })
 
-    // 移动端（无 hover，触屏）：点击切换 .open 显示面板
-    // 用 matchMedia('(hover: none)') 判断触摸设备；PC 上仍让链接直接跳转
+    // 触屏/点击打开下拉：无 hover 的触屏设备点菜单切换 .open；
+    // 桌面有 hover 下，点击也可作为 fallback。用 pointer:coarse 判断更稳。
     link.addEventListener('click', function (e) {
-      if (!window.matchMedia || !window.matchMedia('(hover: none)').matches) return
+      var isTouch = window.matchMedia && (window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches)
+      if (!isTouch) return // 桌面不拦截，链接直接跳转
       e.preventDefault()
       var wasOpen = item.classList.contains('open')
-      // 关闭其它
       menus.forEach(function (m) { m.classList.remove('open') })
       if (!wasOpen) item.classList.add('open')
     })
   })
 
-  // 触摸设备点击页面其它区域时关闭 open 面板
+  // 触屏设备点击页面其它区域时关闭 open 面板
   document.addEventListener('click', function (e) {
-    if (window.matchMedia && window.matchMedia('(hover: none)').matches && !nav.contains(e.target)) {
+    var isTouch = window.matchMedia && (window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches)
+    if (isTouch && !nav.contains(e.target)) {
       menus.forEach(function (m) { m.classList.remove('open') })
     }
   })
