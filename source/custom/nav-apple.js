@@ -144,8 +144,17 @@
   var closeTimers = {}
 
   function setOpen(item, on) {
-    if (on) { item.classList.add('open'); cancelClose(item) }
-    else { item.classList.remove('open') }
+    if (on) {
+      // 互斥：打开当前菜单项时，立即关闭其它所有菜单项的下拉面板，
+      // 保证任一时刻只显示一个面板（否则从"最新文章"滑到"归档"时两会同开）。
+      menus.forEach(function (m) {
+        if (m !== item) { m.classList.remove('open'); cancelClose(m) }
+      })
+      item.classList.add('open')
+      cancelClose(item)
+    } else {
+      item.classList.remove('open')
+    }
   }
   function cancelClose(item) {
     var key = menuKey(item)
