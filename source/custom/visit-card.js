@@ -54,15 +54,28 @@
   // ---------- 切换逻辑：先模糊 -> 换字 -> 再清晰（柔和，硬变） ----------
   let state = 'owner'   // owner | visit
   let timer = null
+  let imgTimer = null
 
   const applyWithBlur = function (html, avatar, nextState) {
     clearTimeout(timer)
     // ① 文字先模糊淡出
     swap.classList.add('swapping')
     timer = setTimeout(function () {
-      // ② 模糊到看不清时换字 + 换头像
+      // ② 模糊到看不清时换字 + 换头像（头像变化时旋转一下）
       swap.innerHTML = html
-      if (avatarImg) avatarImg.src = avatar
+      if (avatarImg) {
+        // 触发头像旋转：先转半程时换 src，再到 360 度
+        avatarImg.classList.add('spin')
+        clearTimeout(imgTimer)
+        imgTimer = setTimeout(function () {
+          avatarImg.src = avatar
+          // 旋转结束后移除类，避免影响下一次
+          setTimeout(function () {
+            avatarImg.classList.remove('spin')
+            avatarImg.style.transform = ''
+          }, 520)
+        }, 180)   // 旋转进行到约半程时切换新图
+      }
       state = nextState
       // ③ 去模糊，文字清晰浮现
       swap.classList.remove('swapping')
