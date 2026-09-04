@@ -42,19 +42,20 @@
 }
 
 /* 跟随指针的局部光晕层：absolute 铺满 nav，径向渐变定位在 --gx/--gy。
-   羽化加强：中心更柔，中间拉长过渡(30%/55%/78%)，让光斑边缘渐进弥散，
-   不再有生硬边界。 */
+   光斑轻量 (96x76px)：仅指针附近微亮，不泛满整栏。
+   羽化拉高：过渡带拉长到 28%/52%/75% 均匀停点，边缘渐进弥散到 100% 透明，
+   中心柔、向外绵长衰减，无生硬边界。 */
 #nav::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(
-    130px 100px at var(--gx, 50%) var(--gy, 50%),
-    rgba(140, 195, 255, .34),
-    rgba(150, 205, 255, .22) 30%,
-    rgba(160, 210, 255, .12) 55%,
-    rgba(170, 215, 255, .05) 78%,
+    96px 76px at var(--gx, 50%) var(--gy, 50%),
+    rgba(140, 195, 255, .30),
+    rgba(150, 205, 255, .20) 28%,
+    rgba(160, 210, 255, .12) 52%,
+    rgba(170, 215, 255, .05) 75%,
     transparent 100%
   );
   opacity: 0;
@@ -82,11 +83,11 @@ html[data-theme='dark'] #nav {
 }
 html[data-theme='dark'] #nav::after {
   background: radial-gradient(
-    130px 100px at var(--gx, 50%) var(--gy, 50%),
-    rgba(100, 160, 255, .30),
-    rgba(85, 135, 235, .18) 30%,
-    rgba(75, 125, 225, .10) 55%,
-    rgba(65, 115, 215, .05) 78%,
+    96px 76px at var(--gx, 50%) var(--gy, 50%),
+    rgba(100, 160, 255, .28),
+    rgba(85, 135, 235, .18) 28%,
+    rgba(75, 125, 225, .10) 52%,
+    rgba(65, 115, 215, .05) 75%,
     transparent 100%
   );
 }
