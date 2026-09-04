@@ -112,7 +112,7 @@
     item.addEventListener('mouseenter', function (e) {
       // 是否打开：若鼠标此刻已在"文字/图标<a>"区内则打开；否则交给 mousemove 状态机。
       // 避免指针刚触碰胶囊边缘(padding 留白)就弹面板（用户嫌检测范围太大）。
-      if (inOpenZone(item, e.clientX, e.clientY)) setOpen(item, true)
+      if (isInLinkZone(item, e.clientX, e.clientY)) setOpen(item, true)
       fetchArticles(conf.href, conf.selector)
         .then(function (articles) { buildPanel(item, conf.label, articles) })
         .catch(function () { buildPanel(item, conf.label, []) })
@@ -178,35 +178,58 @@
     return (a && a.getAttribute) ? a.getAttribute('href') || 'x' : 'x'
   }
 
-  // 命中检测：鼠标是否在某个含 .nav-drop 的菜单项自身或其面板范围内
-  // 触发区收窄到"文字/图标<a>"本身(而非含 padding 的 .menus_item 胶囊)，
-  // 避免指针在 11px 视觉留白上就误触发弹出（用户嫌检测范围太大）。
-  function inOpenZone(item, x, y) {
+  // ---- 触发区 / 保持区 分离（关键）----
+  // 之前把"面板矩形"也当作触发区，两个面板水平方向重叠(都以按钮为中心向两侧扩
+  // 240px，而两按钮中心间距仅~92px)，导致鼠标在「最新文章」面板里横向移动时，
+  // 就提前命中了「归档」的面板矩形而被 setOpen 打开（用户反馈"还没移到归档就被触发"）。
+  // 修复：两类区分开——
+  //   触发区 = 按钮文字/图标 <a> 本体：鼠标真正移到按钮上才打开（且互斥）。
+  //   保持区 = 面板本体 + 按钮与面板间的连接带：已打开的面板鼠标进入时保持不丢，
+  //            但绝不触发其它面板。
+  function isInLinkZone(item, x, y) {
     var r = item.querySelector('a.site-page, span.site-page')
-    // 优先用链接< a> 作为触发区，失败则退回菜单项矩形
     var base = (r && r.getBoundingClientRect && r.getBoundingClientRect()) || item.getBoundingClientRect()
-    if (x >= base.left && x <= base.right && y >= base.top && y <= base.bottom) return true
+    return x >= base.left && x <= base.right && y >= base.top && y <= base.bottom
+  }
+  function isInKeepZone(item, x, y) {
+    var base = item.querySelector('a.site-page, span.site-page')
+    var baseR = (base && base.getBoundingClientRect && base.getBoundingClientRect()) || item.getBoundingClientRect()
     var d = item.querySelector('.nav-drop')
-    if (d) {
-      var dr = d.getBoundingClientRect()
-      if (x >= dr.left && x <= dr.right && y >= dr.top && y <= dr.bottom) return true
-      // 连通带：链接底部(inOpenZone 用 base)到面板顶部之间的空隙也算 zone（鼠标下滑时不丢）
-      if (x >= base.left && x <= base.right && y >= base.bottom && y <= dr.top) return true
-    }
+    if (!d) return false
+    var dr = d.getBoundingClientRect()
+    // 面板本体
+    if (x >= dr.left && x <= dr.right && y >= dr.top && y <= dr.bottom) return true
+    // 连接带：按钮底(baseR.bottom)到面板顶(dr.top)之间的空隙（鼠标下滑时不丢）
+    if (x >= baseR.left && x <= baseR.right && y >= baseR.bottom && y <= dr.top) return true
     return false
+  }
+
+  // 找到鼠标所在的"按钮文字区"菜单项（触发用）。按钮彼此不相交 → 最多一个。
+  function linkHitItem(x, y) {
+    var hit = null
+    menus.forEach(function (item) {
+      if (!item.querySelector('.nav-drop')) return
+      if (isInLinkZone(item, x, y)) hit = item
+    })
+    return hit
   }
 
   // mousemove 挂在 document 上：鼠标移出 nav 后仍能触发，才能正常延时关闭。
   document.addEventListener('mousemove', function (e) {
     var x = e.clientX, y = e.clientY
+    // 1) 鼠标在某按钮文字区上 → 打开它（setOpen 内部互斥关闭其它面板）。
+    var linkHit = linkHitItem(x, y)
+    if (linkHit) { setOpen(linkHit, true); return }
+
+    // 2) 不在任何按钮文字区 → 只对已 open 的项做"保持/关闭"，绝不新开别的面板：
+    //    鼠标仍在该项的面板/连接带内 → 保持；否则延时关闭。
+    //    这样鼠标在「最新文章」面板里横向移动，即使进入两面板重叠区，
+    //    只要不真正碰到「归档」按钮文字区，就不会提前打开归档。
     menus.forEach(function (item) {
-      if (!item.querySelector('.nav-drop')) return // 未构建面板的菜单项忽略
-      if (inOpenZone(item, x, y)) {
-        setOpen(item, true)
-      } else {
-        // 不在范围内，但若当前 open，启动延时关闭（鼠标移出 zone 才关）
-        if (item.classList.contains('open')) scheduleClose(item)
-      }
+      if (!item.querySelector('.nav-drop')) return
+      if (!item.classList.contains('open')) return
+      if (isInKeepZone(item, x, y)) cancelClose(item)
+      else scheduleClose(item)
     })
   })
   // 失焦兜底：切走窗口时关闭所有已打开面板
