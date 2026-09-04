@@ -15,22 +15,27 @@ html.js .card-info .text-swap {
   position: relative;
 }
 
-/* 原文字层 & 名片文字层叠放在同一位置 */
+/* 原文字层 & 名片文字层叠放在同一位置，统一平滑缓动（接近公告栏舒缓换字） */
 html.js .card-info .text-swap .owner-text,
 html.js .card-info .text-swap .visit-text {
-  transition: filter 0.4s ease, opacity 0.4s ease;
+  transition: filter 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, filter, opacity;
 }
 
 /* 原文字默认显示 */
 html.js .owner-text {
   opacity: 1;
+  transform: translateY(0);
 }
 
-/* 名片文字默认隐藏，绝对定位叠在原文字上方 */
+/* 名片文字默认隐藏，绝对定位叠在原文字上方，从下方 14px 准备上浮 */
 html.js .visit-text {
   position: absolute;
   inset: 0;
   opacity: 0;
+  transform: translateY(14px);
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -40,13 +45,15 @@ html.js .visit-text {
   text-align: center;
 }
 
-/* hover：原文字模糊淡出，名片文字淡入 */
+/* hover：原文字模糊 + 上移淡出，名片文字从下方浮上来 */
 html.js .card-info:hover .owner-text {
-  filter: blur(5px);
-  opacity: .3;
+  filter: blur(6px);
+  opacity: .25;
+  transform: translateY(-6px);
 }
 html.js .card-info:hover .visit-text {
   opacity: 1;
+  transform: translateY(0);
   pointer-events: auto;
 }
 
