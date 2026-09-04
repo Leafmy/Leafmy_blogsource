@@ -1,0 +1,96 @@
+/* ============================================================
+   Glass panels (custom inject, v3)
+   板块玻璃化：白色模式=高斯模糊玻璃 / 黑色模式=磨砂玻璃
+   v3：背景加入噪点颗粒(高频细节)，卡片内外的模糊差异变得
+       清晰可见，玻璃通透感明显；light 更通透、dark 更雾面。
+   ============================================================ */
+
+/* 兜底底色（body 透明后露出 html；色值与历史 modeBg 一致） */
+html {
+  background-color: #e9eef8;
+}
+[data-theme='dark'] html {
+  background-color: #0f1116;
+}
+
+/* 噪点纹理（颗粒细节 -> backdrop blur 前后差异可见） */
+:root {
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.72 0 0 0 0 0.75 0 0 0 0 0.80 0 0 0 0.55 0'/></filter><rect width='150' height='150' filter='url(%23n)' opacity='0.30'/></svg>");
+}
+
+/* ================= 页面背景：light ================= */
+body {
+  background-color: transparent !important;
+  background-attachment: fixed !important;
+  background-image:
+    var(--grain),
+    radial-gradient(560px 420px at 12% 6%, rgba(96, 142, 255, .22), transparent 60%),
+    radial-gradient(660px 480px at 90% 12%, rgba(255, 118, 196, .17), transparent 60%),
+    radial-gradient(800px 580px at 58% 100%, rgba(90, 224, 184, .16), transparent 62%),
+    linear-gradient(160deg, #e6ecf8 0%, #d9e3f2 55%, #e3e9f6 100%);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 150px 150px, auto, auto, auto, auto;
+}
+
+/* ================= 页面背景：dark ================= */
+[data-theme='dark'] body {
+  background-image:
+    var(--grain),
+    radial-gradient(580px 440px at 16% 8%, rgba(96, 120, 190, .34), transparent 62%),
+    radial-gradient(720px 540px at 86% 16%, rgba(150, 96, 220, .26), transparent 62%),
+    radial-gradient(880px 640px at 48% 96%, rgba(60, 160, 140, .22), transparent 64%),
+    linear-gradient(160deg, #12151f 0%, #10131c 55%, #0c0f16 100%);
+}
+
+/* ================= 玻璃面板 ================= */
+
+/* light：高斯模糊玻璃 —— 通透半透明 + 顶部强反光，像一块透亮的玻璃板 */
+.recent-post-item,
+.card-widget,
+#post {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, .58) 0%,
+    rgba(255, 255, 255, .26) 55%,
+    rgba(255, 255, 255, .44) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(175%) brightness(1.06);
+  backdrop-filter: blur(28px) saturate(175%) brightness(1.06);
+  box-shadow:
+    0 18px 40px rgba(20, 36, 80, .20),
+    inset 0 1px 0 rgba(255, 255, 255, .85),
+    inset 0 -1px 0 rgba(255, 255, 255, .35) !important;
+}
+
+/* dark：磨砂玻璃 —— 顶部微反光 + 大 blur + 低饱和，厚实哑光 */
+[data-theme='dark'] .recent-post-item,
+[data-theme='dark'] .card-widget,
+[data-theme='dark'] #post {
+  background: linear-gradient(
+    170deg,
+    rgba(46, 52, 72, .60) 0%,
+    rgba(17, 20, 30, .46) 55%,
+    rgba(26, 30, 44, .54) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(130%) brightness(1.22);
+  backdrop-filter: blur(36px) saturate(130%) brightness(1.22);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, .60),
+    inset 0 1px 0 rgba(255, 255, 255, .16),
+    inset 0 -1px 0 rgba(255, 255, 255, .05) !important;
+}
+
+/* 移动端：固定背景与 blur 开销大，退回主题原始实色卡片 */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+  }
+  .recent-post-item,
+  .card-widget,
+  #post {
+    background: var(--card-bg) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none !important;
+  }
+}

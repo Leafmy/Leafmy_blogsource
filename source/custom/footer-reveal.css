@@ -1,0 +1,69 @@
+/* ============================================================
+   Footer reveal (custom inject, v2)
+   滚动到页面最底部时，footer 从视口底部外向上滑出；离开底部
+   滑回隐藏。全部非线性缓动 cubic-bezier(.22,.61,.36,1)。
+
+   v2 修复（v1“顶起整个网站”）：
+   v1 用文档流 + transform 下移隐藏，被推出的部分成为可滚动
+   溢出 → 文档高度在滑入瞬间突变(约 footer 高)，滚动条/页面
+   弹跳。v2 将 footer 改为 fixed 悬浮视口底部：
+   - fixed 移出视口不参与文档滚动，docH 恒定、无弹跳
+   - body 底部补垫还原原 footer 占位高度，footer 不遮正文
+   - 仅当 JS 可用(html.js)时启用，无 JS 时 footer 文档流正常
+   ============================================================ */
+
+/* JS 可用时：还原原 footer 占位高度，避免整体变矮跳动 */
+html.js body {
+  padding-bottom: 150px;
+}
+
+/* JS 可用时：footer 悬浮于视口底部，平时藏于下缘外 */
+html.js #footer {
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1001;
+  margin: 0 !important;
+  transform: translateY(100%);
+  transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+}
+
+/* 滚到最底部：footer 向上滑入视口 */
+html.js #footer.ft-shown {
+  transform: translateY(0);
+}
+
+/* ============================================================
+   Footer 毛玻璃（透过悬浮层可看到滚动内容的模糊效果）
+   light：通透浅色玻璃 / dark：深色磨砂玻璃
+   文字沿用主题 --light-grey 变量，自动适配两模式
+   ============================================================ */
+
+/* 若有主题 footer 遮罩层，先移除，避免盖住玻璃 */
+html.js #footer::before {
+  display: none !important;
+}
+
+/* light：高斯模糊玻璃 */
+html.js #footer {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .62) 0%, rgba(255, 255, 255, .32) 100%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(20px) saturate(170%);
+  border-top: 1px solid rgba(255, 255, 255, .65);
+  box-shadow:
+    0 -12px 34px rgba(24, 40, 84, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .75);
+}
+
+/* dark：磨砂玻璃 */
+html.js[data-theme='dark'] #footer {
+  background: linear-gradient(180deg, rgba(34, 38, 53, .62) 0%, rgba(12, 14, 21, .48) 100%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
+  backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
+  border-top: 1px solid rgba(255, 255, 255, .10);
+  box-shadow:
+    0 -16px 44px rgba(0, 0, 0, .45),
+    inset 0 1px 0 rgba(255, 255, 255, .14);
+}

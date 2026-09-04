@@ -1,33 +1,29 @@
 /* ============================================================
-   Theme switch: circular reveal animation (custom inject)
-   主题切换：以切换按钮为圆心，圆形向外扩散新主题
+   Theme switch: center content reveal (custom inject v8)
+   View Transitions 圆形扩散基础规则。
+   圆心固定网页中心(50% 50%) —— 百分比相对伪元素自身盒，
+   任何渲染环境下中心都精确，不依赖 JS 像素坐标。
    ============================================================ */
 
-:root {
-  --theme-reveal-x: 50%;
-  --theme-reveal-y: 50%;
+::view-transition-image-pair(root) {
+  isolation: auto;
 }
 
-/* 关闭 View Transitions 默认的交叉淡入淡出，改成“覆盖式”扩散 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  mix-blend-mode: normal;
-}
-
-::view-transition-old(root) {
   animation: none;
+  mix-blend-mode: normal;
+  display: block;
 }
 
+/* 新主题内容从网页中心圆形长出（真实页面内容扩散） */
 ::view-transition-new(root) {
-  animation: theme-circle-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) both;
+  clip-path: circle(0% at 50% 50%);
+  animation: center-content-reveal 0.62s cubic-bezier(0.45, 0, 0.25, 1) both;
 }
 
-/* 新主题从按钮圆心(0)扩散到足够覆盖视口的半径 */
-@keyframes theme-circle-reveal {
-  from {
-    clip-path: circle(0px at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
-  }
+@keyframes center-content-reveal {
   to {
-    clip-path: circle(200vmax at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
+    clip-path: circle(150% at 50% 50%);
   }
 }

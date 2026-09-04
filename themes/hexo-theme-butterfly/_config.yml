@@ -292,7 +292,21 @@ aside:
       link: https://github.com/xxxxxx
   card_announcement:
     enable: true
-    content: This is my Blog
+    content: |
+      <p>📢 <b>欢迎来到「受命于天，既寿永昌」</b></p>
+      <p>这是我和 Leaf 一起维护的个人博客，主要用于记录技术教程、编程踩坑和一些生活随笔。站点还在持续装修中，遇到奇怪的效果别慌，多半是我在折腾新东西～</p>
+      <p><b>最近在做：</b></p>
+      <ul>
+        <li>给博客加上毛玻璃玻璃面板与动态主题切换</li>
+        <li>准备写第一篇真正意义上的技术长文</li>
+        <li>整理友链与投稿合作方式</li>
+      </ul>
+      <p><b>你可以在这里找到我：</b></p>
+      <ul>
+        <li>文章评论区留言（会尽快回复）</li>
+        <li>页脚联系方式 / GitHub</li>
+      </ul>
+      <p>感谢到访，慢慢逛，有缘再见 👋</p>
   card_recent_post:
     enable: true
     # If set 0 will show all
@@ -1059,9 +1073,14 @@ inject:
   head:
     # - <link rel="stylesheet" href="/xxx.css">
     - <link rel="stylesheet" href="/custom/theme-reveal.css">
+    - <link rel="stylesheet" href="/custom/theme-glass.css">
+    - <link rel="stylesheet" href="/custom/footer-reveal.css">
+    - <link rel="stylesheet" href="/custom/announce-hover.css">
   bottom:
     # - <script src="xxxx"></script>
     - <script src="/custom/theme-reveal.js"></script>
+    - <script src="/custom/footer-reveal.js"></script>
+    - <script src="/custom/announce-hover.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work

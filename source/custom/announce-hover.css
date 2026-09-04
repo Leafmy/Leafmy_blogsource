@@ -1,0 +1,77 @@
+/* ============================================================
+   Announcement card: hover reveals full text (custom inject)
+   公告卡默认只显示标题；鼠标悬浮(或触屏点击)时，全文以
+   浮层面板从卡片下方弹出展示。非线性缓动。
+   浮层不挤压侧栏布局(absolute)，长文内部滚动。
+   ============================================================ */
+
+.card-announcement {
+  position: relative;
+}
+
+/* 默认：只显示标题行（公告内容不占空间） */
+.card-announcement .announcement_content {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 999;
+  padding: 14px 18px;
+  max-height: 62vh;
+  overflow-y: auto;
+  border-radius: 10px;
+  font-size: 0.92em;
+  line-height: 1.8;
+  text-align: left;
+  box-shadow:
+    0 18px 42px rgba(10, 16, 40, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .6);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition:
+    opacity 0.28s ease,
+    transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    visibility 0.4s;
+  pointer-events: none;
+}
+
+/* light 浮层：玻璃质感浅色面板 */
+.card-announcement .announcement_content {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .88));
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, .8);
+  color: #3a4256;
+}
+
+/* dark 浮层：磨砂玻璃深色面板 */
+html[data-theme='dark'] .card-announcement .announcement_content {
+  background: linear-gradient(165deg, rgba(40, 45, 62, .97), rgba(18, 21, 31, .95));
+  border: 1px solid rgba(255, 255, 255, .10);
+  color: rgba(255, 255, 255, .86);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, .5),
+    inset 0 1px 0 rgba(255, 255, 255, .10);
+}
+
+/* 悬浮 或 触屏 .open：显示全文 */
+.card-announcement:hover .announcement_content,
+.card-announcement.open .announcement_content {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* 浮层内排版细节 */
+.card-announcement .announcement_content p {
+  margin: 0.4em 0;
+}
+.card-announcement .announcement_content ul {
+  margin: 0.2em 0 0.2em 1.2em;
+  padding: 0;
+}
+.card-announcement .announcement_content li {
+  margin: 0.15em 0;
+}
