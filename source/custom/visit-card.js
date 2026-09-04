@@ -1,10 +1,12 @@
 /* ============================================================
-   Visit card — blur to reveal business card (custom inject, v3)
+   Visit card — swap text in place (custom inject, v5)
    个人信息卡（.card-info，站主 Leaf 卡）：
-   - 默认：正常显示站主卡（头像、名字、描述、数据、Follow）和名片信息
-   - 鼠标移入：原站主卡内容"变模糊"，同时名片卡淡入浮现
-   - 鼠标移出：名片卡淡出，站主卡恢复清晰
-   原卡片内容保留不动，名片卡作为覆盖层注入，纯 CSS :hover 触发。
+   - 只改变"文字信息区"，头像与卡片背景/布局完全不动
+   - 默认：显示站主原文字（名字、描述、文章/标签/分类、Follow）
+   - 鼠标移入：原文字高斯模糊淡出，名片文字原位淡入
+     （名字→名字、描述→邮箱、数据→联系方式、按钮→Follow）
+   - 鼠标移出：恢复原文字
+   头像(.avatar-img)不参与变换，纯 CSS :hover，无整卡遮罩。
    ============================================================ */
 (function () {
   'use strict'
@@ -13,37 +15,45 @@
 
   const card = document.querySelector('.card-info')
   if (!card) return
-  if (card.querySelector('.visit-card')) return
+  if (card.querySelector('.text-swap')) return
 
   // ---------- 名片信息（可按需修改） ----------
   const config = {
     email: 'leaf@example.com',
     wechat: '微信：Leaf-dev',
-    github: 'https://github.com/xxxxxx',
-    btnText: 'Follow Me'
+    github: 'https://github.com/xxxxxx'
   }
 
-  const avatar = card.querySelector('.avatar-img img')
-  const avatarSrc = avatar ? avatar.getAttribute('src') : ''
-  const nameEl = card.querySelector('.author-info-name')
-  const name = nameEl ? nameEl.textContent : 'Leaf'
-  const followBtn = card.querySelector('#card-info-btn')
-  const followHref = followBtn ? followBtn.getAttribute('href') : ''
+  const avatar = card.querySelector('.avatar-img')
+  const name = (card.querySelector('.author-info-name') || {}).textContent || 'Leaf'
+  const btn = card.querySelector('#card-info-btn')
+  const btnHref = btn ? btn.getAttribute('href') : (config.github || '')
 
-  // ---------- 构造名片覆盖层 ----------
-  const visit = document.createElement('div')
-  visit.className = 'visit-card'
-  visit.innerHTML = [
-    '<div class="visit-card-inner">',
-    '  <div class="visit-avatar"><img src="' + avatarSrc + '" alt="avatar"></div>',
-    '  <div class="visit-name">' + name + '</div>',
-    '  <div class="visit-contacts">',
-    '    <a class="visit-contact" href="mailto:' + config.email + '"><i class="fas fa-envelope"></i><span>' + config.email + '</span></a>',
-    '    <div class="visit-contact"><i class="fab fa-weixin"></i><span>' + config.wechat + '</span></div>',
-    '  </div>',
-    '  <a class="visit-follow" target="_blank" rel="noopener" href="' + (followHref || config.github) + '"><i class="fab fa-github"></i><span>' + config.btnText + '</span></a>',
-    '</div>'
+  // 把原卡的"文字信息区"打包成一层（不含头像）
+  const textLayer = document.createElement('div')
+  textLayer.className = 'owner-text'
+  // 依次移动：名字、描述、数据、按钮
+  ;['.author-info-name', '.author-info-description', '.site-data', '#card-info-btn'].forEach(function (sel) {
+    const el = card.querySelector(sel)
+    if (el) textLayer.appendChild(el)
+  })
+
+  // 名片文字层（与原文字层同位置叠放）
+  const visitLayer = document.createElement('div')
+  visitLayer.className = 'visit-text'
+  visitLayer.innerHTML = [
+    '<div class="vt-name">' + name + '</div>',
+    '<div class="vt-desc">' + config.email + '</div>',
+    '<div class="vt-data">' + config.wechat + '</div>',
+    '<a class="vt-follow" target="_blank" rel="noopener" href="' + btnHref + '"><i class="fab fa-github"></i><span>Follow Me</span></a>'
   ].join('')
 
-  card.appendChild(visit)
+  // 组装：两层叠放进 swap 容器，头像保持在上方
+  const swap = document.createElement('div')
+  swap.className = 'text-swap'
+  swap.appendChild(textLayer)
+  swap.appendChild(visitLayer)
+
+  // 把 swap 插到头像之后（头像不动），其余不动
+  avatar ? avatar.insertAdjacentElement('afterend', swap) : card.appendChild(swap)
 })()

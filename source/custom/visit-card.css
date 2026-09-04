@@ -1,120 +1,70 @@
 /* ============================================================
-   Visit card — blur to reveal business card (custom inject, v3)
-   鼠标移入站主卡：原内容模糊，名片卡淡入盖在上面；
-   鼠标移出：名片淡出，站主卡恢复清晰。纯 CSS :hover。
+   Visit card — swap text in place (custom inject, v5)
+   只改变"文字信息区"，头像/卡片背景/布局不动。
+   原文字层与名片文字层叠放，hover 时原文字模糊淡出、名片淡入。
+   纯 CSS :hover，无整卡遮罩。
    ============================================================ */
 
-/* 卡片作为定位上下文，让名片覆盖层填满卡片 */
+/* 头部头像保留原样，只对文字区做变换 */
 html.js .card-info {
-  position: relative !important;
-  overflow: hidden;
+  position: relative;
 }
 
-/* ---------- 站主卡原内容：默认清晰，移入时模糊 ---------- */
-html.js .card-info > *:not(.visit-card) {
+/* 文字区容器：相对定位，叠放两层 */
+html.js .card-info .text-swap {
+  position: relative;
+}
+
+/* 原文字层 & 名片文字层叠放在同一位置 */
+html.js .card-info .text-swap .owner-text,
+html.js .card-info .text-swap .visit-text {
   transition: filter 0.4s ease, opacity 0.4s ease;
 }
-html.js .card-info:hover > *:not(.visit-card) {
-  filter: blur(6px) saturate(80%);
-  opacity: .65;
+
+/* 原文字默认显示 */
+html.js .owner-text {
+  opacity: 1;
 }
 
-/* ---------- 名片覆盖层（默认隐藏，移入时淡入） ---------- */
-html.js .visit-card {
+/* 名片文字默认隐藏，绝对定位叠在原文字上方 */
+html.js .visit-text {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 16px 18px;
-  border-radius: inherit;
-  box-sizing: border-box;
+  gap: 8px;
   text-align: center;
-  /* 与原卡片一致的透光玻璃，让"文字模糊→变成名片"更自然 */
-  background: rgba(255, 255, 255, .74);
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  backdrop-filter: blur(14px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, .60);
-  box-shadow:
-    0 12px 30px rgba(20, 36, 80, .16),
-    inset 0 1px 0 rgba(255, 255, 255, .80);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.45s ease;
-}
-/* dark 下名片卡用深色玻璃 —— 注意：html 是根元素，
-   必须把 [data-theme] 属性和 .js 类放在同一个 html 选择器上，
-   写成 html[data-theme='dark'].js（不能写 [data-theme] html.js，那是后代选择器永不匹配） */
-html[data-theme='dark'].js .visit-card {
-  background: rgba(26, 30, 46, .82) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(120%) brightness(1.10) !important;
-  backdrop-filter: blur(16px) saturate(120%) brightness(1.10) !important;
-  border: 1px solid rgba(255, 255, 255, .14) !important;
-  box-shadow:
-    0 14px 34px rgba(0, 0, 0, .50),
-    inset 0 1px 0 rgba(255, 255, 255, .12) !important;
 }
 
-/* 移入时名片淡入 */
-html.js .card-info:hover .visit-card {
+/* hover：原文字模糊淡出，名片文字淡入 */
+html.js .card-info:hover .owner-text {
+  filter: blur(5px);
+  opacity: .3;
+}
+html.js .card-info:hover .visit-text {
   opacity: 1;
   pointer-events: auto;
 }
 
-/* ---------- 名片内容 ---------- */
-html.js .visit-card-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-html.js .visit-avatar img {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, .95);
-  background: #fff;
-  object-fit: cover;
-  box-shadow: 0 6px 18px rgba(20, 36, 80, .20);
-}
-
-html.js .visit-name {
+/* ---------- 名片文字样式 ---------- */
+html.js .visit-text .vt-name {
   font-size: 19px;
   font-weight: 700;
   color: #2c3050;
 }
-
-html.js .visit-contacts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 2px 0;
-}
-html.js .visit-contact {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+html.js .visit-text .vt-desc {
   font-size: 13px;
-  color: #3a4060;
-  text-decoration: none;
-}
-html.js .visit-contact i {
   color: #5079d6;
-  font-size: 15px;
 }
-html.js .visit-contact span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 180px;
+html.js .visit-text .vt-data {
+  font-size: 14px;
+  color: #3a4060;
 }
-
-html.js .visit-follow {
+html.js .visit-text .vt-follow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -122,27 +72,25 @@ html.js .visit-follow {
   padding: 8px 24px;
   border-radius: 22px;
   background: #5079d6;
-  border: 1px solid transparent;
   color: #fff !important;
   font-size: 14px;
   text-decoration: none !important;
-  transition: background 0.3s ease, transform 0.3s ease;
+  transition: background 0.3s ease;
 }
-html.js .visit-follow:hover {
+html.js .visit-text .vt-follow:hover {
   background: #3a63c0;
-  transform: translateY(-2px);
 }
-html.js .visit-follow i {
+html.js .visit-text .vt-follow i {
   color: #fff;
 }
 
 /* dark 下名片文字用浅色 */
-html[data-theme='dark'].js .visit-name {
+html[data-theme='dark'].js .visit-text .vt-name {
   color: #f0f2fa;
 }
-html[data-theme='dark'].js .visit-contact {
-  color: rgba(255, 255, 255, .88);
-}
-html[data-theme='dark'].js .visit-contact i {
+html[data-theme='dark'].js .visit-text .vt-desc {
   color: #7aa2f0;
+}
+html[data-theme='dark'].js .visit-text .vt-data {
+  color: rgba(255, 255, 255, .88);
 }
