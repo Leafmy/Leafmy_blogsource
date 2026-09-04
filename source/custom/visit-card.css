@@ -69,8 +69,11 @@ html.js .card-info .swap-text .vt-follow {
 html.js .card-info .swap-text .vt-follow:hover {
   background: #3a63c0;
 }
-html.js .card-info .swap-text .vt-follow i {
+html.js .card-info .swap-text .vt-follow i,
+html.js .card-info .swap-text .vt-follow .vt-github-icon {
   color: #fff;
+  fill: #fff;
+  vertical-align: -0.125em;
 }
 
 /* dark 下名片文字用浅色 */
