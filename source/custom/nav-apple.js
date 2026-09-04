@@ -20,7 +20,25 @@
   if (!nav) return
 
   // 移动到 body 下（保持 fixed 视口定位）
-  document.body.appendChild(nav)
+  document.body.appendChild(nav);
+
+  // ---- 指针周围局部光斑（跟随鼠标） ----
+  // 光斑用 nav::after 的 radial-gradient 定位在 --gx/--gy（相对 nav 内坐标 %）。
+  // mousemove 时换算指针相对 nav 的百分比并写入 CSS 变量，光斑即跟随指针。
+  ;(function initGlow() {
+    var set = function (e) {
+      var r = nav.getBoundingClientRect()
+      var px = e.clientX - r.left
+      var py = e.clientY - r.top
+      var x = Math.max(0, Math.min(100, (px / r.width) * 100)).toFixed(2)
+      var y = Math.max(0, Math.min(100, (py / r.height) * 100)).toFixed(2)
+      nav.style.setProperty('--gx', x + '%')
+      nav.style.setProperty('--gy', y + '%')
+    }
+    nav.addEventListener('mousemove', set)
+    // 进入时先定位一次，避免光斑停留在默认 50% 处
+    nav.addEventListener('mouseenter', set)
+  })()
 
   // ---- 悬浮下拉：最新文章 / 归档 ----
   var menus = nav.querySelectorAll('.menus_items .menus_item')

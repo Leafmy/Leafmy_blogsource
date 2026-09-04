@@ -6,7 +6,11 @@
    覆盖主题默认 #nav（absolute、透明、无背景模糊）
    ============================================================ */
 
-/* ---- 基础：悬浮 + 毛玻璃胶囊 ---- */
+/* ---- 指针周围局部光斑（跟随鼠标，仅指针附近亮起） ----
+   用户要求：光效限制在指针周围一点，而非整条导航栏发光。
+   做法：nav 内注入一个 .nav-glow 覆盖层（pointer-events:none），JS 用
+   mousemove 更新其 --gx/--gy 变量；光斑为径向渐变，只在指针附近亮起。
+   去掉原先整条 #nav:hover 的 box-shadow 外发光，避免全栏泛光。 */
 #nav {
   position: fixed !important;
   top: 12px !important;
@@ -20,6 +24,7 @@
   border-radius: 14px !important;
   box-shadow: 0 8px 24px rgba(15, 25, 50, .14) !important;
   opacity: 1 !important;
+  overflow: hidden !important;
 
   /* 覆盖主题滚动时的位移与过渡（.nav-visible/.nav-fixed 会给 nav 加
      transform: translate3d 把它移出视口；我们让它始终悬浮在顶部） */
@@ -36,32 +41,51 @@
   border: 1px solid rgba(255, 255, 255, .60);
 }
 
-/* ---- 指针悬浮整条导航栏 → 边缘泛光（HarmonyOS 式悬浮提亮） ----
-   指针进入导航栏时，整条导航栏泛起柔和冷色外发光 + 边框更亮 + 轻微提亮。
-   只用 box-shadow / border / filter 增强，不做 transform/位移/缩放，避免错位。 */
-#nav:hover {
-  box-shadow:
-    0 8px 24px rgba(15, 25, 50, .14),
-    0 0 0 1px rgba(120, 180, 250, .28),
-    0 0 22px rgba(120, 180, 250, .28),
-    0 0 46px rgba(120, 180, 250, .14) !important;
-  border-color: rgba(120, 180, 250, .55) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(200%) brightness(1.03);
-  backdrop-filter: blur(26px) saturate(200%) brightness(1.03);
-  transition: box-shadow .25s ease, border-color .25s ease, -webkit-backdrop-filter .25s ease, backdrop-filter .25s ease !important;
+/* 跟随指针的局部光晕层：absolute 铺满 nav，径向渐变定位在 --gx/--gy */
+#nav::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    120px 90px at var(--gx, 50%) var(--gy, 50%),
+    rgba(140, 195, 255, .40),
+    rgba(150, 205, 255, .18) 55%,
+    transparent 72%
+  );
+  opacity: 0;
+  transition: opacity .2s ease;
+  pointer-events: none;
+  z-index: 0;
 }
-html[data-theme='dark'] #nav:hover {
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, .40),
-    0 0 0 1px rgba(90, 150, 255, .30),
-    0 0 26px rgba(90, 150, 255, .30),
-    0 0 54px rgba(90, 150, 255, .16) !important;
-  border-color: rgba(90, 150, 255, .55) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(170%) brightness(1.05);
-  backdrop-filter: blur(26px) saturate(170%) brightness(1.05);
+/* 指针进入导航栏时点亮光斑 */
+#nav:hover::after {
+  opacity: 1;
+}
+/* 文字与内容浮在光斑之上 */
+#nav #blog-info,
+#nav #menus,
+#nav > *:not(::after) {
+  position: relative;
+  z-index: 1;
+}
+html[data-theme='dark'] #nav {
+  background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .40) !important;
+}
+html[data-theme='dark'] #nav::after {
+  background: radial-gradient(
+    120px 90px at var(--gx, 50%) var(--gy, 50%),
+    rgba(100, 160, 255, .42),
+    rgba(80, 130, 230, .20) 55%,
+    transparent 72%
+  );
 }
 
-/* ---- 布局：站名(标题)在最左，然后是最新文章/归档，汉堡按钮靠右 ----
+/* 原有 light/dark 的 .menus_item 菜单项 hover 光晕保留（菜单项自身发光） */
    用户要求：标题在最左，之后紧跟菜单项。
    注意覆盖主题默认为 #menus 设置的 margin-left:auto（会把菜单推到最右），
    这里显式清零并用 flex:1 让 #menus 占满剩余空间，菜单项靠左、汉堡靠右。 */
