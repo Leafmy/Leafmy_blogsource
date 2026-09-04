@@ -9,6 +9,7 @@
    ============================================================ */
 
 /* ---------- 背景装饰层（body 首子元素，垫在所有内容下方） ---------- */
+/* 液态玻璃：光斑缓慢漂移、流动融合，像一层流动的液体玻璃 */
 .glass-bg {
   position: fixed;
   inset: 0;
@@ -23,6 +24,47 @@
     radial-gradient(1600px 1250px at 14% 92%, rgba(245, 205, 160, .22), transparent 64%),
     radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .35), transparent 72%),
     linear-gradient(160deg, #e3eaf6 0%, #d4dfef 48%, #e2e9f4 100%);
+  /* 液态流动动画：光斑位置缓慢漂移，模拟液体流动融合 */
+  background-size: 180% 180%;
+  background-position: 0% 0%;
+  animation: glass-liquid-drift 26s ease-in-out infinite alternate;
+}
+
+/* 液态玻璃的光斑漂移 */
+@keyframes glass-liquid-drift {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+/* 液态纹理/噪点：叠加一层细微的斑驳，增强"液体"质感（如玻璃上的水渍） */
+.glass-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(380px 280px at 18% 24%, rgba(255, 255, 255, .10), transparent 70%),
+    radial-gradient(520px 380px at 78% 58%, rgba(255, 255, 255, .07), transparent 70%),
+    radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .06), transparent 70%);
+  mix-blend-mode: soft-light;
+  animation: glass-liquid-swirl 18s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* 液态旋涡：纹理缓慢旋转/位移，仿佛液体被搅动 */
+@keyframes glass-liquid-swirl {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    transform: translate3d(2%, -1%, 0) rotate(6deg) scale(1.06);
+  }
 }
 
 /* dark：背景层换深色光斑 */
@@ -34,6 +76,24 @@ html[data-theme='dark'] .glass-bg {
     radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .38), transparent 64%),
     radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .08), transparent 70%),
     linear-gradient(160deg, #161d31 0%, #0d1226 45%, #0a0e1d 100%);
+}
+
+/* dark 的液态纹理降低亮度 */
+html[data-theme='dark'] .glass-bg::after {
+  background-image:
+    radial-gradient(380px 280px at 18% 24%, rgba(255, 255, 255, .05), transparent 70%),
+    radial-gradient(520px 380px at 78% 58%, rgba(120, 160, 255, .05), transparent 70%),
+    radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .04), transparent 70%);
+}
+
+/* 降低动画前提：用户开启减少动效时关闭流动 */
+@media (prefers-reduced-motion: reduce) {
+  .glass-bg {
+    animation: none;
+  }
+  .glass-bg::after {
+    animation: none;
+  }
 }
 
 /* ---------- 内容层：垫在背景层之上 ---------- */
