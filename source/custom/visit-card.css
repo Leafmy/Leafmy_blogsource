@@ -1,62 +1,28 @@
 /* ============================================================
-   Visit card — POKER STACK (custom inject, v2)
-   扑克牌堆叠：一叠牌错落摆放（能看到"一叠牌"的层次），
-   最上面的"站主牌"在 hover 时翻开抽走，露出下面的「名片牌」。
+   Visit card — blur to reveal business card (custom inject, v3)
+   鼠标移入站主卡：原内容模糊，名片卡淡入盖在上面；
+   鼠标移出：名片淡出，站主卡恢复清晰。纯 CSS :hover。
    ============================================================ */
 
-/* 卡片容器作为定位上下文，overflow 隐藏让叠牌不越界 */
+/* 卡片作为定位上下文，让名片覆盖层填满卡片 */
 html.js .card-info {
   position: relative !important;
   overflow: hidden;
 }
 
-/* ---------- 牌堆容器（参与文档流，由站主牌撑起卡片高度） ---------- */
-html.js .poker-deck {
-  position: relative;
-  width: 100%;
-  height: 100%;
+/* ---------- 站主卡原内容：默认清晰，移入时模糊 ---------- */
+html.js .card-info > *:not(.visit-card) {
+  transition: filter 0.4s ease, opacity 0.4s ease;
+}
+html.js .card-info:hover > *:not(.visit-card) {
+  filter: blur(6px) saturate(80%);
+  opacity: .65;
 }
 
-/* ---------- 单张牌 ---------- */
-html.js .poker-card {
-  border-radius: 8px;
-  box-sizing: border-box;
-  will-change: transform;
-  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
-  backface-visibility: hidden;
-}
-
-/* 最顶的站主牌：默认 relative 占据文档流，撑起卡片高度 */
-html.js .pc-owner {
-  position: relative;
-  z-index: 3;
-  transform: translate(0, 0) rotate(0deg);
-}
-
-/* 名片牌 & 牌背：absolute 叠在站主牌后面，错开形成"一叠牌" */
-html.js .pc-visit,
-html.js .pc-back {
+/* ---------- 名片覆盖层（默认隐藏，移入时淡入） ---------- */
+html.js .visit-card {
   position: absolute;
   inset: 0;
-  border-radius: 8px;
-}
-
-/* 底层牌背：向右下角错开一点，露出边缘 */
-html.js .pc-back {
-  transform: translate(10px, 10px) rotate(2deg);
-  background: linear-gradient(150deg, rgba(156, 104, 218, .85), rgba(58, 90, 180, .85));
-  border: 1px solid rgba(255, 255, 255, .25);
-  box-shadow: 0 14px 30px rgba(16, 24, 70, .30);
-  z-index: 1;
-}
-[data-theme='dark'] html.js .pc-back {
-  background: linear-gradient(150deg, rgba(40, 48, 104, .85), rgba(18, 24, 56, .85));
-  border: 1px solid rgba(255, 255, 255, .12);
-}
-
-/* 中层：名片牌（略微偏转，露出少量边缘） */
-html.js .pc-visit {
-  transform: translate(4px, 4px) rotate(1deg);
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -64,100 +30,40 @@ html.js .pc-visit {
   justify-content: center;
   gap: 10px;
   padding: 16px 18px;
+  border-radius: inherit;
+  box-sizing: border-box;
   text-align: center;
-  background: linear-gradient(170deg, rgba(156, 104, 218, .97) 0%, rgba(94, 84, 200, .96) 55%, rgba(58, 90, 180, .95) 100%);
+  background: linear-gradient(170deg, rgba(156, 104, 218, .96) 0%, rgba(94, 84, 200, .95) 55%, rgba(58, 90, 180, .94) 100%);
   border: 1px solid rgba(255, 255, 255, .22);
   box-shadow:
     0 18px 42px rgba(16, 24, 70, .42),
     inset 0 1px 0 rgba(255, 255, 255, .28);
   opacity: 0;
   pointer-events: none;
+  transition: opacity 0.45s ease;
 }
-[data-theme='dark'] html.js .pc-visit {
-  background: linear-gradient(170deg, rgba(40, 48, 104, .97) 0%, rgba(28, 34, 78, .96) 55%, rgba(18, 24, 56, .95) 100%);
+[data-theme='dark'] html.js .visit-card {
+  background: linear-gradient(170deg, rgba(40, 48, 104, .96) 0%, rgba(28, 34, 78, .95) 55%, rgba(18, 24, 56, .94) 100%);
   border: 1px solid rgba(255, 255, 255, .12);
   box-shadow:
     0 18px 42px rgba(0, 0, 0, .55),
     inset 0 1px 0 rgba(255, 255, 255, .10);
 }
 
-/* ---------- hover：名片牌升到最上，盖住站主卡 ---------- */
-/* 站主卡留在底层不动（被遮住） */
-html.js .card-info:hover .pc-owner {
-  transform: translate(0, 0) rotate(0deg);
+/* 移入时名片淡入 */
+html.js .card-info:hover .visit-card {
   opacity: 1;
   pointer-events: auto;
-}
-/* 名片牌升上来盖住站主卡 */
-html.js .card-info:hover .pc-visit {
-  transform: translateY(0) rotate(0deg);
-  opacity: 1;
-  pointer-events: auto;
-  z-index: 4;
 }
 
-/* ---------- 顶级牌内容（站主卡原有布局，去掉多余 padding 干扰） ---------- */
-html.js .pc-owner .avatar-img {
-  margin: 0 auto 14px;
-  width: 88px;
-  height: 88px;
-}
-html.js .pc-owner .avatar-img img {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 6px 16px rgba(16, 24, 70, .20);
-  object-fit: cover;
-}
-html.js .pc-owner .author-info-name {
-  font-size: 21px;
-  font-weight: 700;
-  color: var(--font-color);
-  margin-bottom: 6px;
-}
-html.js .pc-owner .author-info-description {
-  font-size: 12px;
-  color: var(--font-color);
-  opacity: .78;
-  margin-bottom: 14px;
-}
-html.js .pc-owner .site-data {
+/* ---------- 名片内容 ---------- */
+html.js .visit-card-inner {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 16px;
-}
-html.js .pc-owner .site-data a {
-  text-decoration: none;
-  color: var(--font-color);
-}
-html.js .pc-owner .site-data .headline {
-  font-size: 13px;
-}
-html.js .pc-owner .site-data .length-num {
-  font-size: 15px;
-  font-weight: 700;
-  color: #5079d6;
-}
-html.js .pc-owner #card-info-btn {
-  display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 9px 26px;
-  border-radius: 22px;
-  background: #5079d6;
-  color: #fff !important;
-  font-size: 14px;
-  text-decoration: none !important;
-  transition: background 0.3s ease, transform 0.3s ease;
-}
-html.js .pc-owner #card-info-btn:hover {
-  background: #3a63c0;
-  transform: translateY(-2px);
+  gap: 10px;
 }
 
-/* ---------- 名片牌内容 ---------- */
 html.js .visit-avatar img {
   width: 64px;
   height: 64px;
@@ -166,11 +72,13 @@ html.js .visit-avatar img {
   background: #fff;
   object-fit: cover;
 }
+
 html.js .visit-name {
   font-size: 19px;
   font-weight: 700;
   color: #fff;
 }
+
 html.js .visit-contacts {
   display: flex;
   flex-direction: column;
@@ -196,6 +104,7 @@ html.js .visit-contact span {
   white-space: nowrap;
   max-width: 180px;
 }
+
 html.js .visit-follow {
   display: inline-flex;
   align-items: center;
