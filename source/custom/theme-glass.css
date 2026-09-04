@@ -232,3 +232,67 @@ html[data-theme='dark'] #post::before {
     display: none;
   }
 }
+
+/* ============================================================
+   首页 hero（#page-header.full_page）玻璃化
+   原背景是主题纯色 $light-blue（蓝），用户要把首屏做成玻璃：
+   - light（白模式）：半透明亮色 + backdrop-filter 高斯模糊，
+     透过下方 .bg-liquid 光斑，呈「通透磨砂玻璃」
+   - dark（黑模式）：半透明深色 + 磨砂，呈「深色磨砂玻璃」
+   原理：与卡片玻璃同理——backdrop-filter 模糊其后方的真实 DOM
+   内容层（.bg-liquid 的光斑），而非 body/html 背景。
+   ============================================================ */
+
+/* ---- light：通透玻璃（高斯模糊） ---- */
+#page-header.full_page {
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, .18) 0%,
+    rgba(255, 255, 255, .08) 45%,
+    rgba(255, 255, 255, .14) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+}
+
+/* 原有黑色遮罩改为柔和高光渐变，保留玻璃的镜面折射感 */
+#page-header.full_page:not(.not-top-img)::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, .10) 0%,
+    rgba(120, 160, 220, .06) 60%,
+    transparent 100%
+  ) !important;
+}
+
+/* ---- dark：深色磨砂玻璃 ---- */
+html[data-theme='dark'] #page-header.full_page {
+  background: linear-gradient(
+    150deg,
+    rgba(30, 40, 66, .42) 0%,
+    rgba(12, 16, 28, .44) 48%,
+    rgba(22, 30, 48, .40) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+  backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+}
+
+html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, .05) 0%,
+    transparent 70%
+  ) !important;
+}
+
+/* 移动端：hero 玻璃开销大，退回主题原始纯色 */
+@media (max-width: 768px) {
+  #page-header.full_page {
+    background: var(--light-blue) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  #page-header.full_page:not(.not-top-img)::before {
+    background: var(--mark-bg) !important;
+  }
+}
