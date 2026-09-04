@@ -81,16 +81,19 @@ html.js .pc-visit {
     inset 0 1px 0 rgba(255, 255, 255, .10);
 }
 
-/* ---------- hover：顶牌翻开抽走，露出名片牌 ---------- */
+/* ---------- hover：名片牌升到最上，盖住站主卡 ---------- */
+/* 站主卡留在底层不动（被遮住） */
 html.js .card-info:hover .pc-owner {
-  transform: translateY(-120%) rotate(-10deg);
-  opacity: 0;
-  pointer-events: none;
-}
-html.js .card-info:hover .pc-visit {
   transform: translate(0, 0) rotate(0deg);
   opacity: 1;
   pointer-events: auto;
+}
+/* 名片牌升上来盖住站主卡 */
+html.js .card-info:hover .pc-visit {
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 4;
 }
 
 /* ---------- 顶级牌内容（站主卡原有布局，去掉多余 padding 干扰） ---------- */
