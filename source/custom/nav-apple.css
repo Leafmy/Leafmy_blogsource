@@ -36,17 +36,33 @@
   border: 1px solid rgba(255, 255, 255, .60);
 }
 
-/* ---- 菜单移到左侧（站名之前），站名紧随其后 ---- */
+/* ---- 布局：站名(标题)在最左，然后是最新文章/归档，汉堡按钮靠右 ----
+   用户要求：标题在最左，之后紧跟菜单项。
+   注意覆盖主题默认为 #menus 设置的 margin-left:auto（会把菜单推到最右），
+   这里显式清零并用 flex:1 让 #menus 占满剩余空间，菜单项靠左、汉堡靠右。 */
+#nav #blog-info {
+  order: 0 !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  margin-right: 16px !important;
+  display: block !important;
+}
 #nav #menus {
-  order: -1 !important;
-  margin-right: 24px !important;
+  order: 1 !important;
+  flex: 1 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+#nav #menus .menus_items {
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
 }
-#nav #blog-info {
-  order: 0 !important;
-  margin-right: auto !important;
+#nav #menus #toggle-menu {
+  order: 9 !important;
+  margin-left: auto !important;
 }
 
 /* ---- dark：深色毛玻璃 ---- */
@@ -104,10 +120,11 @@ html[data-theme='dark'] #nav span.site-page:hover {
   color: var(--theme-color, #49b1f5) !important;
 }
 
-/* ---- 指针悬浮光效（macOS 毛玻璃高亮斑点） ----
-   菜单项悬浮时呈现一个圆角高亮胶囊光斑，类似 macOS 菜单栏 hover 的高亮。
+/* ---- 指针悬浮光效（macOS 毛玻璃高亮胶囊） ----
+   菜单项悬浮时呈现一个圆角高亮胶囊光斑，类似 macOS 菜单栏 hover 的高亮 / 手机点击的按压回馈。
    用 ::after 做高亮光斑，hover 时淡入 + 轻微上浮。
-   注意：/ 和 /archives/ 两个菜单有下拉面板，悬浮时保持光斑常亮。 */
+   注意 z-index/透明度问题：低透明度(.18)+ 负 z-index 会几乎看不见（用户反馈"完全没生效"），
+   因此提高透明度、用 z-index:0 让光斑在文字下方但不被 nav 背景盖住，并加内发光增强可见性。 */
 #nav .menus_item {
   position: relative;
   padding: 7px 14px;
@@ -119,21 +136,51 @@ html[data-theme='dark'] #nav span.site-page:hover {
   position: absolute;
   inset: 0;
   border-radius: 9px;
-  background: linear-gradient(150deg, rgba(120, 180, 250, .18), rgba(160, 210, 255, .10));
+  background: linear-gradient(150deg, rgba(120, 180, 250, .42), rgba(170, 215, 255, .34));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 0 0 1px rgba(255, 255, 255, .28);
   opacity: 0;
-  transform: scale(.92);
-  transition: opacity .25s ease, transform .25s ease;
+  transform: scale(.9);
+  transition: opacity .22s ease, transform .22s ease;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
+}
+#nav .menus_item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: radial-gradient(120% 140% at 50% 0%, rgba(255, 255, 255, .55), transparent 60%);
+  opacity: 0;
+  transition: opacity .22s ease;
+  pointer-events: none;
+  z-index: 0;
 }
 #nav .menus_item:hover::after,
+#nav .menus_item:hover::before,
 #nav .menus_item:focus-within::after,
-#nav .menus_item.open::after {
+#nav .menus_item:focus-within::before,
+#nav .menus_item.open::after,
+#nav .menus_item.open::before {
   opacity: 1;
   transform: scale(1);
 }
+#nav .menus_item:hover::before,
+#nav .menus_item:focus-within::before,
+#nav .menus_item.open::before {
+  opacity: .6;
+}
+/* 文字浮在光斑之上 */
+#nav .menus_item > a,
+#nav .menus_item > span {
+  position: relative;
+  z-index: 1;
+}
 html[data-theme='dark'] #nav .menus_item::after {
-  background: linear-gradient(150deg, rgba(90, 150, 255, .28), rgba(70, 110, 200, .16));
+  background: linear-gradient(150deg, rgba(90, 150, 255, .55), rgba(70, 110, 210, .42));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .20), inset 0 0 0 1px rgba(255, 255, 255, .10);
+}
+html[data-theme='dark'] #nav .menus_item::before {
+  background: radial-gradient(120% 140% at 50% 0%, rgba(255, 255, 255, .22), transparent 60%);
 }
 
 /* ---- 菜单子项（下拉）毛玻璃 ---- */
@@ -250,11 +297,16 @@ html[data-theme='dark'] #nav .nav-drop-head {
   overflow: hidden;
   text-overflow: ellipsis;
   color: rgba(40, 44, 60, .90) !important;
-  transition: background-color .18s ease, color .18s ease;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, transform .18s ease;
 }
 #nav .nav-drop-list a:hover {
-  background: linear-gradient(150deg, rgba(120, 180, 250, .18), rgba(160, 210, 255, .10));
+  background: linear-gradient(150deg, rgba(120, 180, 250, .28), rgba(160, 210, 255, .20));
   color: var(--theme-color, #49b1f5) !important;
+  transform: translateX(2px);
+}
+#nav .nav-drop-list a:active {
+  transform: translateX(2px) scale(.98);
 }
 html[data-theme='dark'] #nav .nav-drop-list a {
   color: rgba(255, 255, 255, .88) !important;

@@ -28,17 +28,18 @@
   position: absolute;
   inset: -40%;
   will-change: transform;
-  /* 白色模式：天蓝气泡感（bubble）
-     天蓝底色渐变 + 多个大小不一的圆形"气泡"光斑（带柔边高光），
-     仿佛清澈天蓝水里漂浮的气泡。 */
+  /* 白色模式：与暗色模式同构的「液态玻璃」质感，只是用天蓝/浅蓝色调。
+     取消原先的小气泡，改为大半径、低饱和度、长过渡的光斑（与 dark 一致），
+     配合下方漂移动画，呈现流动的液体玻璃；天蓝底色 + 高亮冷色光斑。
+     底层再叠一层柔和白色高光斑增加"水润"感。 */
   background-image:
-    radial-gradient(520px 520px at 16% 22%, rgba(120, 200, 250, .30), rgba(120, 200, 250, .10) 55%, transparent 70%),
-    radial-gradient(700px 700px at 82% 68%, rgba(90, 190, 250, .26), rgba(90, 190, 250, .08) 55%, transparent 70%),
-    radial-gradient(340px 340px at 30% 78%, rgba(160, 220, 255, .34), rgba(160, 220, 255, .12) 55%, transparent 70%),
-    radial-gradient(430px 430px at 68% 30%, rgba(110, 205, 255, .30), rgba(110, 205, 255, .10) 55%, transparent 70%),
-    radial-gradient(360px 360px at 48% 52%, rgba(180, 235, 255, .28), rgba(180, 235, 255, .10) 55%, transparent 72%),
-    radial-gradient(260px 260px at 88% 20%, rgba(140, 215, 255, .32), rgba(140, 215, 255, .12) 55%, transparent 72%),
-    linear-gradient(165deg, #cdeafb 0%, #aeddff 45%, #c8ecff 100%);
+    radial-gradient(1200px 1000px at 14% 16%, rgba(130, 200, 250, .40), transparent 72%),
+    radial-gradient(1300px 1000px at 88% 20%, rgba(150, 215, 255, .38), transparent 72%),
+    radial-gradient(1400px 1100px at 76% 82%, rgba(120, 195, 255, .34), transparent 74%),
+    radial-gradient(1250px 950px at 16% 88%, rgba(170, 225, 255, .36), transparent 74%),
+    radial-gradient(900px 700px at 50% 46%, rgba(190, 235, 255, .30), transparent 76%),
+    radial-gradient(500px 400px at 62% 66%, rgba(255, 255, 255, .28), transparent 78%),
+    linear-gradient(160deg, #cdeafb 0%, #a5d8fb 45%, #c6ebff 100%);
   /* 液态流动：transform 平移（合成友好），幅度控制在层自身范围内、
      不露出边缘（层每侧有 40% 越界量，平移 <=20% 安全）。 */
   animation: glass-liquid-drift 46s ease-in-out infinite alternate;
@@ -295,10 +296,32 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
 
 /* ---- hero 底部羽化（fade-out），与下方内容区柔和融合 ----
    用 mask 渐变让 hero 玻璃在底部渐透明，消除与内容区相切的生硬水平分界线。
-   同时作用于 light（白模式）与 dark（黑模式）。 */
+   同时作用于 light（白模式）与 dark（黑模式）。
+   「色彩断层」优化：原 150px 线性 0→100% 在透明端偏生硬，且 hero 的
+   backdrop-filter 在 mask 快透明处会突然剥离，形成可见断层。
+   改法：① 拉长羽化区到 260px，② 加入 60%/80% 中间停点做更平缓的 S 形衰减，
+   让 glass + backdrop 随 alpha 同步、平滑地淡出。 */
 #page-header.full_page {
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 150px), transparent 100%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 150px), transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 260px),
+    rgba(0, 0, 0, .82) calc(100% - 180px),
+    rgba(0, 0, 0, .46) calc(100% - 120px),
+    rgba(0, 0, 0, .18) calc(100% - 70px),
+    rgba(0, 0, 0, .04) calc(100% - 34px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 260px),
+    rgba(0, 0, 0, .82) calc(100% - 180px),
+    rgba(0, 0, 0, .46) calc(100% - 120px),
+    rgba(0, 0, 0, .18) calc(100% - 70px),
+    rgba(0, 0, 0, .04) calc(100% - 34px),
+    transparent 100%
+  );
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
 }
