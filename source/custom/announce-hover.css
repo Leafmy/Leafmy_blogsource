@@ -1,10 +1,15 @@
 /* ============================================================
-   Announcement card: expand full text inside the card (custom inject)
-   公告卡默认只显示标题；鼠标悬浮(或触屏点击)时，完整内容在
-   卡片内部向下展开，不溢出卡片边界，保留圆角裁切。
-   非线性缓动。
-   ※ 侧栏卡片 .card-widget 自带 overflow:hidden，因此不能在
-   卡片外弹浮层(会被裁掉)——改用在卡片内部展开。
+   Announcement card: title always visible + body expand on hover
+   公告卡默认显示：标题行「📢 公告」+ 公告首段标题(常驻)。
+   鼠标悬浮(或触屏点击)时，正文在卡片内部向下展开。
+   不溢出卡片边界，保留圆角裁切。非线性缓动。
+   ※ 侧栏卡片 .card-widget 自带 overflow:hidden，不能在卡片外
+   弹浮层(会被裁掉)——一律卡片内部展开。
+   结构(由 announce-hover.js 生成)：
+     .card-announcement
+       .item-headline        「📢 公告」
+       .announcement_title   公告首段(常驻标题)
+       .announcement_body    其余正文(默认折叠，hover/open 展开)
    ============================================================ */
 
 .card-announcement {
@@ -29,8 +34,19 @@
   color: inherit;
 }
 
-/* ---- 内容区：卡片内折叠展开 ---- */
-.card-announcement .announcement_content {
+/* ---- 常驻公告标题（首段）---- */
+.card-announcement .announcement_title {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.95em;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--theme-color, #49b1f5);
+  word-break: break-word;
+}
+
+/* ---- 正文：卡片内折叠展开 ---- */
+.card-announcement .announcement_body {
   overflow: hidden;                     /* 配合 max-height 做折叠动画 */
   max-height: 0;                        /* 默认折叠 */
   opacity: 0;
@@ -46,40 +62,40 @@
     padding 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* 悬浮 或 触屏 .open：卡片内向下展开 */
-.card-announcement:hover .announcement_content,
-.card-announcement.open .announcement_content {
+/* 悬浮 或 触屏 .open：正文向下展开 */
+.card-announcement:hover .announcement_body,
+.card-announcement.open .announcement_body {
   max-height: 720px;                    /* 足够容纳长文 */
   opacity: 1;
-  margin-top: 8px;
+  margin-top: 6px;
   padding: 2px;
 }
 
-/* ---- 标题行与正文之间的分隔线（展开时可见） ---- */
-.card-announcement .announcement_content {
+/* ---- 标题与正文之间的分隔线（展开时可见） ---- */
+.card-announcement .announcement_body {
   border-top: 1px solid transparent;
 }
-.card-announcement:hover .announcement_content,
-.card-announcement.open .announcement_content {
+.card-announcement:hover .announcement_body,
+.card-announcement.open .announcement_body {
   border-top-color: rgba(0, 0, 0, 0.08);
 }
-html[data-theme='dark'] .card-announcement:hover .announcement_content,
-html[data-theme='dark'] .card-announcement.open .announcement_content {
+html[data-theme='dark'] .card-announcement:hover .announcement_body,
+html[data-theme='dark'] .card-announcement.open .announcement_body {
   border-top-color: rgba(255, 255, 255, 0.12);
 }
 
-/* ---- 展开区排版细节 ---- */
-.card-announcement .announcement_content p {
+/* ---- 正文排版细节 ---- */
+.card-announcement .announcement_body p {
   margin: 0.4em 0;
 }
-.card-announcement .announcement_content ul {
+.card-announcement .announcement_body ul {
   margin: 0.2em 0 0.2em 1.2em;
   padding: 0;
 }
-.card-announcement .announcement_content li {
+.card-announcement .announcement_body li {
   margin: 0.15em 0;
 }
-.card-announcement .announcement_content blockquote {
+.card-announcement .announcement_body blockquote {
   margin: 0.5em 0;
   padding: 0.2em 0.8em;
 }
