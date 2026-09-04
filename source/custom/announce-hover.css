@@ -1,70 +1,74 @@
 /* ============================================================
-   Announcement card: hover reveals full text (custom inject)
-   公告卡默认只显示标题；鼠标悬浮(或触屏点击)时，全文以
-   浮层面板从卡片下方弹出展示。非线性缓动。
-   浮层不挤压侧栏布局(absolute)，长文内部滚动。
+   Announcement card: expand full text inside the card (custom inject)
+   公告卡默认只显示标题；鼠标悬浮(或触屏点击)时，完整内容在
+   卡片内部向下展开，不溢出卡片边界，保留圆角裁切。
+   非线性缓动。
+   ※ 侧栏卡片 .card-widget 自带 overflow:hidden，因此不能在
+   卡片外弹浮层(会被裁掉)——改用在卡片内部展开。
    ============================================================ */
 
 .card-announcement {
   position: relative;
 }
 
-/* 默认：只显示标题行（公告内容不占空间） */
+/* ---- 标题行：强制始终可见、醒目 ---- */
+.card-announcement .item-headline {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 1.02em;
+  font-weight: 600;
+  line-height: 1.6;
+  min-height: 0;
+}
+
+/* 图标加载失败时仍有可读标题文字 */
+.card-announcement .item-headline span {
+  color: inherit;
+}
+
+/* ---- 内容区：卡片内折叠展开 ---- */
 .card-announcement .announcement_content {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  z-index: 999;
-  padding: 14px 18px;
-  max-height: 62vh;
-  overflow-y: auto;
-  border-radius: 10px;
+  overflow: hidden;                     /* 配合 max-height 做折叠动画 */
+  max-height: 0;                        /* 默认折叠 */
+  opacity: 0;
+  margin-top: 0;
+  padding: 0 2px;
   font-size: 0.92em;
   line-height: 1.8;
   text-align: left;
-  box-shadow:
-    0 18px 42px rgba(10, 16, 40, .22),
-    inset 0 1px 0 rgba(255, 255, 255, .6);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(10px);
   transition:
-    opacity 0.28s ease,
-    transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
-    visibility 0.4s;
-  pointer-events: none;
+    max-height 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.3s ease,
+    margin-top 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+    padding 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* light 浮层：玻璃质感浅色面板 */
-.card-announcement .announcement_content {
-  background: linear-gradient(160deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .88));
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, .8);
-  color: #3a4256;
-}
-
-/* dark 浮层：磨砂玻璃深色面板 */
-html[data-theme='dark'] .card-announcement .announcement_content {
-  background: linear-gradient(165deg, rgba(40, 45, 62, .97), rgba(18, 21, 31, .95));
-  border: 1px solid rgba(255, 255, 255, .10);
-  color: rgba(255, 255, 255, .86);
-  box-shadow:
-    0 20px 48px rgba(0, 0, 0, .5),
-    inset 0 1px 0 rgba(255, 255, 255, .10);
-}
-
-/* 悬浮 或 触屏 .open：显示全文 */
+/* 悬浮 或 触屏 .open：卡片内向下展开 */
 .card-announcement:hover .announcement_content,
 .card-announcement.open .announcement_content {
+  max-height: 720px;                    /* 足够容纳长文 */
   opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  pointer-events: auto;
+  margin-top: 8px;
+  padding: 2px;
 }
 
-/* 浮层内排版细节 */
+/* ---- 标题行与正文之间的分隔线（展开时可见） ---- */
+.card-announcement .announcement_content {
+  border-top: 1px solid transparent;
+}
+.card-announcement:hover .announcement_content,
+.card-announcement.open .announcement_content {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme='dark'] .card-announcement:hover .announcement_content,
+html[data-theme='dark'] .card-announcement.open .announcement_content {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ---- 展开区排版细节 ---- */
 .card-announcement .announcement_content p {
   margin: 0.4em 0;
 }
@@ -74,4 +78,8 @@ html[data-theme='dark'] .card-announcement .announcement_content {
 }
 .card-announcement .announcement_content li {
   margin: 0.15em 0;
+}
+.card-announcement .announcement_content blockquote {
+  margin: 0.5em 0;
+  padding: 0.2em 0.8em;
 }
