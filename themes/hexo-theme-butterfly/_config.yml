@@ -264,7 +264,15 @@ footer:
   copyright:
     enable: true
     version: true
-  custom_text:
+  custom_text: |
+    <div class="footer-site-meta">
+      <span class="footer-statement">本站为个人技术博客，内容仅代表个人观点，欢迎交流指正。</span>
+      <span class="footer-legal">
+        <span class="footer-icp">京ICP备XXXXXXXX号</span>
+        <span class="footer-sep">|</span>
+        <span class="footer-gabe">京公网安备 11000000000000号</span>
+      </span>
+    </div>
 
 # --------------------------------------
 # Aside Settings

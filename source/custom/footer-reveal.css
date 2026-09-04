@@ -1,7 +1,7 @@
 /* ============================================================
-   Footer — normal document-flow footer (custom inject, v5)
-   普通网站形态：footer 跟随内容排版在页面最底部，默认直接显示，
-   滚动到底即可看到。无悬浮、无 hover、无 grip 热区。
+   Footer — normal document-flow footer (custom inject, v6)
+   普通网站形态：footer 跟随内容排版在页面最底部，默认直接显示。
+   视觉：明亮通透的浅玻璃底 + 分层居中排版（参考 BakaXL 站底声明区）。
    保留毛玻璃背景，与整站玻璃风统一。JS 仅用于标记 html.js。
    ============================================================ */
 
@@ -12,20 +12,20 @@ html.js body {
 
 /* ---------- Footer 玻璃背景（light/dark 适配） ---------- */
 
-/* light：通透浅色玻璃 */
+/* light：明亮通透浅色玻璃 */
 #footer {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .58) 0%, rgba(255, 255, 255, .24) 100%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(170%);
-  backdrop-filter: blur(20px) saturate(170%);
-  border-top: 1px solid rgba(255, 255, 255, .55);
+  background: linear-gradient(180deg, rgba(246, 250, 255, .82) 0%, rgba(226, 236, 249, .55) 100%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(175%);
+  backdrop-filter: blur(22px) saturate(175%);
+  border-top: 1px solid rgba(255, 255, 255, .60);
   box-shadow:
-    0 -12px 34px rgba(24, 40, 84, .10),
-    inset 0 1px 0 rgba(255, 255, 255, .70);
+    0 -14px 40px rgba(24, 40, 84, .08),
+    inset 0 1px 0 rgba(255, 255, 255, .80);
 }
 
 /* dark：深色磨砂玻璃 */
 [data-theme='dark'] #footer {
-  background: linear-gradient(180deg, rgba(34, 38, 53, .58) 0%, rgba(12, 14, 21, .42) 100%) !important;
+  background: linear-gradient(180deg, rgba(34, 38, 53, .62) 0%, rgba(12, 14, 21, .46) 100%) !important;
   -webkit-backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
   backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
   border-top: 1px solid rgba(255, 255, 255, .10);
@@ -39,10 +39,78 @@ html.js body {
   display: none !important;
 }
 
+/* ---------- 分层排版结构（参考 BakaXL 站底声明的居中分层） ---------- */
+
+/* 整体：footer-other 改成上下分层、每行独立居中 */
+#footer .footer-other {
+  padding: 34px 20px 40px;
+}
+
+/* 第一层：版权行（© 年份 By 站主） */
+#footer .footer-copyright {
+  margin-bottom: 4px;
+  line-height: 1.9;
+}
+
+/* 第二层：框架/主题信息行（Hexo | Butterfly），与版权分离更清晰 */
+#footer .framework-info {
+  display: inline-block;
+}
+
+/* 第三层：声明 + 备案行（来自 custom_text） */
+#footer .footer_custom_text {
+  margin-top: 12px;
+}
+
+#footer .footer-site-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: .92em;
+  line-height: 1.9;
+}
+#footer .footer-statement {
+  opacity: .86;
+}
+#footer .footer-legal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+#footer .footer-icp,
+#footer .footer-gabe {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+#footer .footer-icp a,
+#footer .footer-gabe a {
+  color: inherit;
+  text-decoration: none;
+}
+#footer .footer-icp a:hover,
+#footer .footer-gabe a:hover {
+  text-decoration: underline;
+}
+#footer .footer-sep {
+  margin: 0 6px;
+  opacity: .55;
+}
+
+/* dark 下把声明行透明度略降，避免过亮 */
+[data-theme='dark'] #footer .footer-statement {
+  opacity: .72;
+}
+
 /* ---------- Footer 文字颜色适配（玻璃背景会改变底色，需同步文字） ---------- */
 /* light：浅色玻璃配深色文字，保证可读 */
 #footer .copyright,
-#footer .framework-info {
+#footer .framework-info,
+#footer .footer_custom_text {
   color: rgba(45, 48, 62, .82) !important;
 }
 #footer a {
@@ -51,9 +119,18 @@ html.js body {
 
 /* dark：深色磨砂玻璃配浅色文字 */
 [data-theme='dark'] #footer .copyright,
-[data-theme='dark'] #footer .framework-info {
+[data-theme='dark'] #footer .framework-info,
+[data-theme='dark'] #footer .footer_custom_text {
   color: rgba(255, 255, 255, .78) !important;
 }
 [data-theme='dark'] #footer a {
   color: #7aa2f0 !important;
 }
+
+/* 移动端收紧内边距 */
+@media (max-width: 768px) {
+  #footer .footer-other {
+    padding: 26px 16px 32px;
+  }
+}
+
