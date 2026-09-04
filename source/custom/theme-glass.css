@@ -243,13 +243,17 @@ html[data-theme='dark'] #post::before {
    内容层（.bg-liquid 的光斑），而非 body/html 背景。
    ============================================================ */
 
-/* ---- light：通透玻璃（高斯模糊） ---- */
+/* ---- light：通透玻璃（高斯模糊） ----
+   注意：hero 标题是白色(--white)，背景必须偏深色才有对比度。
+   若用半透明白色玻璃，白字配白底会看不清（显示 bug）。
+   因此 light glass 采用蓝紫渐变压暗调，保留 backdrop 模糊的玻璃感，
+   同时让白色标题清晰可读。 */
 #page-header.full_page {
   background: linear-gradient(
     150deg,
-    rgba(255, 255, 255, .18) 0%,
-    rgba(255, 255, 255, .08) 45%,
-    rgba(255, 255, 255, .14) 100%
+    rgba(40, 60, 110, .55) 0%,
+    rgba(50, 66, 120, .50) 50%,
+    rgba(60, 70, 130, .55) 100%
   ) !important;
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   backdrop-filter: blur(30px) saturate(180%);
@@ -259,8 +263,8 @@ html[data-theme='dark'] #post::before {
 #page-header.full_page:not(.not-top-img)::before {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, .10) 0%,
-    rgba(120, 160, 220, .06) 60%,
+    rgba(20, 30, 60, .25) 0%,
+    rgba(30, 45, 90, .20) 60%,
     transparent 100%
   ) !important;
 }
