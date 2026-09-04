@@ -13,5 +13,13 @@
   var bg = document.createElement('div')
   bg.className = 'glass-bg'
   bg.setAttribute('aria-hidden', 'true')
+
+  // 液体层：比视口大一圈，承载彩色光斑渐变，用 transform 平移（GPU 合成，
+  // 不触发 CPU 逐帧重绘 background-position），由 .glass-bg 的 overflow:hidden 裁切。
+  var liquid = document.createElement('div')
+  liquid.className = 'bg-liquid'
+  liquid.setAttribute('aria-hidden', 'true')
+  bg.appendChild(liquid)
+
   document.body.insertBefore(bg, document.body.firstChild)
 })()

@@ -9,16 +9,25 @@
    ============================================================ */
 
 /* ---------- 背景装饰层（body 首子元素，垫在所有内容下方） ---------- */
-/* 液态玻璃：光斑缓慢漂移、流动融合，像一层流动的液体玻璃 */
+/* 液态玻璃：光斑缓慢漂移、流动融合，像一层流动的液体玻璃。
+   性能优化：把背景渐变放到比视口放大一圈的 .bg-liquid 子层上，用
+   transform: translate3d 做漂移动画（GPU 合成层，不触发 CPU 逐帧
+   重绘 background-position —— 后者是整屏掉帧主因）；外层 .glass-bg
+   仅做 fixed + overflow:hidden 裁切。视觉参数与之前完全一致。 */
 .glass-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
-  pointer-events: none;
   overflow: hidden;
-  /* light：低饱和淡彩柔光，避免高纯光斑透过卡片刺眼。
-     重要：radial 的 transparent 停点拉长、光斑透明度调低，
-     让色阶过渡更缓，减少颜色断层(banding)。 */
+  pointer-events: none;
+}
+
+/* 液体层：放大到视口约 180%，承载全部彩色光斑渐变 + 漂移动画。
+   光斑透明度/停点保持不变（继续去 banding）。 */
+.bg-liquid {
+  position: absolute;
+  inset: -40%;
+  will-change: transform;
   background-image:
     radial-gradient(1500px 1150px at 10% 6%, rgba(150, 185, 255, .22), transparent 70%),
     radial-gradient(1700px 1300px at 92% 12%, rgba(235, 160, 215, .17), transparent 70%),
@@ -26,42 +35,42 @@
     radial-gradient(1600px 1250px at 14% 92%, rgba(245, 205, 160, .15), transparent 72%),
     radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .28), transparent 78%),
     linear-gradient(160deg, #e8eef9 0%, #dbe4f2 48%, #e6ecf7 100%);
-  /* 液态流动动画：光斑位置缓慢漂移，模拟液体流动融合（放缓到 46s） */
-  background-size: 170% 170%;
-  background-position: 0% 0%;
+  /* 液态流动：transform 平移（合成友好），幅度控制在层自身范围内、
+     不露出边缘（层每侧有 40% 越界量，平移 <=20% 安全）。 */
   animation: glass-liquid-drift 46s ease-in-out infinite alternate;
 }
 
-/* 液态玻璃的光斑漂移 */
+/* 液态玻璃的光斑漂移（transform 平移，走 GPU 合成层） */
 @keyframes glass-liquid-drift {
   0% {
-    background-position: 0% 0%;
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    background-position: 45% 55%;
+    transform: translate3d(-7%, -5%, 0);
   }
   100% {
-    background-position: 100% 100%;
+    transform: translate3d(-15%, -10%, 0);
   }
 }
 
 /* 噪点抖动(dither)：细微随机噪点打散 8-bit 渐变色带(banding)。
    用内联 SVG feTurbulence 生成噪声，低透明度叠加，肉眼几乎不可见，
-   但足以让相邻色阶间的生硬边界被填平。 */
-.glass-bg::before {
+   但足以让相邻色阶间的生硬边界被填平。
+   性能：噪点不再单独做背景位置动画（原 60s 循环），静态即可持续
+   打散色带，省掉一层的逐帧重绘。 */
+.bg-liquid::before {
   content: '';
   position: absolute;
-  inset: -50%;
+  inset: -10%;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 240px 240px;
   opacity: .045;
   mix-blend-mode: overlay;
-  animation: glass-liquid-drift 60s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
 /* 液态纹理/噪点：叠加一层细微的斑驳，增强"液体"质感（如玻璃上的水渍） */
-.glass-bg::after {
+.bg-liquid::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -70,6 +79,7 @@
     radial-gradient(520px 380px at 78% 58%, rgba(255, 255, 255, .05), transparent 72%),
     radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .04), transparent 72%);
   mix-blend-mode: soft-light;
+  will-change: transform;
   animation: glass-liquid-swirl 34s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -85,7 +95,7 @@
 }
 
 /* dark：背景层换深色光斑（同样降透明度、拉长过渡去 banding） */
-html[data-theme='dark'] .glass-bg {
+html[data-theme='dark'] .bg-liquid {
   background-image:
     radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .38), transparent 70%),
     radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .33), transparent 70%),
@@ -96,12 +106,12 @@ html[data-theme='dark'] .glass-bg {
 }
 
 /* dark 的噪点抖动调低亮度 */
-html[data-theme='dark'] .glass-bg::before {
+html[data-theme='dark'] .bg-liquid::before {
   opacity: .04;
 }
 
 /* dark 的液态纹理降低亮度 */
-html[data-theme='dark'] .glass-bg::after {
+html[data-theme='dark'] .bg-liquid::after {
   background-image:
     radial-gradient(380px 280px at 18% 24%, rgba(255, 255, 255, .035), transparent 72%),
     radial-gradient(520px 380px at 78% 58%, rgba(120, 160, 255, .035), transparent 72%),
@@ -110,11 +120,11 @@ html[data-theme='dark'] .glass-bg::after {
 
 /* 降低动画前提：用户开启减少动效时关闭流动 */
 @media (prefers-reduced-motion: reduce) {
-  .glass-bg {
+  .bg-liquid {
     animation: none;
   }
-  .glass-bg::before,
-  .glass-bg::after {
+  .bg-liquid::before,
+  .bg-liquid::after {
     animation: none;
   }
 }
