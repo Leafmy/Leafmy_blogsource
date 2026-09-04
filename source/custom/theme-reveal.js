@@ -59,8 +59,24 @@
 
     try {
       // 内容级圆形 reveal：圆心固定网页中心（动画在 CSS 中定义）
-      document.startViewTransition(() => performSwitch(mode))
+      // 切换期间暂停背景液体层的独立动画 + 移除 will-change，让它被并入
+      // root 一起被圆形 clip-path 裁切，避免被 VT 拆成独立组导致"动画坏了"。
+      const bg = document.querySelector('.glass-bg')
+      if (bg) bg.classList.add('vt-pause')
+
+      const vt = document.startViewTransition(() => performSwitch(mode))
+
+      // 切换结束后恢复背景层动画
+      const done = () => { if (bg) bg.classList.remove('vt-pause') }
+      if (vt && typeof vt.finished === 'object' && vt.finished && vt.finished.then) {
+        vt.finished.then(done, done)
+      } else {
+        // 兜底：给足动画时长后恢复（0.62s 动画 + 余量）
+        setTimeout(done, 900)
+      }
     } catch (err) {
+      const bg = document.querySelector('.glass-bg')
+      if (bg) bg.classList.remove('vt-pause')
       performSwitch(mode)
     }
   }, true)

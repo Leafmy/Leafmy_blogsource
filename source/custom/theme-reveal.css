@@ -27,3 +27,21 @@
     clip-path: circle(150% at 50% 50%);
   }
 }
+
+/* ============================================================
+   背景层在 View Transition 期间并入 root 组（避免独立分层逃逸裁切）
+   -----------------------------------------------
+   性能优化给 .bg-liquid 加了 will-change + 持续动画 + mix-blend-mode，
+   这些会让 View Transitions 把它识别为「独立合成组」，不再被 root 的
+   clip-path: circle() 裁切 —— 切换时液体背景会铺满全屏、不随圆形扩散，
+   视觉上表现为"黑白转换动画坏了"。
+   修复：切换期间（theme-reveal.js 加 .vt-pause）暂停其动画、移除
+   will-change，让它被并入 root 一起扩散；切换结束(transition.finished)
+   后移除 .vt-pause 恢复正常。
+   ============================================================ */
+.glass-bg.vt-pause .bg-liquid,
+.glass-bg.vt-pause .bg-liquid::before,
+.glass-bg.vt-pause .bg-liquid::after {
+  animation: none;
+  will-change: auto;
+}
