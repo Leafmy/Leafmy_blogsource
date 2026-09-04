@@ -12,10 +12,13 @@ html.js .card-info {
 /* 文字区容器：相对定位，承载单一文本元素 */
 html.js .card-info .swap-text {
   position: relative;
+  overflow: hidden;
+  /* 高度也走非线性曲线：变小/变大时先快后缓，不生硬 */
   transition: filter 0.3s ease,
               opacity 0.3s ease,
-              transform 0.3s ease;
-  will-change: transform, filter, opacity;
+              transform 0.3s ease,
+              height 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, filter, opacity, height;
 }
 
 /* 单一文本元素：默认清晰显示（站主文字） */

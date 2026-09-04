@@ -48,17 +48,40 @@
   // 把 swap 插到头像之后（头像不动）
   avatar ? avatar.insertAdjacentElement('afterend', swap) : card.appendChild(swap)
 
-  // ---------- 换字逻辑：先模糊 → 换字 → 再清晰 ----------
+  // ---------- 换字逻辑：先模糊 → 换字 → 再清晰，高度走非线性曲线 ----------
   let state = 'owner'   // owner | visit
   let timer = null
 
+  // 离屏测量某套文案的自然高度（用于高度过渡）
+  const measureHeight = function (html) {
+    const clone = document.createElement('div')
+    clone.className = 'swap-text'
+    clone.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:0;'
+    clone.style.width = swap.offsetWidth + 'px'
+    clone.innerHTML = html
+    document.body.appendChild(clone)
+    const h = clone.offsetHeight
+    document.body.removeChild(clone)
+    return h
+  }
+
   const swapTo = function (nextHTML, nextState) {
-    swap.classList.add('swapping')            // ① 开始模糊淡出
     clearTimeout(timer)
+    // ① 锁住当前高度，开始模糊淡出
+    swap.style.height = swap.offsetHeight + 'px'
+    swap.classList.add('swapping')
     timer = setTimeout(function () {
-      swap.innerHTML = nextHTML              // ② 模糊到看不清时，同一位置换字
-      swap.classList.remove('swapping')      // ③ 文字清晰浮现
+      // ② 模糊到看不清时，同一位置换字
+      swap.innerHTML = nextHTML
+      // ③ 高度平滑过渡到新文案的自然高度（非线性曲线）
+      swap.style.height = measureHeight(nextHTML) + 'px'
+      swap.classList.remove('swapping')
       state = nextState
+      // ④ 过渡结束后释放锁定高度（回到 auto，避免挤压残留）
+      clearTimeout(timer)
+      timer = setTimeout(function () {
+        swap.style.height = ''
+      }, 360)
     }, 320)
   }
 
