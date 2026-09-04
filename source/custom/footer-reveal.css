@@ -1,103 +1,31 @@
 /* ============================================================
-   Footer reveal — hover grip (custom inject, v4)
-   鼠标移入底部 grip 热区 → footer 从视口底部外向上滑出；
-   鼠标离开(footer+grip 整体) → footer 滑回隐藏。
-   全部非线性缓动 cubic-bezier(.22,.61,.36,1)。
-
-   v4 相对 v3 的交互变更：
-   - 不再依赖"滚动到底"，而是 hover 触发，天然无跨页继承
-     与提前误弹问题（CSS :hover 只跟鼠标位置有关）。
-   - 屏幕底缘常驻一条 26px grip 热区作为"可上拉"的视觉提示。
+   Footer — normal document-flow footer (custom inject, v5)
+   普通网站形态：footer 跟随内容排版在页面最底部，默认直接显示，
+   滚动到底即可看到。无悬浮、无 hover、无 grip 热区。
+   保留毛玻璃背景，与整站玻璃风统一。JS 仅用于标记 html.js。
    ============================================================ */
 
-/* JS 可用时：还原原 footer 占位高度（grip/footer 悬浮不挤正文） */
+/* 还原 footer 占位：不再需要底部 150px 垫高（之前是给悬浮 footer 留位） */
 html.js body {
-  padding-bottom: 150px;
+  padding-bottom: 0;
 }
 
-/* ---------- 底部 grip 热区（常驻视口底缘） ---------- */
-html.js .footer-grip {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 30px;
-  z-index: 1000;                 /* 低于 footer，保证滑出盖住 grip */
-  cursor: pointer;
-  /* 视觉：底部极淡的柔光带（透明→微亮），提示"可上拉" */
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(180, 205, 255, 0.18));
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
-  transition: background 0.3s ease;
-}
+/* ---------- Footer 玻璃背景（light/dark 适配） ---------- */
 
-/* grip 中央上拉指示钮（白亮，深浅背景下都可见） */
-html.js .footer-grip::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 10px;
-  width: 48px;
-  height: 5px;
-  transform: translateX(-50%);
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 6px rgba(120, 150, 220, 0.6);
-  transition: all 0.3s ease;
-}
-
-/* grip 悬停时提示加强 */
-html.js .footer-grip:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(180, 205, 255, 0.34));
-}
-html.js .footer-grip:hover::after {
-  background: #fff;
-  box-shadow: 0 0 10px rgba(120, 150, 220, 0.9);
-}
-
-/* ---------- footer：平时藏于视口底部外，hover 滑出 ---------- */
-html.js #footer {
-  position: fixed !important;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1001;
-  margin: 0 !important;
-  transform: translateY(100%);
-  transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
-  will-change: transform;
-}
-
-/* 鼠标移入 grip，或移入已滑出的 footer → footer 展开 */
-html.js .footer-grip:hover + #footer,
-html.js #footer:hover {
-  transform: translateY(0);
-}
-
-/* ============================================================
-   Footer 毛玻璃（透过悬浮层可看到内容模糊）
-   light：通透浅色玻璃 / dark：深色磨砂玻璃
-   ============================================================ */
-
-/* 若有主题 footer 遮罩层，先移除，避免盖住玻璃 */
-html.js #footer::before {
-  display: none !important;
-}
-
-/* light：高斯模糊玻璃 */
-html.js #footer {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .62) 0%, rgba(255, 255, 255, .32) 100%) !important;
+/* light：通透浅色玻璃 */
+#footer {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .58) 0%, rgba(255, 255, 255, .24) 100%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(170%);
   backdrop-filter: blur(20px) saturate(170%);
-  border-top: 1px solid rgba(255, 255, 255, .65);
+  border-top: 1px solid rgba(255, 255, 255, .55);
   box-shadow:
-    0 -12px 34px rgba(24, 40, 84, .16),
-    inset 0 1px 0 rgba(255, 255, 255, .75);
+    0 -12px 34px rgba(24, 40, 84, .10),
+    inset 0 1px 0 rgba(255, 255, 255, .70);
 }
 
-/* dark：磨砂玻璃 */
-html.js[data-theme='dark'] #footer {
-  background: linear-gradient(180deg, rgba(34, 38, 53, .62) 0%, rgba(12, 14, 21, .48) 100%) !important;
+/* dark：深色磨砂玻璃 */
+[data-theme='dark'] #footer {
+  background: linear-gradient(180deg, rgba(34, 38, 53, .58) 0%, rgba(12, 14, 21, .42) 100%) !important;
   -webkit-backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
   backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
   border-top: 1px solid rgba(255, 255, 255, .10);
@@ -106,14 +34,26 @@ html.js[data-theme='dark'] #footer {
     inset 0 1px 0 rgba(255, 255, 255, .14);
 }
 
-/* dark 下 grip 提示条更低调 */
-html.js[data-theme='dark'] .footer-grip {
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(130, 160, 220, 0.16));
+/* 移除主题自带的 footer 遮罩层，避免盖住玻璃 */
+#footer::before {
+  display: none !important;
 }
-html.js[data-theme='dark'] .footer-grip::after {
-  background: rgba(200, 215, 245, 0.85);
-  box-shadow: 0 0 6px rgba(90, 120, 190, 0.5);
+
+/* ---------- Footer 文字颜色适配（玻璃背景会改变底色，需同步文字） ---------- */
+/* light：浅色玻璃配深色文字，保证可读 */
+#footer .copyright,
+#footer .framework-info {
+  color: rgba(45, 48, 62, .82) !important;
 }
-html.js[data-theme='dark'] .footer-grip:hover {
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(130, 160, 220, 0.32));
+#footer a {
+  color: #5079d6 !important;
+}
+
+/* dark：深色磨砂玻璃配浅色文字 */
+[data-theme='dark'] #footer .copyright,
+[data-theme='dark'] #footer .framework-info {
+  color: rgba(255, 255, 255, .78) !important;
+}
+[data-theme='dark'] #footer a {
+  color: #7aa2f0 !important;
 }
