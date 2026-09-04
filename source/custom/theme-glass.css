@@ -15,13 +15,14 @@
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
+  /* light：低饱和淡彩柔光，避免高纯光斑透过卡片刺眼 */
   background-image:
-    radial-gradient(1400px 1100px at 12% 8%, rgba(70, 130, 255, .52), transparent 60%),
-    radial-gradient(1600px 1200px at 90% 15%, rgba(255, 96, 195, .44), transparent 60%),
-    radial-gradient(1700px 1300px at 78% 82%, rgba(45, 205, 175, .42), transparent 62%),
-    radial-gradient(1500px 1150px at 15% 90%, rgba(255, 170, 80, .40), transparent 62%),
-    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .55), transparent 70%),
-    linear-gradient(160deg, #b8cdee 0%, #9db8e6 45%, #c2d3ee 100%);
+    radial-gradient(1500px 1150px at 10% 6%, rgba(150, 185, 255, .34), transparent 62%),
+    radial-gradient(1700px 1300px at 92% 12%, rgba(235, 160, 215, .26), transparent 62%),
+    radial-gradient(1800px 1400px at 76% 86%, rgba(150, 215, 200, .24), transparent 64%),
+    radial-gradient(1600px 1250px at 14% 92%, rgba(245, 205, 160, .22), transparent 64%),
+    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .35), transparent 72%),
+    linear-gradient(160deg, #e3eaf6 0%, #d4dfef 48%, #e2e9f4 100%);
 }
 
 /* dark：背景层换深色光斑 */
@@ -51,35 +52,35 @@ html[data-theme='dark'] body {
 
 /* ================= 玻璃面板 ================= */
 
-/* ---- light：通透玻璃 ---- */
+/* ---- light：通透玻璃（saturate 降低防刺眼，保持清透） ---- */
 .recent-post-item,
 .card-widget,
 #post {
   background: linear-gradient(
     155deg,
-    rgba(255, 255, 255, .30) 0%,
-    rgba(255, 255, 255, .12) 50%,
-    rgba(255, 255, 255, .22) 100%
+    rgba(255, 255, 255, .34) 0%,
+    rgba(255, 255, 255, .16) 50%,
+    rgba(255, 255, 255, .26) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(38px) saturate(220%) brightness(1.02);
-  backdrop-filter: blur(38px) saturate(220%) brightness(1.02);
-  border: 1px solid rgba(255, 255, 255, .75) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(170%) brightness(1.04);
+  backdrop-filter: blur(34px) saturate(170%) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, .70) !important;
   box-shadow:
-    0 22px 48px rgba(20, 36, 80, .20),
-    0 4px 12px rgba(20, 36, 80, .06),
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    inset 0 -1px 0 rgba(255, 255, 255, .70) !important;
+    0 20px 44px rgba(30, 48, 96, .16),
+    0 4px 12px rgba(30, 48, 96, .05),
+    inset 0 1px 0 rgba(255, 255, 255, .95),
+    inset 0 -1px 0 rgba(255, 255, 255, .60) !important;
 }
 
-/* 顶部细镜面高光 */
+/* 顶部细镜面高光（light 更克制） */
 .recent-post-item::before,
 .card-widget::before,
 #post::before {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
-  height: 24%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .50), transparent);
+  height: 20%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .38), transparent);
   pointer-events: none;
   border-radius: inherit;
 }
