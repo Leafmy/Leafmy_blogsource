@@ -1,10 +1,10 @@
 /* ============================================================
-   Visit card — swap text in place (custom inject, v6)
-   单一文本元素原位变换：鼠标移入文字先高斯模糊淡出，同一位置
-   换成名片文字再清晰浮现；移出同理换回。无两层叠放、无整卡遮罩。
+   Visit card — swap text in place (custom inject, v7)
+   双人切换：默认站主 l3AFovxs，hover 换 HexShane 头像+名字+简介「卡密」。
+   名字/简介单一元素原位变换，头像渐隐切换。无 Follow 按钮，无整卡遮罩。
    ============================================================ */
 
-/* 头部头像保留原样，只对文字区做变换 */
+/* 卡片保持相对定位，避免换字时布局跳动 */
 html.js .card-info {
   position: relative;
 }
@@ -13,7 +13,7 @@ html.js .card-info {
 html.js .card-info .swap-text {
   position: relative;
   overflow: hidden;
-  /* 高度也走非线性曲线：变小/变大时先快后缓，不生硬 */
+  /* 高度走非线性曲线：变小/变大先快后缓，不生硬 */
   transition: filter 0.3s ease,
               opacity 0.3s ease,
               transform 0.3s ease,
@@ -36,53 +36,19 @@ html.js .card-info .swap-text.swapping {
   pointer-events: none;
 }
 
-/* ---------- 名片文字样式（换字后的内容） ---------- */
-html.js .card-info .swap-text .vt-name {
-  font-size: 19px;
-  font-weight: 700;
-  color: #2c3050;
-  margin-bottom: 6px;
+/* 头像渐隐切换 */
+html.js .card-info .avatar-img img {
+  transition: opacity 0.4s ease;
 }
-html.js .card-info .swap-text .vt-desc {
-  font-size: 13px;
-  color: #5079d6;
-  margin-bottom: 4px;
-}
-html.js .card-info .swap-text .vt-data {
-  font-size: 14px;
-  color: #3a4060;
-  margin-bottom: 6px;
-}
-html.js .card-info .swap-text .vt-follow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-  padding: 8px 24px;
-  border-radius: 22px;
-  background: #5079d6;
-  color: #fff !important;
-  font-size: 14px;
-  text-decoration: none !important;
-  transition: background 0.3s ease;
-}
-html.js .card-info .swap-text .vt-follow:hover {
-  background: #3a63c0;
-}
-html.js .card-info .swap-text .vt-follow i,
-html.js .card-info .swap-text .vt-follow .vt-github-icon {
-  color: #fff;
-  fill: #fff;
-  vertical-align: -0.125em;
+html.js .card-info.swapping .avatar-img img {
+  opacity: 0;
 }
 
-/* dark 下名片文字用浅色 */
-html[data-theme='dark'].js .card-info .swap-text .vt-name {
-  color: #f0f2fa;
+/* ---------- 名片文字（复用主题 .author-info-name / .author-info-description） ---------- */
+/* 确保名片态名字与简介的视觉与站主态一致 */
+html.js .card-info .swap-text .author-info-name {
+  font-weight: 500;
 }
-html[data-theme='dark'].js .card-info .swap-text .vt-desc {
-  color: #7aa2f0;
-}
-html[data-theme='dark'].js .card-info .swap-text .vt-data {
-  color: rgba(255, 255, 255, .88);
+html.js .card-info .swap-text .author-info-description {
+  margin-top: -.42em;
 }
