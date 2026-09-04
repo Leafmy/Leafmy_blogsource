@@ -109,8 +109,10 @@
     config.forEach(function (c) { if (c.href === href) conf = c })
     if (!conf) return
 
-    item.addEventListener('mouseenter', function () {
-      setOpen(item, true)
+    item.addEventListener('mouseenter', function (e) {
+      // 是否打开：若鼠标此刻已在"文字/图标<a>"区内则打开；否则交给 mousemove 状态机。
+      // 避免指针刚触碰胶囊边缘(padding 留白)就弹面板（用户嫌检测范围太大）。
+      if (inOpenZone(item, e.clientX, e.clientY)) setOpen(item, true)
       fetchArticles(conf.href, conf.selector)
         .then(function (articles) { buildPanel(item, conf.label, articles) })
         .catch(function () { buildPanel(item, conf.label, []) })
@@ -168,17 +170,19 @@
   }
 
   // 命中检测：鼠标是否在某个含 .nav-drop 的菜单项自身或其面板范围内
+  // 触发区收窄到"文字/图标<a>"本身(而非含 padding 的 .menus_item 胶囊)，
+  // 避免指针在 11px 视觉留白上就误触发弹出（用户嫌检测范围太大）。
   function inOpenZone(item, x, y) {
-    var r = item.getBoundingClientRect()
+    var r = item.querySelector('a.site-page, span.site-page')
+    // 优先用链接< a> 作为触发区，失败则退回菜单项矩形
+    var base = (r && r.getBoundingClientRect && r.getBoundingClientRect()) || item.getBoundingClientRect()
+    if (x >= base.left && x <= base.right && y >= base.top && y <= base.bottom) return true
     var d = item.querySelector('.nav-drop')
-    // 菜单项矩形
-    if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return true
-    // 面板矩形
     if (d) {
       var dr = d.getBoundingClientRect()
       if (x >= dr.left && x <= dr.right && y >= dr.top && y <= dr.bottom) return true
-      // 连通带：菜单项底部到面板顶部之间的间隙也算 zone（鼠标下滑时不丢）
-      if (x >= r.left && x <= r.right && y >= r.bottom && y <= dr.top) return true
+      // 连通带：链接底部(inOpenZone 用 base)到面板顶部之间的空隙也算 zone（鼠标下滑时不丢）
+      if (x >= base.left && x <= base.right && y >= base.bottom && y <= dr.top) return true
     }
     return false
   }
