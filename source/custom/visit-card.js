@@ -1,10 +1,10 @@
 /* ============================================================
-   Visit card — swap text (custom inject, v8)
-   个人信息卡（.card-info）双人切换，无动画：
+   Visit card — swap text (custom inject, v9)
+   个人信息卡（.card-info）双人切换：
    - 默认显示站主 l3AFovxs（蓝发侦探头像）
-   - 鼠标移入：直接换成 HexShane（斗篷头像）+ 简介「卡密」
-   - 鼠标移出：直接换回站主
-   头像/名字/简介瞬间切换，无 Follow 按钮，无动画。
+   - 鼠标移入：名字+简介先模糊淡出 -> 换成 HexShane（斗篷头像）+ 简介「卡密」-> 清晰浮现
+   - 鼠标移出：换回站主
+   - 头像去掉 hover 旋转；文字切换带模糊遮罩过渡，无整卡动画。
    ============================================================ */
 (function () {
   'use strict'
@@ -51,19 +51,28 @@
     '<div class="author-info-name">' + config.visit.name + '</div>' +
     '<div class="author-info-description">' + config.visit.desc + '</div>'
 
-  // ---------- 切换逻辑：瞬间切换，无动画 ----------
+  // ---------- 切换逻辑：先模糊 -> 换字 -> 再清晰（柔和，硬变） ----------
   let state = 'owner'   // owner | visit
+  let timer = null
 
-  const apply = function (html, avatar, nextState) {
-    swap.innerHTML = html
-    if (avatarImg) avatarImg.src = avatar
-    state = nextState
+  const applyWithBlur = function (html, avatar, nextState) {
+    clearTimeout(timer)
+    // ① 文字先模糊淡出
+    swap.classList.add('swapping')
+    timer = setTimeout(function () {
+      // ② 模糊到看不清时换字 + 换头像
+      swap.innerHTML = html
+      if (avatarImg) avatarImg.src = avatar
+      state = nextState
+      // ③ 去模糊，文字清晰浮现
+      swap.classList.remove('swapping')
+    }, 220)
   }
 
   card.addEventListener('mouseenter', function () {
-    if (state !== 'visit') apply(visitHTML, config.visit.avatar, 'visit')
+    if (state !== 'visit') applyWithBlur(visitHTML, config.visit.avatar, 'visit')
   })
   card.addEventListener('mouseleave', function () {
-    if (state !== 'owner') apply(ownerHTML, config.owner.avatar, 'owner')
+    if (state !== 'owner') applyWithBlur(ownerHTML, config.owner.avatar, 'owner')
   })
 })()
