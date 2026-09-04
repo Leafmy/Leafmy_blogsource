@@ -11,10 +11,13 @@ html.js .card-info {
   position: relative;
 }
 
-/* 去掉头像 hover 常驻旋转：覆盖主题 .avatar-img img:hover rotate(360deg) */
+/* 去掉头像 hover 常驻旋转：覆盖主题 .avatar-img img:hover rotate(360deg)。
+   注意：不要用 !important —— 否则会在 hover 时把下方 @keyframes spin 动画的 transform
+   一同压掉（!important 优先级高于动画），导致头像切换旋转失效、视觉静止。
+   这里仅覆盖主题的 rotate(360deg)，spin 动画自带更高优先级。 */
 html.js .card-info .avatar-img img:hover,
 html.js .card-info:hover .avatar-img img {
-  transform: none !important;
+  transform: none;
 }
 /* 头像基础：无常驻 transition（避免移除 spin 时逆时针回退） */
 html.js .card-info .avatar-img img {
