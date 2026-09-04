@@ -41,17 +41,21 @@
   border: 1px solid rgba(255, 255, 255, .60);
 }
 
-/* 跟随指针的局部光晕层：absolute 铺满 nav，径向渐变定位在 --gx/--gy */
+/* 跟随指针的局部光晕层：absolute 铺满 nav，径向渐变定位在 --gx/--gy。
+   羽化加强：中心更柔，中间拉长过渡(30%/55%/78%)，让光斑边缘渐进弥散，
+   不再有生硬边界。 */
 #nav::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: radial-gradient(
-    120px 90px at var(--gx, 50%) var(--gy, 50%),
-    rgba(140, 195, 255, .40),
-    rgba(150, 205, 255, .18) 55%,
-    transparent 72%
+    130px 100px at var(--gx, 50%) var(--gy, 50%),
+    rgba(140, 195, 255, .34),
+    rgba(150, 205, 255, .22) 30%,
+    rgba(160, 210, 255, .12) 55%,
+    rgba(170, 215, 255, .05) 78%,
+    transparent 100%
   );
   opacity: 0;
   transition: opacity .2s ease;
@@ -78,28 +82,37 @@ html[data-theme='dark'] #nav {
 }
 html[data-theme='dark'] #nav::after {
   background: radial-gradient(
-    120px 90px at var(--gx, 50%) var(--gy, 50%),
-    rgba(100, 160, 255, .42),
-    rgba(80, 130, 230, .20) 55%,
-    transparent 72%
+    130px 100px at var(--gx, 50%) var(--gy, 50%),
+    rgba(100, 160, 255, .30),
+    rgba(85, 135, 235, .18) 30%,
+    rgba(75, 125, 225, .10) 55%,
+    rgba(65, 115, 215, .05) 78%,
+    transparent 100%
   );
 }
 
-/* 原有 light/dark 的 .menus_item 菜单项 hover 光晕保留（菜单项自身发光） */
+/* ---- 布局：站名(标题)在最左，然后是最新文章/归档，汉堡按钮靠右 ----
    用户要求：标题在最左，之后紧跟菜单项。
-   注意覆盖主题默认为 #menus 设置的 margin-left:auto（会把菜单推到最右），
-   这里显式清零并用 flex:1 让 #menus 占满剩余空间，菜单项靠左、汉堡靠右。 */
+   覆盖主题默认为 #menus 设置的 margin-left:auto（会把菜单推到最右）。
+   关键：#blog-info 必须收缩到内容宽度(width:max-content / flex:0 0 auto)，
+   否则它会被撑满(实测 642px)，把「最新文章/归档」挤到中间偏右 → 位置错误。
+   修复后实测：#blog-info=164px，菜单从 x=223 开始，最新文章/归档紧贴标题居左。 */
 #nav #blog-info {
   order: 0 !important;
   flex: 0 0 auto !important;
-  width: auto !important;
+  width: max-content !important;
+  min-width: 0 !important;
   margin: 0 !important;
-  margin-right: 16px !important;
+  margin-right: 18px !important;
   display: block !important;
+}
+#nav #blog-info .nav-site-title {
+  white-space: nowrap !important;
 }
 #nav #menus {
   order: 1 !important;
-  flex: 1 !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
   margin: 0 !important;
   display: flex !important;
   align-items: center !important;
