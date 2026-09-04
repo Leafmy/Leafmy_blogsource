@@ -16,17 +16,20 @@ html.js .card-info .avatar-img img:hover,
 html.js .card-info:hover .avatar-img img {
   transform: none !important;
 }
-/* 头像基础：允许切换时的旋转过渡（不再 transition:none） */
+/* 头像基础：无常驻 transition（避免移除 spin 时逆时针回退） */
 html.js .card-info .avatar-img img {
-  transition: transform 0.5s ease;
-  will-change: transform;
+  transition: none;
 }
 
-/* 头像切换到新图时的旋转动画（JS 播放一次后移除）
-   用更高特异性 + !important 覆盖 hover 的 transform:none */
+/* 头像切换到新图时的旋转动画：用 @keyframes 播放一圈，
+   播完自动停在最终帧，移除类时无回退（不像 transition 会倒转） */
+@keyframes avatar-spin {
+  from { transform: rotate(0deg) scale(1); }
+  to   { transform: rotate(360deg) scale(1); }
+}
 html.js .card-info .avatar-img img.spin,
 html.js .card-info:hover .avatar-img img.spin {
-  transform: rotate(360deg) !important;
+  animation: avatar-spin 0.6s ease-in-out forwards;
 }
 
 /* 文字区容器：相对定位，承载单一文本元素 */

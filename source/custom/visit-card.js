@@ -64,17 +64,18 @@
       // ② 模糊到看不清时换字 + 换头像（头像变化时旋转一下）
       swap.innerHTML = html
       if (avatarImg) {
-        // 触发头像旋转：先转半程时换 src，再到 360 度
+        // 触发头像旋转动画（@keyframes 0.6s，播完自动定格，无逆时针回退）
         avatarImg.classList.add('spin')
         clearTimeout(imgTimer)
+        // 旋转进行到约半程时切换新图（旧图转半圈变新图）
         imgTimer = setTimeout(function () {
           avatarImg.src = avatar
-          // 旋转结束后移除类，避免影响下一次
-          setTimeout(function () {
-            avatarImg.classList.remove('spin')
-            avatarImg.style.transform = ''
-          }, 520)
-        }, 180)   // 旋转进行到约半程时切换新图
+        }, 260)
+        // 动画结束后移除类（无 transition，瞬间复位，不会倒转）
+        setTimeout(function () {
+          avatarImg.classList.remove('spin')
+          avatarImg.style.transform = ''
+        }, 640)
       }
       state = nextState
       // ③ 去模糊，文字清晰浮现
