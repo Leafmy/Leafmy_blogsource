@@ -1,7 +1,11 @@
 /* ============================================================
-   Footer — normal document-flow footer (custom inject, v6)
+   Footer — normal document-flow footer (custom inject, v6 → v7)
    普通网站形态：footer 跟随内容排版在页面最底部，默认直接显示。
    视觉：明亮通透的浅玻璃底 + 分层居中排版（参考 BakaXL 站底声明区）。
+   v7 light 调整：与 v6 冷雾液态玻璃大背景/高斯模糊卡片同调,
+   footer 不再做奶白亮带(α.82 白→奶亮突兀), 改为低饱和冷雾半透明
+   玻璃(浅灰蓝半透, 与大背景同色相), backdrop 模糊后形成柔和
+   "底部玻璃", 不抢主体卡片, 但仍与背景区分。
    保留毛玻璃背景，与整站玻璃风统一。JS 仅用于标记 html.js。
    ============================================================ */
 
@@ -12,15 +16,20 @@ html.js body {
 
 /* ---------- Footer 玻璃背景（light/dark 适配） ---------- */
 
-/* light：明亮通透浅色玻璃 */
+/* light：冷雾同调半透明玻璃(浅灰蓝, 与 .bg-liquid 冷雾底色同色相,
+   backdrop 模糊后融于背景而非奶白亮带) */
 #footer {
-  background: linear-gradient(180deg, rgba(246, 250, 255, .82) 0%, rgba(226, 236, 249, .55) 100%) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(175%);
-  backdrop-filter: blur(22px) saturate(175%);
-  border-top: 1px solid rgba(255, 255, 255, .60);
+  background: linear-gradient(
+    180deg,
+    rgba(232, 234, 242, .62) 0%,
+    rgba(210, 216, 232, .50) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%) brightness(.97);
+  backdrop-filter: blur(28px) saturate(150%) brightness(.97);
+  border-top: 1px solid rgba(255, 255, 255, .45);
   box-shadow:
-    0 -14px 40px rgba(24, 40, 84, .08),
-    inset 0 1px 0 rgba(255, 255, 255, .80);
+    0 -14px 40px rgba(40, 54, 88, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .55);
 }
 
 /* dark：深色磨砂玻璃 */
@@ -84,14 +93,14 @@ html.js body {
 }
 
 /* ---------- Footer 文字颜色适配（玻璃背景会改变底色，需同步文字） ---------- */
-/* light：浅色玻璃配深色文字，保证可读 */
+/* light：冷雾玻璃配稍深文字, 保证可读(冷雾底比之前奶白底深一点, 文字加深) */
 #footer .copyright,
 #footer .framework-info,
 #footer .footer_custom_text {
-  color: rgba(45, 48, 62, .82) !important;
+  color: rgba(38, 44, 60, .86) !important;
 }
 #footer a {
-  color: #5079d6 !important;
+  color: #3d5fa6 !important;
 }
 
 /* dark：深色磨砂玻璃配浅色文字 */
