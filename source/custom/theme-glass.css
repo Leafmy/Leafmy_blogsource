@@ -174,14 +174,13 @@ html[data-theme='dark'] body {
   backdrop-filter: blur(46px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, .42) !important;
   box-shadow:
-    0 24px 52px rgba(40, 54, 88, .20),
-    0 6px 16px rgba(40, 54, 88, .08),
-    inset 0 1px 0 rgba(255, 255, 255, .72),
-    inset 0 -1px 0 rgba(255, 255, 255, .38),
-    inset 0 0 0 1px rgba(255, 255, 255, .10) !important;
+    0 12px 30px rgba(40, 54, 88, .10),
+    0 3px 10px rgba(40, 54, 88, .05),
+    inset 0 1px 0 rgba(255, 255, 255, .40),
+    inset 0 -1px 0 rgba(255, 255, 255, .20) !important;
 }
 
-/* 顶部细镜面高光（light 更克制） */
+/* 顶部镜面高光已按用户要求去除（不再显示） */
 .recent-post-item::before,
 .card-widget::before,
 #post::before,
@@ -190,9 +189,10 @@ html[data-theme='dark'] body {
   position: absolute;
   inset: 0 0 auto 0;
   height: 20%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .28), transparent);
+  background: none;
   pointer-events: none;
   border-radius: inherit;
+  display: none;
 }
 
 /* ---- dark：真实磨砂玻璃 ---- */
@@ -210,18 +210,18 @@ html[data-theme='dark'] #archive {
   backdrop-filter: blur(46px) saturate(170%);
   border: 1px solid rgba(255, 255, 255, .14) !important;
   box-shadow:
-    0 24px 56px rgba(0, 0, 0, .55),
-    0 4px 16px rgba(0, 0, 0, .30),
-    inset 0 1px 0 rgba(255, 255, 255, .22),
-    inset 0 -1px 0 rgba(255, 255, 255, .06) !important;
+    0 12px 30px rgba(0, 0, 0, .28),
+    0 3px 10px rgba(0, 0, 0, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .12) !important;
 }
 
-/* dark 高光更柔和 */
+/* dark 顶部高光也已去除 */
 html[data-theme='dark'] .recent-post-item::before,
 html[data-theme='dark'] .card-widget::before,
 html[data-theme='dark'] #post::before,
 html[data-theme='dark'] #archive::before {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .16), transparent);
+  background: none;
+  display: none;
 }
 
 /* ---- 卡片定位（供 ::before 与展开浮层使用） ---- */
