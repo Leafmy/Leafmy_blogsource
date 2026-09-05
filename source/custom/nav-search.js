@@ -340,6 +340,9 @@
     // 有残留值: 重新检索并恢复结果面板(收起时面板被隐藏 + lastQuery 清空,
     // 重新展开若不重新 runSearch, 结果栏就不会再出现)
     if (input.value.trim()) runSearch(input.value)
+    // 光效初始化: 用最近鼠标位置 clamp 到面板内(面板刚展开, 指针静止时
+    // 光斑不会卡在初始左上角)
+    updateSearchGlow(lastMouseX, lastMouseY)
     if (doFocus !== false) {
       clearTimeout(showTimer)
       showTimer = setTimeout(function () {
@@ -408,27 +411,26 @@
   input.addEventListener('keyup', positionCaret)
   input.addEventListener('click', positionCaret)
   input.addEventListener('select', positionCaret)
-  // 结果浮层: 顶部导航栏同款光效 —— 指针光斑 + 边缘发光环跟随指针
-  // (复用 .nav-drop-glow/.nav-drop-edge 样式, transform 直写, 冷雾蓝)
+  // 结果浮层: "文章"下拉页(nav-drop)同款光效 —— 光斑常亮, 光心 clamp
+  // 到面板内跟随指针(指针在面板内跟随, 移出则停靠最近边缘, 不停左上角)
   var panelEdgeLight = panel.querySelector('.nav-drop-edge-light')
   var panelGlow = panel.querySelector('.nav-drop-glow')
-  function setSearchGlow(gx, gy) {
+  var lastMouseX = 0
+  var lastMouseY = 0
+  function updateSearchGlow(x, y) {
+    lastMouseX = x
+    lastMouseY = y
+    var r = panel.getBoundingClientRect()
+    if (!r.width || !r.height) return
+    // clamp 到面板矩形内(与 nav-drop 的 updateDropGlow 同构)
+    var gx = (x < r.left ? r.left : (x > r.right ? r.right : x)) - r.left
+    var gy = (y < r.top ? r.top : (y > r.bottom ? r.bottom : y)) - r.top
     if (panelGlow) panelGlow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
     if (panelEdgeLight) panelEdgeLight.style.transform = 'translate3d(' + (gx - 340).toFixed(2) + 'px,' + (gy - 120).toFixed(2) + 'px,0)'
   }
-  panel.addEventListener('mouseenter', function (e) {
-    // 进入面板立即定位光心(避免鼠标静止进入时卡在初始左上角)
-    var r = panel.getBoundingClientRect()
-    if (!r.width || !r.height) return
-    setSearchGlow(e.clientX - r.left, e.clientY - r.top)
+  document.addEventListener('mousemove', function (e) {
+    updateSearchGlow(e.clientX, e.clientY)
   })
-  panel.addEventListener('mousemove', function (e) {
-    var r = panel.getBoundingClientRect()
-    if (!r.width || !r.height) return
-    setSearchGlow(e.clientX - r.left, e.clientY - r.top)
-  })
-  // 移出: 光斑熄灭由 CSS :hover 的 opacity 过渡承担(像顶部导航栏,
-  // 边缘离开影响范围才熄灭), 这里不再把光心移到左上角
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return
