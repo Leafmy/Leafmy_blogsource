@@ -158,6 +158,65 @@ html[data-theme='dark'] body {
   background-color: #0f1116;
 }
 
+/* ---------- 全局页面滚动条（浏览器主内容）风格化 ----------
+   与下拉面板 / 搜索结果列表同款冷雾蓝玻璃质感：
+   - Firefox：标准 scrollbar-width + scrollbar-color
+   - WebKit/Chromium：窄轨 + 圆角半透明主题滑块 + 白色细描边 + hover 高亮
+   - dark 模式：冷蓝紫变体
+   注：html::-webkit-scrollbar 需用双冒号伪元素；body 溢出时归 html 管。 */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 170, 255, .40) rgba(120, 170, 255, .07);
+}
+html::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html::-webkit-scrollbar-track {
+  background: rgba(120, 170, 255, .07);
+  border-radius: 999px;
+}
+html::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(130, 185, 255, .52), rgba(100, 160, 255, .42));
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+html::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(150, 200, 255, .72), rgba(110, 170, 255, .58));
+}
+html[data-theme='dark'] {
+  scrollbar-color: rgba(110, 175, 255, .45) rgba(110, 175, 255, .06);
+}
+html[data-theme='dark']::-webkit-scrollbar-track {
+  background: rgba(110, 175, 255, .06);
+}
+html[data-theme='dark']::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(110, 175, 255, .58), rgba(90, 150, 250, .48));
+}
+html[data-theme='dark']::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(140, 195, 255, .78), rgba(110, 165, 250, .6));
+}
+
+/* ---- 代码块 / 表格滚动条：由主题的灰色 --hlscrollbar-bg 统一为玻璃蓝 ---- */
+figure.highlight table::-webkit-scrollbar-thumb,
+.container figure.highlight.default pre::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(130, 185, 255, .55), rgba(100, 160, 255, .45));
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+figure.highlight table::-webkit-scrollbar-thumb:hover,
+.container figure.highlight.default pre::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(150, 200, 255, .75), rgba(110, 170, 255, .60));
+}
+html[data-theme='dark'] figure.highlight table::-webkit-scrollbar-thumb,
+html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(110, 175, 255, .58), rgba(90, 150, 250, .48));
+}
+html[data-theme='dark'] figure.highlight table::-webkit-scrollbar-thumb:hover,
+html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(140, 195, 255, .78), rgba(110, 165, 250, .6));
+}
+
 /* ================= 玻璃面板 ================= */
 
 /* ---- light：真实磨砂玻璃卡片 ----
