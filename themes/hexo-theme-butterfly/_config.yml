@@ -1080,6 +1080,7 @@ inject:
     - <link rel="stylesheet" href="/custom/announce-hover.css">
     - <link rel="stylesheet" href="/custom/visit-card.css">
     - <link rel="stylesheet" href="/custom/light-text-contrast.css">
+    - <link rel="stylesheet" href="/custom/nav-search.css">
   bottom:
     # - <script src="xxxx"></script>
     - <script src="/custom/nav-apple.js"></script>
@@ -1088,6 +1089,7 @@ inject:
     - <script src="/custom/footer-reveal.js"></script>
     - <script src="/custom/announce-hover.js"></script>
     - <script src="/custom/visit-card.js"></script>
+    - <script src="/custom/nav-search.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
