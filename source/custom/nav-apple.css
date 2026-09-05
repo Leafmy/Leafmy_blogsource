@@ -70,13 +70,12 @@
     rgba(170, 215, 255, .05) 75%,
     transparent 100%
   );
-  /* 中心对齐指针：translate 使元素中心落在 (--gx, --gy)，减半自身尺寸 */
-  transform: translate3d(calc(var(--gx, 0px) - 96px), calc(var(--gy, 0px) - 76px), 0);
+  /* 位置与亮度由 JS 直写 style.transform / style.opacity（合成层最快路径）。
+     这里仅作 JS 未注入时的静态兜底定位；无 transition：JS 每帧写入的
+     连续值已天然平滑，transition 反而引入滞后(拖尾)。 */
+  transform: translate3d(-96px, -76px, 0);
   will-change: transform;
-  /* 亮度由 JS 写 --glow-a(0~1，鼠标到导航栏距离越近越大)：实现
-     "鼠标移到光斑可影响的导航栏范围即泛光、越近越亮"。 */
-  opacity: var(--glow-a, 0);
-  transition: opacity .15s ease;
+  opacity: 0;
 }
 /* ---- 光斑点亮时导航栏边缘高亮（跟随指针方向） ----
    在光斑引发的同时, 胶囊边缘也泛起一圈描边高亮, 且最亮处跟随指针:
@@ -102,9 +101,8 @@
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   padding: 1.5px;
-  /* 亮度与光斑同步由 JS 写 --glow-a(0~1)：鼠标进入光斑影响范围即渐亮 */
+  /* 亮度由 JS 每帧写 --glow-a(0~1)，无 transition 避免拖尾滞后 */
   opacity: var(--glow-a, 0);
-  transition: opacity .15s ease;
   pointer-events: none;
   z-index: 0;
 }

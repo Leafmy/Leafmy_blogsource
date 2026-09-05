@@ -76,13 +76,24 @@
       else if (lastY > rect.bottom) dy = lastY - rect.bottom
       var t = Math.sqrt((dx / RX) * (dx / RX) + (dy / RY) * (dy / RY))
       var a = Math.max(0, Math.min(1, 1 - t)) // 越近越亮，范围内随距离线性衰减
-      // 3) 写入：位置用 px（相对 nav 左上角）；亮度用 --glow-a
+
+      // 3) 光斑位置/亮度【直写 style】(不经 CSS 变量/calc 间接)：
+      //    元素已 will-change:transform 提升为合成层，直写 transform/opacity
+      //    只走合成器，是浏览器最快的"跟手"路径。px = 相对 nav 左上角。
       var px = cx - rect.left
       var py = cy - rect.top
+      spot.style.transform = 'translate3d(' + (px - 96).toFixed(2) + 'px,' + (py - 76).toFixed(2) + 'px,0)'
+
+      // 4) 边缘环 ::before 是 nav 轮廓的 1.5px 环(无法 transform 平移)，
+      //    只能经 CSS 变量定位其渐变中心；继续写 --gx/--gy 与 --glow-a。
       nav.style.setProperty('--gx', px.toFixed(2) + 'px')
       nav.style.setProperty('--gy', py.toFixed(2) + 'px')
       a = +a.toFixed(3)
-      if (a !== lastA) { nav.style.setProperty('--glow-a', String(a)); lastA = a }
+      if (a !== lastA) {
+        spot.style.opacity = String(a)
+        nav.style.setProperty('--glow-a', String(a))
+        lastA = a
+      }
     }
     function track(e) {
       lastX = e.clientX
@@ -93,7 +104,11 @@
       } else {
         // 完全离开范围：立即熄灭（亮度归 0），取消待写帧
         if (raf !== null) { cancelAnimationFrame(raf); raf = null }
-        if (lastA !== 0) { nav.style.setProperty('--glow-a', '0'); lastA = 0 }
+        if (lastA !== 0) {
+          spot.style.opacity = '0'
+          nav.style.setProperty('--glow-a', '0')
+          lastA = 0
+        }
       }
     }
     function inGlowRange(x, y) {
@@ -106,10 +121,14 @@
       var nx = dx / RX, ny = dy / RY
       return nx * nx + ny * ny <= 1
     }
-    // 熄灭光效：取消待写帧并把亮度归 0（带 lastA 去重）
+    // 熄灭光效：取消待写帧并把光斑/边缘环亮度归 0（带 lastA 去重）
     function extinguish() {
       if (raf !== null) { cancelAnimationFrame(raf); raf = null }
-      if (lastA !== 0) { nav.style.setProperty('--glow-a', '0'); lastA = 0 }
+      if (lastA !== 0) {
+        spot.style.opacity = '0'
+        nav.style.setProperty('--glow-a', '0')
+        lastA = 0
+      }
     }
     // 挂在 document：鼠标从正文/窗口其它区域接近导航栏时也能点亮，
     // 离开范围后自动熄灭（每次 mousemove 重新判定）
@@ -301,8 +320,12 @@
   }
 
   // mousemove 挂在 document 上：鼠标移出 nav 后仍能触发，才能正常延时关闭。
-  document.addEventListener('mousemove', function (e) {
-    var x = e.clientX, y = e.clientY
+  // 与光斑一样用 rAF 节流：一帧最多做一次命中判定/几何读取，避免高频
+  // mousemove 下反复 getBoundingClientRect(强制样式/layout flush)拖累跟手。
+  var dropX = 0, dropY = 0, dropRaf = null
+  function updateDrop() {
+    dropRaf = null
+    var x = dropX, y = dropY
     // 1) 鼠标在某按钮文字区上 → 打开它（setOpen 内部互斥关闭其它面板）。
     var linkHit = linkHitItem(x, y)
     if (linkHit) { setOpen(linkHit, true); return }
@@ -317,6 +340,11 @@
       if (isInKeepZone(item, x, y)) cancelClose(item)
       else scheduleClose(item)
     })
+  }
+  document.addEventListener('mousemove', function (e) {
+    dropX = e.clientX
+    dropY = e.clientY
+    if (dropRaf === null) dropRaf = requestAnimationFrame(updateDrop)
   })
   // 失焦兜底：切走窗口时关闭所有已打开面板
   window.addEventListener('blur', function () {
