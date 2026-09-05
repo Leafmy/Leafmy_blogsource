@@ -1,138 +1,117 @@
 /* ============================================================
-   顶部导航栏 检索图标 + 检索栏 样式 (custom inject)
-   配套 nav-search.js; 与整站"冷雾液态玻璃/高斯模糊"同调。
-   - 图标按钮: 悬浮光晕(harmony 光感语言), 圆角
-   - 展开输入条: 绝对定位 + width 0→340px + easeOutBack 非线性缓动,
-     transform-origin 在右侧 → 视觉上"向左展开"; 不推挤菜单项
-   - 结果浮层: nav 正下方, 毛玻璃冷雾面板, 列表/状态两类
-   - light/dark 双适配
+   顶部导航栏 一体式胶囊检索 (custom inject)
+   - 常态: 一个圆角胶囊，内含放大镜图标(+提示文字)。
+     背景为轻量毛玻璃，无任何光晕/遮罩装饰(用户要求简洁)。
+   - 点击胶囊 → 输入区在图标右侧平滑滑出(宽度非线性展开)，
+     图标保持在胶囊内左侧 = "搜索栏把图标包起来"。
+   - 无输入时不下拉任何提示浮层；只有检索产生内容
+     (结果 / 无结果 / 索引失败) 时才显示结果浮层。
+   - 再次点击胶囊 / Esc / 点击空白处收起。
    ============================================================ */
 
-/* ---- 容器(放在 #menus 内最右) ---- */
+/* ---- 容器: 放 #menus 内最右 ---- */
 #nav .nav-search {
   position: relative;
-  margin-left: auto;       /* 推到 #menus 最右(桌面 toggle 隐藏) */
+  margin-left: auto;
   order: 10;
+  z-index: 1002;
   display: flex;
   align-items: center;
-  z-index: 1002;           /* 高于 .nav-drop(1000) 与普通内容 */
 }
 
-/* ---- 图标按钮 ---- */
-#nav .nav-search-btn {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  margin: 0 0 0 12px;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: rgba(40, 44, 60, .82);
-  font-size: 15px;
-  cursor: pointer;
-  display: inline-flex;
+/* ---- 一体胶囊本体(图标 + 输入同盒) ----
+   常态只显示图标(输入区宽度0, overflow裁掉)。
+   展开态 .nav-search-open: 输入区 width 0→290px, 图标仍居左。
+   收起是同一胶囊: 不占位不遮挡, 不推挤菜单项(绝对定位外层无, 由
+   #menus flex 提供; 胶囊自身宽度会变, 但胶囊在最右, 左侧是空白区)。 */
+#nav .nav-search-bar {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  transition: color .2s ease, background-color .2s ease;
+  gap: 0;
+  height: 38px;
+  padding: 0 10px 0 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: linear-gradient(150deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .14));
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, .55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .6),
+    0 2px 8px rgba(40, 54, 88, .06);
+  /* 收起态: 只容纳图标+padding(约42px) */
+  transition:
+    background-color .2s ease,
+    border-color .2s ease;
 }
-/* 悬浮/激活光晕(HarmonyOS 语言, 同 .menus_item) */
-#nav .nav-search-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  background:
-    radial-gradient(120% 160% at 50% 0%, rgba(255, 255, 255, .66), rgba(255, 255, 255, .10) 55%, transparent 78%),
-    linear-gradient(180deg, rgba(120, 180, 250, .30), rgba(150, 205, 255, .16) 55%, rgba(180, 215, 255, .12));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .50), inset 0 0 14px rgba(140, 195, 255, .18);
-  opacity: 0;
-  transition: opacity .22s ease;
-  pointer-events: none;
+#nav .nav-search-bar:hover {
+  background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
+  border-color: rgba(255, 255, 255, .75);
 }
-#nav .nav-search-btn:hover::before,
-#nav .nav-search-btn.active::before {
-  opacity: 1;
+
+/* 放大镜图标: 常态展示, 展开时作为输入框左侧图标 */
+#nav .nav-search-ico {
+  flex: 0 0 auto;
+  color: rgba(70, 84, 116, .85);
+  font-size: 15px;
+  line-height: 1;
+  transition: color .2s ease;
 }
-#nav .nav-search-btn i {
-  position: relative;
-  z-index: 1;
-}
-#nav .nav-search-btn:hover,
-#nav .nav-search-btn.active {
+#nav .nav-search-open .nav-search-ico,
+#nav .nav-search-bar:hover .nav-search-ico {
   color: var(--theme-color, #49b1f5);
 }
 
-/* ---- 展开输入条(向左展开) ----
-   绝对定位在图标左侧: field 右缘贴按钮左缘; 宽度从 0 展开到 340px。
-   transform-origin:right 仅是语义; 实际 width 动画天然"右固定向左延展"。
-   用 cubic-bezier 缓出微过冲(先快后缓, 不过度)而非 easeOutBack(会回弹)。
-   视觉上平滑"向左滑出"。 */
-#nav .nav-search-field {
-  position: absolute;
-  right: 44px;              /* 按钮(36px)+12px 间隙 ≈ 44px */
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  overflow: hidden;
-  border-radius: 10px;
-  background: linear-gradient(150deg, rgba(255, 255, 255, .30), rgba(255, 255, 255, .12));
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, .55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 6px 18px rgba(40, 54, 88, .10);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  /* 非线性缓动: 展开快→慢(轻微过冲由 easeOutQuart 表达不了, 选标准 ease) */
-  transition:
-    width .42s cubic-bezier(.22, 1.2, .36, 1),
-    opacity .28s ease,
-    visibility .28s;
-}
-#nav.nav-search-open .nav-search-field {
-  width: 340px;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
+/* 输入框: 常态宽0不可见; 展开后滑出 */
 #nav .nav-search-input {
-  width: 340px;              /* 与展开宽度一致, 避免换行 */
+  width: 0;
   height: 34px;
-  padding: 0 34px 0 14px;
+  padding: 0;
   border: 0;
   outline: 0;
   background: transparent;
   color: rgba(40, 44, 60, .92);
   font-size: 13.5px;
   font-family: inherit;
+  opacity: 0;
+  pointer-events: none;
+  cursor: text;
+  /* 非线性滑出: 先慢后快的缓入, 视觉上平滑"从右向左生长" */
+  transition:
+    width .4s cubic-bezier(.3, 1.25, .3, 1),
+    opacity .28s ease .06s,
+    padding .28s ease .06s;
 }
-/* 占位文字颜色(冷雾底上略淡) */
+#nav .nav-search-open .nav-search-input {
+  width: 290px;
+  padding: 0 4px 0 10px;
+  opacity: 1;
+  pointer-events: auto;
+}
 #nav .nav-search-input::placeholder {
-  color: rgba(90, 100, 130, .7);
+  color: rgba(90, 100, 130, .72);
 }
-/* 清除按钮(WebKit)颜色同调 */
 #nav .nav-search-input::-webkit-search-cancel-button {
   -webkit-appearance: none;
-  height: 14px;
-  width: 14px;
-  margin-right: 6px;
-  background: radial-gradient(circle, rgba(120, 140, 180, .65) 30%, transparent 65%);
+  height: 13px;
+  width: 13px;
+  margin-right: 2px;
+  background: radial-gradient(circle, rgba(120, 140, 180, .62) 30%, transparent 65%);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z'/%3E%3C/svg%3E") center/contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 
-/* ---- 结果浮层(nav 正下方, 玻璃冷雾面板) ---- */
+/* ---- 结果浮层(仅检索有内容才出现) ----
+   毛玻璃冷雾面板, 默认隐藏; 展开且输入有效才显示 */
 #nav .nav-search-panel {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
-  width: 380px;
-  max-width: min(88vw, 380px);
+  width: 400px;
+  max-width: min(88vw, 400px);
   border-radius: 16px;
   overflow: hidden;
-  background: linear-gradient(160deg, rgba(250, 252, 255, .78), rgba(230, 236, 248, .72));
+  background: linear-gradient(160deg, rgba(250, 252, 255, .82), rgba(230, 236, 248, .76));
   -webkit-backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
   backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
   border: 1px solid rgba(255, 255, 255, .60);
@@ -144,23 +123,23 @@
   visibility: hidden;
   transform: translateY(-6px) scale(.98);
   transition:
-    opacity .28s ease,
-    transform .34s cubic-bezier(.22, 1, .36, 1),
-    visibility .28s;
+    opacity .26s ease,
+    transform .32s cubic-bezier(.22, 1, .36, 1),
+    visibility .26s;
   text-align: left;
 }
-#nav.nav-search-open .nav-search-panel {
+#nav .nav-search.show-panel .nav-search-panel {
   opacity: 1;
   visibility: visible;
   transform: translateY(0) scale(1);
 }
 
-/* 状态区 */
+/* 状态(loading/无结果/错误) */
 #nav .nav-search-status {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 26px 20px;
+  padding: 22px 18px;
   color: rgba(60, 70, 96, .85);
   font-size: 13px;
   line-height: 1.6;
@@ -173,32 +152,18 @@
   color: rgba(38, 44, 60, .95);
   font-weight: 600;
 }
-
-/* loading 点 */
-#nav .nav-search-loading {
-  color: rgba(90, 110, 150, .8);
-}
+#nav .nav-search-loading { color: rgba(90, 110, 150, .8) }
 #nav .nav-search-loading .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+  width: 6px; height: 6px; border-radius: 50%;
   background: rgba(120, 170, 255, .75);
   animation: nav-search-bounce .9s ease-in-out infinite;
 }
 #nav .nav-search-loading .dot:nth-child(2) { animation-delay: .15s }
 #nav .nav-search-loading .dot:nth-child(3) { animation-delay: .3s }
-#nav .nav-search-loading .ns-text {
-  margin-left: 4px;
-  font-size: 12.5px;
-  color: rgba(90, 110, 150, .8);
-}
+#nav .nav-search-loading .ns-text { margin-left: 4px; font-size: 12.5px; color: rgba(90,110,150,.8) }
 @keyframes nav-search-bounce {
   0%, 100% { transform: translateY(0); opacity: .45 }
   50% { transform: translateY(-4px); opacity: 1 }
-}
-#nav .nav-search-empty,
-#nav .nav-search-error {
-  color: rgba(90, 100, 130, .9);
 }
 
 /* 结果列表 */
@@ -246,9 +211,7 @@
 }
 #nav .nav-search-item .ns-meta time,
 #nav .nav-search-item .ns-meta .ns-cat,
-#nav .nav-search-item .ns-meta .ns-tags {
-  margin-right: 8px;
-}
+#nav .nav-search-item .ns-meta .ns-tags { margin-right: 8px }
 #nav .nav-search-item .ns-excerpt {
   display: block;
   margin-top: 5px;
@@ -260,7 +223,6 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-/* 高亮 */
 #nav .nav-search-item mark,
 #nav .nav-search-status mark {
   background: rgba(120, 180, 255, .30);
@@ -270,68 +232,39 @@
 }
 
 /* ---- dark ---- */
-html[data-theme='dark'] #nav .nav-search-btn {
-  color: rgba(255, 255, 255, .85);
-}
-html[data-theme='dark'] #nav .nav-search-field {
+html[data-theme='dark'] #nav .nav-search-bar {
   background: linear-gradient(150deg, rgba(58, 66, 92, .55), rgba(20, 24, 38, .5));
-  border-color: rgba(255, 255, 255, .16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 6px 18px rgba(0, 0, 0, .35);
+  border-color: rgba(255, 255, 255, .14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10), 0 2px 8px rgba(0, 0, 0, .3);
 }
-html[data-theme='dark'] #nav .nav-search-input {
-  color: rgba(255, 255, 255, .9);
+html[data-theme='dark'] #nav .nav-search-bar:hover {
+  background: linear-gradient(150deg, rgba(70, 80, 108, .6), rgba(28, 34, 50, .56));
+  border-color: rgba(255, 255, 255, .22);
 }
-html[data-theme='dark'] #nav .nav-search-input::placeholder {
-  color: rgba(190, 200, 225, .6);
-}
+html[data-theme='dark'] #nav .nav-search-ico { color: rgba(200, 212, 235, .85) }
+html[data-theme='dark'] #nav .nav-search-input { color: rgba(255, 255, 255, .9) }
+html[data-theme='dark'] #nav .nav-search-input::placeholder { color: rgba(190, 200, 225, .58) }
 html[data-theme='dark'] #nav .nav-search-panel {
-  background: linear-gradient(160deg, rgba(40, 46, 64, .88), rgba(18, 22, 34, .86));
+  background: linear-gradient(160deg, rgba(40, 46, 64, .9), rgba(18, 22, 34, .88));
   border-color: rgba(255, 255, 255, .12);
-  box-shadow:
-    0 24px 56px rgba(0, 0, 0, .6),
-    inset 0 1px 0 rgba(255, 255, 255, .10);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .10);
 }
-html[data-theme='dark'] #nav .nav-search-status {
-  color: rgba(205, 214, 235, .85);
-}
-html[data-theme='dark'] #nav .nav-search-status b {
-  color: rgba(255, 255, 255, .95);
-}
-html[data-theme='dark'] #nav .nav-search-item .ns-title {
-  color: rgba(255, 255, 255, .92);
-}
-html[data-theme='dark'] #nav .nav-search-item .ns-meta {
-  color: rgba(170, 180, 205, .8);
-}
-html[data-theme='dark'] #nav .nav-search-item .ns-excerpt {
-  color: rgba(180, 190, 215, .8);
-}
+html[data-theme='dark'] #nav .nav-search-status { color: rgba(205, 214, 235, .85) }
+html[data-theme='dark'] #nav .nav-search-status b { color: rgba(255, 255, 255, .95) }
+html[data-theme='dark'] #nav .nav-search-item .ns-title { color: rgba(255, 255, 255, .92) }
+html[data-theme='dark'] #nav .nav-search-item .ns-meta { color: rgba(170, 180, 205, .8) }
+html[data-theme='dark'] #nav .nav-search-item .ns-excerpt { color: rgba(180, 190, 215, .8) }
 html[data-theme='dark'] #nav .nav-search-item a:hover {
   background: linear-gradient(150deg, rgba(90, 150, 255, .24), rgba(70, 110, 200, .13));
 }
 
-/* ---- 移动端: 全宽窄导航, 浮层宽度贴近视口; 输入条缩短 ---- */
+/* ---- 移动端 ---- */
 @media (max-width: 768px) {
-  #nav .nav-search {
-    margin-left: 4px;
-  }
-  #nav .nav-search-btn {
-    width: 32px;
-    height: 32px;
-    margin-left: 6px;
-  }
-  #nav .nav-search-field {
-    right: 40px;
-  }
-  #nav.nav-search-open .nav-search-field {
-    width: min(52vw, 200px);
-  }
-  #nav .nav-search-input {
-    width: min(52vw, 200px);
-  }
+  #nav .nav-search-bar { height: 34px; padding: 0 8px 0 10px }
+  #nav .nav-search-open .nav-search-input { width: min(56vw, 210px) }
   #nav .nav-search-panel {
     position: fixed;
-    top: 66px;
+    top: 62px;
     right: 12px;
     width: calc(100vw - 24px);
     max-width: none;
