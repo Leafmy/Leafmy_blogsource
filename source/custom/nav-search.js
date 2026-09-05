@@ -403,6 +403,14 @@
   input.addEventListener('keyup', positionCaret)
   input.addEventListener('click', positionCaret)
   input.addEventListener('select', positionCaret)
+  // 结果浮层: 鼠标跟随边缘光效 —— 更新 --mx/--my(百分比), 让
+  // ::after 的径向光晕位置跟随鼠标, 边缘进入光效范围才发光
+  panel.addEventListener('mousemove', function (e) {
+    var r = panel.getBoundingClientRect()
+    if (!r.width || !r.height) return
+    panel.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(2) + '%')
+    panel.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(2) + '%')
+  })
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return
