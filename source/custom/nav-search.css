@@ -383,11 +383,25 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   scrollbar-width: thin;
   scrollbar-color: rgba(120, 170, 255, .45) rgba(120, 170, 255, .08);
 }
-#nav .nav-search-results::-webkit-scrollbar { width: 6px }
-#nav .nav-search-results::-webkit-scrollbar-track { background: rgba(120, 170, 255, .06); border-radius: 999px }
+/* WebKit/Chromium 滚动条: 窄轨 + 圆角半透明主题色滑块(与下拉面板同款) */
+#nav .nav-search-results::-webkit-scrollbar { width: 7px }
+#nav .nav-search-results::-webkit-scrollbar-track { background: rgba(120, 170, 255, .07); border-radius: 999px }
 #nav .nav-search-results::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(130, 185, 255, .5), rgba(100, 160, 255, .4));
+  background: linear-gradient(180deg, rgba(130, 185, 255, .55), rgba(100, 160, 255, .45));
   border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+#nav .nav-search-results::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(150, 200, 255, .75), rgba(110, 170, 255, .60));
+}
+html[data-theme='dark'] #nav .nav-search-results {
+  scrollbar-color: rgba(110, 175, 255, .5) rgba(110, 175, 255, .06);
+}
+html[data-theme='dark'] #nav .nav-search-results::-webkit-scrollbar-track {
+  background: rgba(110, 175, 255, .06);
+}
+html[data-theme='dark'] #nav .nav-search-results::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(110, 175, 255, .6), rgba(90, 150, 250, .5));
 }
 #nav .nav-search-item a {
   display: block;
