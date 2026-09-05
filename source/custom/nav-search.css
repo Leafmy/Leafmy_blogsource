@@ -26,6 +26,7 @@
    收起是同一胶囊: 不占位不遮挡, 不推挤菜单项(绝对定位外层无, 由
    #menus flex 提供; 胶囊自身宽度会变, 但胶囊在最右, 左侧是空白区)。 */
 #nav .nav-search-bar {
+  position: relative;      /* 供跑马灯 absolute 定位 */
   display: flex;
   align-items: center;
   flex-direction: row;
@@ -54,7 +55,7 @@
 /* 放大镜图标: 固定在胶囊右侧(最右), 展开时不移动 */
 #nav .nav-search-ico {
   flex: 0 0 auto;
-  order: 2;                     /* 放最右 */
+  order: 3;                     /* 放最右 */
   color: rgba(70, 84, 116, .85);
   font-size: 15px;
   line-height: 1;
@@ -95,14 +96,97 @@
 #nav .nav-search-input::placeholder {
   color: rgba(90, 100, 130, .72);
 }
+/* 原生清除按钮已弃用(type=text), 隐藏任何残留 */
 #nav .nav-search-input::-webkit-search-cancel-button {
   -webkit-appearance: none;
-  height: 13px;
-  width: 13px;
-  margin-right: 2px;
-  background: radial-gradient(circle, rgba(120, 140, 180, .62) 30%, transparent 65%);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z'/%3E%3C/svg%3E") center/contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7l-1.4-1.4L9.2 12 2.9 5.7l1.4-1.4 6.3 6.3 6.3-6.3z'/%3E%3C/svg%3E") center/contain no-repeat;
+  appearance: none;
+  display: none;
+}
+#nav .nav-search-input::-ms-clear {
+  display: none;
+}
+
+/* ---- 跑马灯: 覆盖输入框内容区, 颜色取大背景主色 ----
+   未输入时循环滚动一段提示文字; 输入后隐藏。
+   "颜色选取大背景的颜色": light 主色 = 液态玻璃冷雾蓝灰梯度;
+   dark 主色 = 深色磨砂蓝黑梯度。用背景渐变而非纯色, 与页面氛围一致。 */
+#nav .nav-search-marquee {
+  position: absolute;
+  left: 14px;
+  right: 48px;             /* 给清除按钮/图标留位 */
+  height: 100%;
+  display: none;           /* 仅展开态显示, 常态(只剩图标)不出现 */
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;    /* 不拦截输入框点击 */
+  white-space: nowrap;
+  /* light: 取 .bg-liquid 基础色线性渐变(冷雾蓝) */
+  background-image: linear-gradient(90deg,
+    rgba(120, 140, 180, .90) 0%,
+    rgba(150, 168, 205, .90) 30%,
+    rgba(110, 132, 176, .90) 55%,
+    rgba(160, 178, 212, .90) 80%,
+    rgba(120, 140, 180, .90) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  will-change: transform;
+}
+#nav .nav-search-open .nav-search-marquee {
+  display: flex;
+}
+#nav .nav-search-marquee span {
+  display: inline-block;
+  padding-right: 60%;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  opacity: .9;
+  animation: nav-search-marquee 16s linear infinite;
+}
+#nav .nav-search-marquee.hidden {
+  display: none;           /* 有输入时覆盖展开态, 隐藏跑马灯 */
+}
+/* 跑马灯循环滚动 */
+@keyframes nav-search-marquee {
+  0%   { transform: translateX(0) }
+  100% { transform: translateX(-100%) }
+}
+
+/* ---- 清除按钮: 真实可点击, 有输入才显示 ---- */
+#nav .nav-search-clear {
+  flex: 0 0 auto;
+  order: 2;                /* 输入框之后、图标之前 */
+  width: 22px;
+  height: 22px;
+  margin: 0 2px 0 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: rgba(90, 104, 140, .80);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .18s ease, background-color .18s ease, transform .15s ease;
+}
+#nav .nav-search-clear.show {
+  display: flex;
+}
+#nav .nav-search-clear:hover {
+  color: var(--theme-color, #49b1f5);
+  background: rgba(120, 170, 255, .16);
+  transform: scale(1.08);
+}
+
+/* ---- dark 跑马灯: 取深色磨砂玻璃主色 ---- */
+html[data-theme='dark'] #nav .nav-search-marquee {
+  background-image: linear-gradient(90deg,
+    rgba(120, 150, 230, .82) 0%,
+    rgba(170, 120, 245, .82) 30%,
+    rgba(60, 200, 180, .82) 55%,
+    rgba(245, 145, 82, .78) 80%,
+    rgba(120, 150, 230, .82) 100%);
 }
 
 /* ---- 结果浮层(仅检索有内容才出现) ----

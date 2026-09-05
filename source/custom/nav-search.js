@@ -27,6 +27,9 @@
   var searchTimer = null
   var lastQuery = ''
   var showTimer = null
+  var clearBtn = null
+  var marqueeEl = null
+  var marqueeInnerEl = null
 
   // ---------- DOM: 一体胶囊 ----------
   var wrap = document.createElement('div')
@@ -40,16 +43,37 @@
   // 图标固定在胶囊右侧(最右)，输入框在其左侧展开 —— 展开时图标不移动
   var input = document.createElement('input')
   input.className = 'nav-search-input'
-  input.type = 'search'
-  input.placeholder = '搜索文章、标签…'
+  input.type = 'text'                 // 弃用 type=search 的原生清除按钮(伪元素不可点击)
+  input.placeholder = ' '             // 占位符由跑马灯承担, 置空字符
   input.setAttribute('autocomplete', 'off')
   input.setAttribute('spellcheck', 'false')
   bar.appendChild(input)
+
+  // 跑马灯: 覆盖在输入框内容区, 未输入/未聚焦时循环滚动, 颜色取大背景主色
+  var marquee = document.createElement('div')
+  marquee.className = 'nav-search-marquee'
+  marquee.setAttribute('aria-hidden', 'true')
+  var marqueeInner = document.createElement('span')
+  marqueeInner.textContent = '搜索文章、标签、分类 · 输入关键字即可匹配 · 支持标题 / 标签 / 摘要命中'
+  marquee.appendChild(marqueeInner)
+  bar.appendChild(marquee)
+
+  // 真实可点击的清除按钮(仅当有输入时显示)
+  var clear = document.createElement('i')
+  clear.className = 'fas fa-times nav-search-clear'
+  clear.title = '清空'
+  clear.setAttribute('role', 'button')
+  clear.setAttribute('aria-label', '清空搜索')
+  bar.appendChild(clear)
 
   var ico = document.createElement('i')
   ico.className = 'fas fa-search nav-search-ico'
   bar.appendChild(ico)
   wrap.appendChild(bar)
+
+  clearBtn = bar.querySelector('.nav-search-clear')
+  marqueeEl = bar.querySelector('.nav-search-marquee')
+  marqueeInnerEl = marqueeEl.querySelector('span')
 
   var panel = document.createElement('div')
   panel.className = 'nav-search-panel'
@@ -112,6 +136,15 @@
     wrap.classList.add('show-panel')
   }
 
+  // 同步输入区状态控件: 有输入→隐藏跑马灯、显示清除按钮; 空→反之
+  function updateControls(query) {
+    var has = !!query
+    // 跑马灯: 无输入时可见(循环滚动), 有输入/聚焦时隐藏
+    marqueeEl.classList.toggle('hidden', has)
+    // 清除按钮: 有输入时显示
+    clearBtn.classList.toggle('show', has)
+  }
+
   // ---------- 匹配 ----------
   function matchScore(item, q) {
     var t = (item.t || '').toLowerCase()
@@ -146,6 +179,9 @@
 
   function runSearch(raw) {
     var query = (raw || '').trim()
+
+    // 同步输入区状态控件: 有内容→隐藏跑马灯+显示清除按钮; 空→显示跑马灯+隐藏清除
+    updateControls(query)
 
     // 空/仅空白：不检索、清面板(不下拉任何提示)
     if (!query) {
@@ -208,6 +244,8 @@
   function openBox(doFocus) {
     isOpen = true
     wrap.classList.add('nav-search-open')
+    // 打开时若上次有残留值, 同步控件状态
+    updateControls(input.value.trim())
     if (doFocus !== false) {
       clearTimeout(showTimer)
       showTimer = setTimeout(function () { input.focus() }, 280)
@@ -223,12 +261,26 @@
     input.blur()
   }
 
+  // 清除按钮: 点它清空输入并复位状态
+  clearBtn.addEventListener('click', function (e) {
+    e.preventDefault()
+    e.stopPropagation()
+    input.value = ''
+    lastQuery = ''
+    runSearch('')
+    input.focus()
+  })
+
   // 点击胶囊: 已开则收起, 未开则展开并聚焦; 点输入框本身不收起
   bar.addEventListener('click', function (e) {
     e.preventDefault()
+    var t = e.target
+    // 点击清除按钮(有独立 listener, 此处兜底)或跑马灯 → 不收起
+    if (t === clearBtn) return
+    if (t === marqueeInnerEl || t === marqueeEl) { input.focus(); return }
     if (isOpen) {
       // 点的是输入框(想放光标) → 不收起; 点图标/胶囊空白 → 收起
-      if (e.target === input) { input.focus(); return }
+      if (t === input) { input.focus(); return }
       closeBox()
     } else {
       openBox()
