@@ -129,7 +129,7 @@
 
   // 菜单 href → 下拉配置
   var config = [
-    { href: '/', label: '最新文章', selector: '.recent-post-items a.article-title' },
+    { href: '/', label: '文章', selector: '.recent-post-items a.article-title' },
     { href: '/archives/', label: '归档', selector: '.article-sort-item-title' }
   ]
 
