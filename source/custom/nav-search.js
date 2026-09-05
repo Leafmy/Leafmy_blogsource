@@ -152,10 +152,19 @@
     clearBtn.classList.toggle('show', has)
   }
 
-  // ---------- 自定义光标定位 ----------
-  // 用 canvas.measureText 量出"光标前文字"宽度, 与输入框字体一致,
-  // 把 .nav-search-caret 精确放到文字之后(无需 DOM 镜像节点)。
+  // ---------- 自定义光标定位(弹簧弹性动画) ----------
+  // 用 canvas.measureText 量出"光标前文字"宽度, 与输入框字体一致。
+  // 光标移动不走线性跳变, 而用弹簧物理(刚度 + 阻尼)做非线性弹性滑动:
+  // 位移→加速度→速度→位移 闭环, 天然带过冲回弹、非匀速轨迹。
   var measureCtx = null
+  var caretX = null          // 光标当前 X(相对 bar)
+  var caretV = 0             // 速度
+  var caretTargetX = null    // 目标 X
+  var caretRaf = null
+  var caretLastTs = 0
+  var SPRING_STIFFNESS = 230 // 弹簧刚度(越高响应越快)
+  var SPRING_DAMPING = 20    // 阻尼(相对刚度越低, 过冲回弹越明显)
+
   function getMeasureCtx() {
     if (!measureCtx) {
       measureCtx = document.createElement('canvas').getContext('2d')
@@ -163,17 +172,66 @@
     }
     return measureCtx
   }
-  function positionCaret() {
-    if (!isOpen || document.activeElement !== input) {
-      caret.classList.remove('on')
-      return
-    }
-    caret.classList.add('on')
+  function caretTargetLeft() {
     var pos = (typeof input.selectionStart === 'number') ? input.selectionStart : input.value.length
     var text = input.value.slice(0, pos)
     var w = text ? getMeasureCtx().measureText(text).width : 0
     var padL = parseFloat(window.getComputedStyle(input).paddingLeft) || 0
-    caret.style.left = (input.offsetLeft + padL + w) + 'px'
+    return input.offsetLeft + padL + w
+  }
+  function caretSpringTick(ts) {
+    var dt = ts ? (ts - caretLastTs) / 1000 : (1 / 60)
+    caretLastTs = ts || 0
+    if (!(dt > 0) || dt > 0.1) dt = 1 / 60   // 限幅, 避免跳帧/暂停导致大步长
+    // 子步进: 每步 ≤ 1/240s, 保证半隐式欧拉数值稳定(低帧率下 dt 过大
+    // 会让高刚度弹簧发散, 轨迹爆炸)。步数上限 24 防极端 dt。
+    var steps = Math.max(1, Math.min(24, Math.ceil(dt * 240)))
+    var h = dt / steps
+    for (var i = 0; i < steps; i++) {
+      var dx = caretTargetX - caretX
+      // 弹簧物理: 加速度 = 刚度 * 位移 - 阻尼 * 速度
+      caretV += (SPRING_STIFFNESS * dx - SPRING_DAMPING * caretV) * h
+      caretX += caretV * h
+    }
+    caret.style.left = caretX + 'px'
+    // 收敛: 位移与速度都足够小 → 吸附到位, 停止动画
+    if (Math.abs(caretTargetX - caretX) < 0.25 && Math.abs(caretV) < 0.4) {
+      caretX = caretTargetX
+      caretV = 0
+      caret.style.left = caretTargetX + 'px'
+      caretRaf = null
+      return
+    }
+    caretRaf = requestAnimationFrame(caretSpringTick)
+  }
+  function setCaretAt(target) {
+    // 即时定位(无动画): 首次出现 / 重新打开恢复残留值时用
+    caretX = target
+    caretTargetX = target
+    caretV = 0
+    if (caretRaf) { cancelAnimationFrame(caretRaf); caretRaf = null }
+    caret.style.left = target + 'px'
+  }
+  function positionCaret() {
+    if (!isOpen || document.activeElement !== input) {
+      caret.classList.remove('on')
+      caretV = 0
+      if (caretRaf) { cancelAnimationFrame(caretRaf); caretRaf = null }
+      caretX = null          // 重置: 下次重新聚焦时直接到位(不做滑动)
+      return
+    }
+    caret.classList.add('on')
+    var target = caretTargetLeft()
+    // 首次出现: 直接到位, 不播放动画
+    if (caretX === null) {
+      setCaretAt(target)
+      return
+    }
+    caretTargetX = target
+    if (caretRaf === null) {
+      caretLastTs = 0
+      caretRaf = requestAnimationFrame(caretSpringTick)
+    }
   }
 
   // ---------- 匹配 ----------
@@ -284,7 +342,11 @@
         // 有残留值时把光标放到末尾, 并同步自定义光标位置
         var len = input.value.length
         if (len && input.setSelectionRange) input.setSelectionRange(len, len)
-        positionCaret()
+        // 重新打开恢复残留值: 直接到位, 不播放滑动动画
+        if (isOpen && document.activeElement === input) {
+          caret.classList.add('on')
+          setCaretAt(caretTargetLeft())
+        }
       }, 430) // 对齐输入框展开动画(width .4s), 让自定义光标在展开完成后才出现
     }
     // 静默预取索引(不显示 loading, 输入时才用)

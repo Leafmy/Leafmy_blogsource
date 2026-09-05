@@ -304,7 +304,11 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   -webkit-backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
   backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
   border: 1px solid rgba(255, 255, 255, .60);
+  /* 光效氛围 + 边框发光: 蓝色描边光晕 + 蓝紫多层光晕, 与检索栏彩色流光呼应 */
   box-shadow:
+    0 0 0 1px rgba(110, 150, 235, .28),
+    0 0 22px rgba(90, 150, 255, .30),
+    0 0 52px rgba(124, 58, 237, .18),
     0 24px 56px rgba(40, 54, 88, .24),
     0 6px 16px rgba(40, 54, 88, .10),
     inset 0 1px 0 rgba(255, 255, 255, .8);
@@ -377,10 +381,12 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   padding: 10px 12px;
   border-radius: 10px;
   text-decoration: none;
-  transition: background-color .18s ease;
+  transition: background-color .18s ease, box-shadow .18s ease;
 }
 #nav .nav-search-item a:hover {
   background: linear-gradient(150deg, rgba(120, 180, 250, .20), rgba(160, 210, 255, .13));
+  /* 悬停态描边发光: 与面板边框发光同色系, 光影层次递进 */
+  box-shadow: inset 0 0 0 1px rgba(120, 160, 235, .22);
 }
 #nav .nav-search-item .ns-title {
   display: block;
@@ -439,7 +445,12 @@ html[data-theme='dark'] #nav .nav-search-input::placeholder { color: rgba(190, 2
 html[data-theme='dark'] #nav .nav-search-panel {
   background: linear-gradient(160deg, rgba(40, 46, 64, .9), rgba(18, 22, 34, .88));
   border-color: rgba(255, 255, 255, .12);
-  box-shadow: 0 24px 56px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .10);
+  box-shadow:
+    0 0 0 1px rgba(130, 170, 255, .22),
+    0 0 22px rgba(120, 160, 255, .20),
+    0 0 52px rgba(140, 120, 255, .14),
+    0 24px 56px rgba(0, 0, 0, .6),
+    inset 0 1px 0 rgba(255, 255, 255, .10);
 }
 html[data-theme='dark'] #nav .nav-search-status { color: rgba(205, 214, 235, .85) }
 html[data-theme='dark'] #nav .nav-search-status b { color: rgba(255, 255, 255, .95) }
@@ -448,6 +459,7 @@ html[data-theme='dark'] #nav .nav-search-item .ns-meta { color: rgba(170, 180, 2
 html[data-theme='dark'] #nav .nav-search-item .ns-excerpt { color: rgba(180, 190, 215, .8) }
 html[data-theme='dark'] #nav .nav-search-item a:hover {
   background: linear-gradient(150deg, rgba(90, 150, 255, .24), rgba(70, 110, 200, .13));
+  box-shadow: inset 0 0 0 1px rgba(120, 170, 255, .20);
 }
 
 /* ---- 移动端 ---- */
