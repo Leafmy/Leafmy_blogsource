@@ -146,6 +146,12 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   opacity: 0;
   pointer-events: none;
   cursor: text;
+  /* [美化] 检索输入框闪烁光标:
+     - caret-color 跟随主题色, 与玻璃冷雾蓝协调(不再用生硬的黑/深蓝)
+     - caret-shape: block 现代块状光标(Notion 风格), 软化闪烁条的
+       "机械感"; 不支持时降级为细 bar, 仍带主题色 */
+  caret-color: var(--theme-color, #49b1f5);
+  caret-shape: block;
   /* 非线性滑出: 先慢后快的缓入, 视觉上平滑"从右向左生长" */
   transition:
     width .4s cubic-bezier(.3, 1.25, .3, 1),
