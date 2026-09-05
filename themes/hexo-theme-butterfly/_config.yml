@@ -1079,6 +1079,7 @@ inject:
     - <link rel="stylesheet" href="/custom/footer-reveal.css">
     - <link rel="stylesheet" href="/custom/announce-hover.css">
     - <link rel="stylesheet" href="/custom/visit-card.css">
+    - <link rel="stylesheet" href="/custom/light-text-contrast.css">
   bottom:
     # - <script src="xxxx"></script>
     - <script src="/custom/nav-apple.js"></script>

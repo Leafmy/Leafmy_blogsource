@@ -1,0 +1,123 @@
+/* ============================================================
+   Light 模式灰字提对比（v1）
+   用户反馈：白色模式下文字若是灰色，可读性太差。
+   根因：v6 把 light 大背景从浅天蓝改为冷雾灰蓝(#b8c4d8/#95a5c2)，
+   原来在浅亮底上的那批中浅灰字(meta/计数/分类/引用/侧栏小字/链接)
+   在冷雾底上对比度严重不足(WCAG 普遍 <4.5:1)。本文件把这些灰字
+   整体加深到深中灰/深蓝灰，并加强主题链接色，dark 模式全部不动
+   (dark 底色本来就深，原色对比度足够)。
+   ============================================================ */
+
+/* ---- 1. 站点内通用"次要正文/mid-grey"提对比 ----
+   覆盖: 正文段落、文章列表 meta、侧栏 widget 文字、blockquote 引用
+   把 rgb(76,73,72) / rgb(106,115,125) / rgb(102,98,97) 全部统一到深色
+   (原来浅底设计，对比度是 0.4 上下的中灰；冷雾底上变成 0.55 → 看不清) */
+html[data-theme='light'] {
+  --text-secondary: #2a3344;   /* 替换中浅灰，深到 WCAG AA */
+  --text-meta: #3c4658;         /* meta/count 计数 */
+  --text-muted: #4a5468;        /* 侧栏描述/quote 引用 */
+  --link-color: #2a55a6;        /* 主题蓝加深，覆盖 #49b1f5 在冷雾底上的淡感 */
+  --link-hover: #1d3f80;
+}
+
+/* 正文 / post-content 文字统一加深（保留 h1-h4 标题的深色，仅提非标题文字） */
+html[data-theme='light'] .post-content p,
+html[data-theme='light'] .post-content li,
+html[data-theme='light'] .post-content blockquote,
+html[data-theme='light'] .post-content table td,
+html[data-theme='light'] .post-content .note,
+html[data-theme='light'] .post-content .tabs,
+html[data-theme='light'] .post-content details {
+  color: var(--text-secondary);
+}
+
+/* 引用块（之前是 rgb 106,115,125 中灰）—— 冷雾底上必须加深 */
+html[data-theme='light'] .post-content blockquote {
+  color: var(--text-muted);
+  border-left-color: rgba(73, 177, 245, .55);
+}
+
+/* 首页/归档/标签 列表 meta (published, tags, categories 计数) */
+html[data-theme='light'] .post-meta,
+html[data-theme='light'] .post-meta a,
+html[data-theme='light'] .article-meta__categories,
+html[data-theme='light'] .article-meta__tags,
+html[data-theme='light'] .article-sort-item-time,
+html[data-theme='light'] .recent-post-info time,
+html[data-theme='light'] .card-recent-info .post-meta,
+html[data-theme='light'] .recent-post-info .post-meta,
+html[data-theme='light'] .recent-post-info .article-meta,
+html[data-theme='light'] #post-meta,
+html[data-theme='light'] #post-meta a,
+html[data-theme='light'] .post-meta-categories,
+html[data-theme='light'] .post-meta-tags {
+  color: var(--text-meta) !important;
+}
+
+/* 侧栏 widget：item-headline 标题/数字/侧栏文字 —— 之前 rgb 153,169,191 极淡 */
+html[data-theme='light'] .card-widget,
+html[data-theme='light'] .card-widget .item-headline,
+html[data-theme='light'] .card-widget .card-archives,
+html[data-theme='light'] .card-widget .card-tags,
+html[data-theme='light'] .card-widget .card-category,
+html[data-theme='light'] .card-widget .card-webinfo,
+html[data-theme='light'] .card-info .author-info-name,
+html[data-theme='light'] .card-info .author-info-description,
+html[data-theme='light'] .card-announcement .announcement_content,
+html[data-theme='light'] .card-announcement .announcement_content p,
+html[data-theme='light'] .site-data,
+html[data-theme='light'] .site-data .headline,
+html[data-theme='light'] .site-data .length-num,
+html[data-theme='light'] .card-recent-post .card-archive-list-item-time,
+html[data-theme='light'] .card-archives li a,
+html[data-theme='light'] .card-tags li a,
+html[data-theme='light'] .card-categories li a {
+  color: var(--text-secondary) !important;
+}
+
+/* 链接：加深主题蓝，覆盖 #49b1f5 在冷雾底上偏淡 */
+html[data-theme='light'] a {
+  color: var(--link-color);
+}
+html[data-theme='light'] a:hover {
+  color: var(--link-hover);
+}
+
+/* 文章页标题/正文代码块 meta 行 */
+html[data-theme='light'] #post-info .post-meta,
+html[data-theme='light'] #post-info .post-meta span,
+html[data-theme='light'] #post-info .post-meta a {
+  color: var(--text-meta) !important;
+}
+
+/* 标签 chip / 分类 chip */
+html[data-theme='light'] .post-meta__tags,
+html[data-theme='light'] .tagcloud a,
+html[data-theme='light'] .tag-cloud-tags a {
+  color: var(--text-meta);
+}
+
+/* 目录 toc 链接(之前 rgb 102,98,97 偏暖灰) */
+html[data-theme='light'] #card-toc .toc-content a,
+html[data-theme='light'] #card-toc .toc-link,
+html[data-theme='light'] .toc-content a {
+  color: var(--text-muted) !important;
+}
+html[data-theme='light'] #card-toc .toc-content a:hover,
+html[data-theme='light'] .toc-content a:hover {
+  color: var(--link-color) !important;
+}
+html[data-theme='light'] #card-toc .toc-link.active {
+  color: var(--link-color) !important;
+  border-left-color: var(--link-color) !important;
+}
+
+/* 复制按钮 / 分享等次要图标 */
+html[data-theme='light'] .post-copyright,
+html[data-theme='light'] .post-copyright a,
+html[data-theme='light'] .post-copyright-meta,
+html[data-theme='light'] .social-share,
+html[data-theme='light'] .post-reward,
+html[data-theme='light'] .post-reward a {
+  color: var(--text-meta);
+}
