@@ -23,20 +23,20 @@
   document.body.appendChild(nav);
 
   // ---- 指针周围局部光斑（跟随鼠标） ----
-  // 光斑做成独立合成层(.nav-glow-spot) + transform 平移，位置由 --gx/--gy 控制。
-  // 点亮范围：不止"悬停在导航栏上"才亮——鼠标移动到光斑可影响导航栏的
-  // 椭圆范围(渐变半径 ~96x76px)内，导航栏就开始泛光（苹果官网式"接近即泛光"）。
-  // 关键技巧：光斑中心取"鼠标到导航栏矩形的最近投影点"(clamp)。
+  // 光斑做成独立合成层(.nav-glow-spot) + 边缘环(.nav-edge>.nav-edge-light)，
+  // 位置全部由 JS【直写 style.transform】控制（不再用 CSS 变量，避免每帧
+  // 变量传播/样式重算/背景重绘造成的拖影与跳动）。
+  // 点亮范围：鼠标移动到光斑可影响导航栏的椭圆范围(96x76px)内即泛光，
+  // 且亮度随距离渐变(--越近越亮)，苹果官网式"接近即泛光"。
+  // 关键技巧：光心取"鼠标到导航栏矩形的最近投影点"(clamp)。
   //   - 鼠标在导航栏内 → 投影点=鼠标本身，光斑跟手(与原行为一致)；
   //   - 鼠标在导航栏外但靠近 → 投影点落在最近的边上，强光中心压在该边上，
-  //     导航栏边缘明显被照亮且随鼠标滑动；越近越亮(--glow-a 随距离渐变)。
-  //   否则若光斑中心锁真实鼠标，鼠标在外围时导航栏只截到光斑几乎透明的
-  //   远缘，看起来"根本没亮"。
+  //     导航栏边缘明显被照亮且随鼠标滑动。
   // 性能：
   //   1) nav 是 fixed 定位，rect 几乎不变 → 缓存，仅 resize 时重测，
   //      避免每次 mousemove 都 getBoundingClientRect() 强制同步布局(reflow)。
   //   2) mousemove 事件频率远高于屏幕刷新率 → rAF 节流：一帧最多写一次
-  //      CSS 变量；且仅在"已进入点亮范围"时才调度写入，范围外不写。
+  //      transform；且仅在"已进入点亮范围"时才调度写入，范围外不写。
   ;(function initGlow() {
     var rect = null
     var lastX = 0, lastY = 0 // 最近一次指针(视口坐标)，帧回调时使用
@@ -56,6 +56,14 @@
     var spot = document.createElement('div')
     spot.className = 'nav-glow-spot'
     clip.appendChild(spot)
+    // 边缘高亮环同款合成层：固定 mask 抠环 + 内嵌大渐变层(transform 直写平移)。
+    // 绝不能再用 CSS 变量移动 ::before 的渐变中心(每帧变量传播+重绘=拖影/跳动)。
+    var edge = document.createElement('div')
+    edge.className = 'nav-edge'
+    var edgeLight = document.createElement('div')
+    edgeLight.className = 'nav-edge-light'
+    edge.appendChild(edgeLight)
+    clip.appendChild(edge)
     nav.appendChild(clip)
 
     function measure() { rect = nav.getBoundingClientRect() }
@@ -64,13 +72,13 @@
 
     function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v) }
 
-    // 把亮度写到光斑 opacity 与边缘环 --glow-a（带 lastA 去重）
+    // 把亮度写到光斑与边缘环 opacity（带 lastA 去重，全部直写 style）
     function setAlpha(a) {
       a = Math.max(0, Math.min(1, a))
       a = +a.toFixed(3)
       if (a === lastA) return
       spot.style.opacity = String(a)
-      nav.style.setProperty('--glow-a', String(a))
+      edge.style.opacity = String(a)
       lastA = a
     }
     // 计算某点的"目标亮度"：越近越亮(椭圆归一化距离的补数)
@@ -87,7 +95,8 @@
     function inGlowRange(x, y) {
       return targetAlphaAt(x, y) > 0
     }
-    // 写光斑位置(transform) + 边缘环渐变中心(--gx/--gy)；用最近投影点 clamp
+    // 写光斑位置(transform) + 边缘环光心(transform)；用最近投影点 clamp。
+    // 全部直写 style，不经 CSS 变量 → 无每帧变量传播/样式重算，只走合成器。
     function writePos() {
       if (!rect) return
       var cx = clamp(lastX, rect.left, rect.right)
@@ -95,8 +104,8 @@
       var px = cx - rect.left
       var py = cy - rect.top
       spot.style.transform = 'translate3d(' + (px - 96).toFixed(2) + 'px,' + (py - 76).toFixed(2) + 'px,0)'
-      nav.style.setProperty('--gx', px.toFixed(2) + 'px')
-      nav.style.setProperty('--gy', py.toFixed(2) + 'px')
+      // 边缘环光心：edgeLight 中心(800,200) 平移到 (px,py)
+      edgeLight.style.transform = 'translate3d(' + (px - 800).toFixed(2) + 'px,' + (py - 200).toFixed(2) + 'px,0)'
     }
     // 常态跟手：一次 rAF 内位置+亮度直写目标值（无滞后，合成器动画）
     function writeGlow() {
@@ -232,6 +241,11 @@
     var drop = document.createElement('div')
     drop.className = 'nav-drop'
 
+    // 面板内指针光斑（同款光效语言）：transform 直写，跟随面板内指针
+    var dropGlow = document.createElement('div')
+    dropGlow.className = 'nav-drop-glow'
+    drop.appendChild(dropGlow)
+
     var head = document.createElement('div')
     head.className = 'nav-drop-head'
     head.textContent = label
@@ -256,6 +270,25 @@
     }
     drop.appendChild(list)
     item.appendChild(drop)
+    // fetch 是异步的：面板可能在鼠标静止(悬停按钮)后才构建完，
+    // 此时没有新的 mousemove tick 来定位 glow → 立即用最近坐标初始化一次
+    if (item.classList.contains('open')) updateDropGlow(dropX, dropY)
+  }
+
+  // 更新已打开下拉面板内的指针光斑：光心 = 指针 clamp 到面板矩形内，
+  // 用 transform 直写(合成层)，鼠标在面板上时毛玻璃泛起与导航一致的辉光。
+  function updateDropGlow(x, y) {
+    menus.forEach(function (item) {
+      if (!item.classList.contains('open')) return
+      var glow = item.querySelector('.nav-drop .nav-drop-glow')
+      if (!glow) return
+      var r = glow.parentNode.getBoundingClientRect()
+      if (!r.width || !r.height) return
+      var gx = (x < r.left ? r.left : (x > r.right ? r.right : x)) - r.left
+      var gy = (y < r.top ? r.top : (y > r.bottom ? r.bottom : y)) - r.top
+      // glow 260x180，中心(130,90)平移到指针
+      glow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
+    })
   }
 
   // 菜单 href → 下拉配置
@@ -386,18 +419,21 @@
     var x = dropX, y = dropY
     // 1) 鼠标在某按钮文字区上 → 打开它（setOpen 内部互斥关闭其它面板）。
     var linkHit = linkHitItem(x, y)
-    if (linkHit) { setOpen(linkHit, true); return }
-
-    // 2) 不在任何按钮文字区 → 只对已 open 的项做"保持/关闭"，绝不新开别的面板：
-    //    鼠标仍在该项的面板/连接带内 → 保持；否则延时关闭。
-    //    这样鼠标在「最新文章」面板里横向移动，即使进入两面板重叠区，
-    //    只要不真正碰到「归档」按钮文字区，就不会提前打开归档。
-    menus.forEach(function (item) {
-      if (!item.querySelector('.nav-drop')) return
-      if (!item.classList.contains('open')) return
-      if (isInKeepZone(item, x, y)) cancelClose(item)
-      else scheduleClose(item)
-    })
+    if (linkHit) setOpen(linkHit, true)
+    else {
+      // 2) 不在任何按钮文字区 → 只对已 open 的项做"保持/关闭"，绝不新开别的面板：
+      //    鼠标仍在该项的面板/连接带内 → 保持；否则延时关闭。
+      //    这样鼠标在「最新文章」面板里横向移动，即使进入两面板重叠区，
+      //    只要不真正碰到「归档」按钮文字区，就不会提前打开归档。
+      menus.forEach(function (item) {
+        if (!item.querySelector('.nav-drop')) return
+        if (!item.classList.contains('open')) return
+        if (isInKeepZone(item, x, y)) cancelClose(item)
+        else scheduleClose(item)
+      })
+    }
+    // 3) 已打开面板内的指针光斑跟随（每次 tick 更新；无 open 面板则跳过）
+    updateDropGlow(x, y)
   }
   document.addEventListener('mousemove', function (e) {
     dropX = e.clientX

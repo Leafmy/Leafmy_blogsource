@@ -77,40 +77,47 @@
   will-change: transform;
   opacity: 0;
 }
-/* ---- 光斑点亮时导航栏边缘高亮（跟随指针方向） ----
+/* ---- 光斑点亮时导航栏边缘高亮（跟随指针方向）----
    在光斑引发的同时, 胶囊边缘也泛起一圈描边高亮, 且最亮处跟随指针:
    指针靠近哪条边, 哪条边的边缘就亮。
-   做法: #nav::before 铺一条比光斑更大、更宽的径向光带(中心同 --gx/--gy),
-   再用 mask 抠出"紧贴边缘一圈"的环(content-box + mask-composite:exclude),
-   指针靠边时该处环带被高亮。复用 --gx/--gy, 无需 JS 额外算角度。 */
-#nav::before {
-  content: '';
+   结构：.nav-edge(固定 mask 抠 1.5px 环, 不随指针重绘) 内嵌
+   .nav-edge-light(大尺寸径向渐变层, JS 用 transform 直写平移光心)。
+   关键：light 的 transform 只走合成器，绝不在 ::before/背景上改
+   渐变中心(CSS 变量 → 每帧 paint)，消除快速移动的拖影/跳动。 */
+#nav .nav-edge {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(
-    340px 120px at var(--gx, 50%) var(--gy, 50%),
-    rgba(140, 195, 255, .55),
-    rgba(150, 205, 255, .22) 45%,
-    rgba(160, 210, 255, .08) 70%,
-    transparent 90%
-  );
-  /* 只保留紧贴边缘的一圈高亮(1.5px 环), 内部挖空 */
+  pointer-events: none;
+  /* 只保留紧贴边缘的一圈(1.5px 环), 内部挖空；mask 固定，不随指针变化 */
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   padding: 1.5px;
-  /* 亮度由 JS 每帧写 --glow-a(0~1)，无 transition 避免拖尾滞后 */
-  opacity: var(--glow-a, 0);
-  pointer-events: none;
-  z-index: 0;
+  opacity: 0; /* JS 直写(与光斑同步) */
+  overflow: hidden;
+}
+#nav .nav-edge-light {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 400px;
+  background: radial-gradient(
+    340px 120px at 50% 50%,
+    rgba(140, 195, 255, .55),
+    rgba(150, 205, 255, .22) 45%,
+    rgba(160, 210, 255, .08) 70%,
+    transparent 90%
+  );
+  /* JS 直写 transform 使渐变光心落在指针(clamp)处；初始移到不可见位 */
+  transform: translate3d(-800px, -200px, 0);
+  will-change: transform;
 }
 /* 悬停兜底（纯 CSS，JS 未启用时鼠标进入导航栏仍会点亮） */
-#nav:hover .nav-glow-spot {
-  opacity: 1;
-}
-#nav:hover::before {
+#nav:hover .nav-glow-spot,
+#nav:hover .nav-edge {
   opacity: 1;
 }
 /* 文字与内容浮在光斑之上 */
@@ -137,9 +144,9 @@ html[data-theme='dark'] #nav .nav-glow-spot {
     transparent 100%
   );
 }
-html[data-theme='dark'] #nav::before {
+html[data-theme='dark'] #nav .nav-edge-light {
   background: radial-gradient(
-    340px 120px at var(--gx, 50%) var(--gy, 50%),
+    340px 120px at 50% 50%,
     rgba(120, 180, 255, .60),
     rgba(90, 150, 250, .25) 45%,
     rgba(70, 120, 230, .08) 70%,
@@ -364,6 +371,45 @@ html[data-theme='dark'] #nav #toggle-menu i {
   right: 0;
   top: -12px;
   height: 12px;
+}
+/* ---- 面板内指针光斑（与导航栏同款光效语言）----
+   面板由 JS 构建时注入 .nav-drop-glow（固定渐变层, transform 直写平移），
+   鼠标在面板上移动时, 光心跟随, 毛玻璃上泛起与导航栏一致的柔和辉光。
+   glow 为面板第一个子元素、z-index:0；head/list 浮在其上。 */
+#nav .nav-drop-glow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 260px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(
+    130px 90px at 50% 50%,
+    rgba(140, 195, 255, .26),
+    rgba(150, 205, 255, .16) 30%,
+    rgba(160, 210, 255, .08) 55%,
+    transparent 80%
+  );
+  transform: translate3d(-130px, -90px, 0);
+  will-change: transform;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .9;
+}
+html[data-theme='dark'] #nav .nav-drop-glow {
+  background: radial-gradient(
+    130px 90px at 50% 50%,
+    rgba(110, 170, 255, .30),
+    rgba(90, 150, 250, .18) 30%,
+    rgba(70, 120, 230, .09) 55%,
+    transparent 80%
+  );
+}
+#nav .nav-drop-head,
+#nav .nav-drop-list,
+#nav .nav-drop-empty {
+  position: relative;
+  z-index: 1;
 }
 /* 显示：桌面用 :hover，触屏用 .open（JS 点击切换）。
    不用 @media (hover:hover) 包裹（它在触屏/部分设备误判为 none，
