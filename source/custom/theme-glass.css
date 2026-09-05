@@ -342,3 +342,96 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
     background: var(--mark-bg) !important;
   }
 }
+
+/* ============================================================
+   附属页 header（post / 归档等非首页页）玻璃化 + 羽化
+   用户要求："所有附属页标题背景和大背景也要添加羽化"。
+   原状态：400px 纯主题蓝(#49b1f5)平涂块 + 30% 黑色整幅遮罩，
+   白字硬压、颜色生硬，与正文水平相切。
+   注意：不能用元素级 mask 做底部淡出（文章标题贴底会被一起
+   淡成透明），因此"羽化"改为以下不影响文字的柔和手段：
+   ① 大背景：纵向多停点半透明深色渐变 + backdrop-filter 玻璃化，
+      颜色从顶部到中段自然过渡、不再平涂；
+   ② 遮罩 ::before：纵向羽化渐变(顶深→中浅→底稍深)替代整幅死黑；
+   ③ 文字层之上不加任何淡出层，标题白字始终清晰。
+   ============================================================ */
+
+/* ---- light：通透深蓝玻璃（多停点柔和渐变） ---- */
+#page-header.not-home-page,
+#page-header.post-bg {
+  background: linear-gradient(
+    160deg,
+    rgba(44, 66, 120, .52) 0%,
+    rgba(52, 70, 124, .44) 30%,
+    rgba(56, 72, 126, .42) 55%,
+    rgba(60, 76, 132, .46) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+}
+
+/* 遮罩羽化渐变：顶部与中部柔和压暗、底部稍回深承载贴底标题；
+   颜色停点拉开→不再是一整块死黑 */
+#page-header.not-home-page::before,
+#page-header.post-bg::before {
+  background: linear-gradient(
+    180deg,
+    rgba(20, 30, 60, .38) 0%,
+    rgba(26, 40, 78, .26) 35%,
+    rgba(20, 30, 60, .20) 62%,
+    rgba(14, 22, 48, .36) 100%
+  ) !important;
+}
+
+/* ---- dark：深色磨砂玻璃 ---- */
+html[data-theme='dark'] #page-header.not-home-page,
+html[data-theme='dark'] #page-header.post-bg {
+  background: linear-gradient(
+    160deg,
+    rgba(34, 46, 74, .56) 0%,
+    rgba(18, 26, 44, .52) 34%,
+    rgba(12, 16, 28, .54) 66%,
+    rgba(16, 22, 38, .58) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+  backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+}
+
+html[data-theme='dark'] #page-header.not-home-page::before,
+html[data-theme='dark'] #page-header.post-bg::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, .04) 0%,
+    rgba(16, 24, 44, .16) 40%,
+    rgba(10, 14, 26, .22) 100%
+  ) !important;
+}
+
+/* 标题文字：玻璃底上加强投影/柔光，保证清晰可读（羽化柔和光晕） */
+#page-header.not-home-page #site-title,
+#page-header.not-home-page #site-subtitle,
+#page-header.post-bg .post-title,
+#page-header.post-bg #post-meta {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, .45),
+    0 4px 18px rgba(0, 0, 0, .42),
+    0 0 1px rgba(0, 0, 0, .3);
+}
+
+/* 移动端：玻璃开销大，退回主题纯色（与首页 hero 一致策略） */
+@media (max-width: 768px) {
+  #page-header.not-home-page,
+  #page-header.post-bg,
+  html[data-theme='dark'] #page-header.not-home-page,
+  html[data-theme='dark'] #page-header.post-bg {
+    background: var(--light-blue) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  #page-header.not-home-page::before,
+  #page-header.post-bg::before,
+  html[data-theme='dark'] #page-header.not-home-page::before,
+  html[data-theme='dark'] #page-header.post-bg::before {
+    background: var(--mark-bg) !important;
+  }
+}
