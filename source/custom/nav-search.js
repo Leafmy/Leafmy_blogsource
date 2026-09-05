@@ -69,6 +69,13 @@
   var ico = document.createElement('i')
   ico.className = 'fas fa-search nav-search-ico'
   bar.appendChild(ico)
+
+  // 自定义光标(渐变 + 光晕 + 呼吸): 取代原生生硬闪烁条, 由 positionCaret 定位
+  var caret = document.createElement('span')
+  caret.className = 'nav-search-caret'
+  caret.setAttribute('aria-hidden', 'true')
+  bar.appendChild(caret)
+
   wrap.appendChild(bar)
 
   clearBtn = bar.querySelector('.nav-search-clear')
@@ -143,6 +150,30 @@
     marqueeEl.classList.toggle('hidden', has)
     // 清除按钮: 有输入时显示
     clearBtn.classList.toggle('show', has)
+  }
+
+  // ---------- 自定义光标定位 ----------
+  // 用 canvas.measureText 量出"光标前文字"宽度, 与输入框字体一致,
+  // 把 .nav-search-caret 精确放到文字之后(无需 DOM 镜像节点)。
+  var measureCtx = null
+  function getMeasureCtx() {
+    if (!measureCtx) {
+      measureCtx = document.createElement('canvas').getContext('2d')
+      measureCtx.font = window.getComputedStyle(input).font
+    }
+    return measureCtx
+  }
+  function positionCaret() {
+    if (!isOpen || document.activeElement !== input) {
+      caret.classList.remove('on')
+      return
+    }
+    caret.classList.add('on')
+    var pos = (typeof input.selectionStart === 'number') ? input.selectionStart : input.value.length
+    var text = input.value.slice(0, pos)
+    var w = text ? getMeasureCtx().measureText(text).width : 0
+    var padL = parseFloat(window.getComputedStyle(input).paddingLeft) || 0
+    caret.style.left = (input.offsetLeft + padL + w) + 'px'
   }
 
   // ---------- 匹配 ----------
@@ -248,7 +279,13 @@
     updateControls(input.value.trim())
     if (doFocus !== false) {
       clearTimeout(showTimer)
-      showTimer = setTimeout(function () { input.focus() }, 280)
+      showTimer = setTimeout(function () {
+        input.focus()
+        // 有残留值时把光标放到末尾, 并同步自定义光标位置
+        var len = input.value.length
+        if (len && input.setSelectionRange) input.setSelectionRange(len, len)
+        positionCaret()
+      }, 280)
     }
     // 静默预取索引(不显示 loading, 输入时才用)
     if (!indexCache && indexState === 'idle') loadIndex().catch(function () {})
@@ -294,6 +331,13 @@
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { e.preventDefault(); closeBox() }
   })
+  // 自定义光标: 聚焦/失焦/输入/点击/移动光标时重定位
+  input.addEventListener('focus', positionCaret)
+  input.addEventListener('blur', positionCaret)
+  input.addEventListener('input', positionCaret)
+  input.addEventListener('keyup', positionCaret)
+  input.addEventListener('click', positionCaret)
+  input.addEventListener('select', positionCaret)
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return

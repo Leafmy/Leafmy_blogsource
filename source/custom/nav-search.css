@@ -146,12 +146,9 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   opacity: 0;
   pointer-events: none;
   cursor: text;
-  /* [美化] 检索输入框闪烁光标:
-     - caret-color 跟随主题色, 与玻璃冷雾蓝协调(不再用生硬的黑/深蓝)
-     - caret-shape: block 现代块状光标(Notion 风格), 软化闪烁条的
-       "机械感"; 不支持时降级为细 bar, 仍带主题色 */
-  caret-color: var(--theme-color, #49b1f5);
-  caret-shape: block;
+  /* [美化] 隐藏原生光标: 由 .nav-search-caret 自定义光标接管
+     (渐变 + 柔和光晕 + 呼吸动画), 原生细竖线/块光标质感不够 */
+  caret-color: transparent;
   /* 非线性滑出: 先慢后快的缓入, 视觉上平滑"从右向左生长" */
   transition:
     width .4s cubic-bezier(.3, 1.25, .3, 1),
@@ -175,6 +172,45 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
 }
 #nav .nav-search-input::-ms-clear {
   display: none;
+}
+
+/* ---- 自定义光标: 渐变 + 柔和光晕 + 呼吸动画 ----
+   取代原生生硬闪烁条。定位由 nav-search.js 的 positionCaret()
+   精确设到文字之后; 仅在输入框聚焦且展开时(.on)显示。 */
+#nav .nav-search-caret {
+  position: absolute;
+  top: 50%;
+  left: 0;                  /* JS 动态写入 */
+  width: 2px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  /* light: 冷雾蓝 → 深靛蓝渐变 */
+  background: linear-gradient(180deg, #8fb6ff 0%, #4a7df0 100%);
+  box-shadow:
+    0 0 0 .5px rgba(255, 255, 255, .45),
+    0 0 7px rgba(90, 150, 255, .60),
+    0 0 16px rgba(90, 150, 255, .30);
+  pointer-events: none;
+  opacity: 0;               /* 默认隐藏, .on 才显示 */
+  transition: opacity .18s ease;
+  animation: nav-caret-breathe 1.15s ease-in-out infinite;
+}
+#nav .nav-search-caret.on {
+  opacity: 1;
+}
+/* 呼吸: 淡入淡出, 比原生 step 闪烁更柔和高级 */
+@keyframes nav-caret-breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .28; }
+}
+/* dark: 光晕偏冷紫, 与深色玻璃协调 */
+html[data-theme='dark'] #nav .nav-search-caret {
+  background: linear-gradient(180deg, #b6c9ff 0%, #7d9cf5 100%);
+  box-shadow:
+    0 0 0 .5px rgba(255, 255, 255, .22),
+    0 0 8px rgba(130, 170, 255, .65),
+    0 0 18px rgba(140, 120, 255, .35);
 }
 
 /* ---- 检索栏提示文字(静止, 不走马灯) ----
