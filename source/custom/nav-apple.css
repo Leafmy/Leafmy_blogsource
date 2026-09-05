@@ -350,12 +350,16 @@ html[data-theme='dark'] #nav #toggle-menu i {
   overflow: hidden;
   border-radius: 16px;
   /* 常规投影阴影；边缘发光由 .nav-drop-edge(环) 承担，与导航一致 */
-  box-shadow: 0 18px 50px rgba(15, 25, 50, .24);
-  border: 1px solid rgba(255, 255, 255, .62);
+  box-shadow: 0 18px 50px rgba(40, 54, 88, .28), 0 4px 14px rgba(40, 54, 88, .10);
+  border: 1px solid rgba(255, 255, 255, .50);
 
-  background: linear-gradient(150deg, rgba(246, 248, 252, .94), rgba(238, 243, 250, .90)) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(185%);
-  backdrop-filter: blur(26px) saturate(185%);
+  background: linear-gradient(
+    150deg,
+    rgba(232, 234, 242, .62) 0%,
+    rgba(210, 216, 232, .50) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(170%) brightness(.97);
+  backdrop-filter: blur(40px) saturate(170%) brightness(.97);
 
   opacity: 0;
   visibility: hidden;
@@ -511,8 +515,8 @@ html[data-theme='dark'] #nav .nav-drop-scroll::-webkit-scrollbar-thumb {
   font-size: 11.5px;
   letter-spacing: .06em;
   padding: 6px 14px 10px;
-  color: rgba(90, 100, 130, .68);
-  border-bottom: 1px solid rgba(120, 140, 180, .16);
+  color: rgba(58, 68, 92, .78);
+  border-bottom: 1px solid rgba(60, 80, 120, .18);
   margin-bottom: 6px;
   text-transform: uppercase;
   font-weight: 600;
@@ -546,7 +550,7 @@ html[data-theme='dark'] #nav .nav-drop-head {
   transition: background-color .18s ease, color .18s ease, transform .18s ease;
 }
 #nav .nav-drop-list a:hover {
-  background: linear-gradient(150deg, rgba(120, 180, 250, .20), rgba(160, 210, 255, .14));
+  background: linear-gradient(150deg, rgba(120, 180, 250, .22), rgba(160, 210, 255, .16));
   color: var(--theme-color, #49b1f5) !important;
   transform: translateX(3px);
 }
