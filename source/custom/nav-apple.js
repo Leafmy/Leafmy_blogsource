@@ -42,7 +42,7 @@
     var lastX = 0, lastY = 0 // 最近一次指针(视口坐标)，帧回调时使用
     var raf = null
     var lastA = -1 // 最近一次写入的亮度(-1=从未写)，用于避免重复写 0
-    // 渐隐淡出用：移出范围/窗口时从当前亮度线性衰减到 0
+    // 淡出(移出范围/窗口)动画状态：从当前亮度线性衰减到 0
     var fadeRaf = null, fadeFrom = 0, fadeT0 = 0
     // 光斑径向渐变椭圆半径(px)：radial-gradient(96px 76px at 50% 50%) 的 ending-shape。
     // 以此作为"光效可影响导航栏"的范围，指针进入该椭圆即点亮。
@@ -64,34 +64,6 @@
 
     function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v) }
 
-    function writeGlow() {
-      raf = null
-      if (!rect || !rect.width || !rect.height) return
-      // 1) 光斑中心 = 鼠标到导航栏矩形的最近投影点(clamp)，保证外围时也照在边上
-      var cx = clamp(lastX, rect.left, rect.right)
-      var cy = clamp(lastY, rect.top, rect.bottom)
-      // 2) 椭圆归一化距离 t∈[0,∞)：0=在导航栏内，1=在影响椭圆边界
-      var dx = 0, dy = 0
-      if (lastX < rect.left) dx = rect.left - lastX
-      else if (lastX > rect.right) dx = lastX - rect.right
-      if (lastY < rect.top) dy = rect.top - lastY
-      else if (lastY > rect.bottom) dy = lastY - rect.bottom
-      var t = Math.sqrt((dx / RX) * (dx / RX) + (dy / RY) * (dy / RY))
-      var a = Math.max(0, Math.min(1, 1 - t)) // 越近越亮，范围内随距离线性衰减
-
-      // 3) 光斑位置/亮度【直写 style】(不经 CSS 变量/calc 间接)：
-      //    元素已 will-change:transform 提升为合成层，直写 transform/opacity
-      //    只走合成器，是浏览器最快的"跟手"路径。px = 相对 nav 左上角。
-      var px = cx - rect.left
-      var py = cy - rect.top
-      spot.style.transform = 'translate3d(' + (px - 96).toFixed(2) + 'px,' + (py - 76).toFixed(2) + 'px,0)'
-
-      // 4) 边缘环 ::before 是 nav 轮廓的 1.5px 环(无法 transform 平移)，
-      //    只能经 CSS 变量定位其渐变中心；继续写 --gx/--gy 与 --glow-a。
-      nav.style.setProperty('--gx', px.toFixed(2) + 'px')
-      nav.style.setProperty('--gy', py.toFixed(2) + 'px')
-      setAlpha(a)
-    }
     // 把亮度写到光斑 opacity 与边缘环 --glow-a（带 lastA 去重）
     function setAlpha(a) {
       a = Math.max(0, Math.min(1, a))
@@ -101,11 +73,83 @@
       nav.style.setProperty('--glow-a', String(a))
       lastA = a
     }
+    // 计算某点的"目标亮度"：越近越亮(椭圆归一化距离的补数)
+    function targetAlphaAt(x, y) {
+      if (!rect || !rect.width || !rect.height) return 0
+      var dx = 0, dy = 0
+      if (x < rect.left) dx = rect.left - x
+      else if (x > rect.right) dx = x - rect.right
+      if (y < rect.top) dy = rect.top - y
+      else if (y > rect.bottom) dy = y - rect.bottom
+      var t = Math.sqrt((dx / RX) * (dx / RX) + (dy / RY) * (dy / RY))
+      return Math.max(0, Math.min(1, 1 - t))
+    }
+    function inGlowRange(x, y) {
+      return targetAlphaAt(x, y) > 0
+    }
+    // 写光斑位置(transform) + 边缘环渐变中心(--gx/--gy)；用最近投影点 clamp
+    function writePos() {
+      if (!rect) return
+      var cx = clamp(lastX, rect.left, rect.right)
+      var cy = clamp(lastY, rect.top, rect.bottom)
+      var px = cx - rect.left
+      var py = cy - rect.top
+      spot.style.transform = 'translate3d(' + (px - 96).toFixed(2) + 'px,' + (py - 76).toFixed(2) + 'px,0)'
+      nav.style.setProperty('--gx', px.toFixed(2) + 'px')
+      nav.style.setProperty('--gy', py.toFixed(2) + 'px')
+    }
+    // 常态跟手：一次 rAF 内位置+亮度直写目标值（无滞后，合成器动画）
+    function writeGlow() {
+      raf = null
+      if (!rect) return
+      writePos()
+      setAlpha(targetAlphaAt(lastX, lastY))
+    }
+
+    // ---- 移入渐亮(淡入) ----
+    // 鼠标从文档外进入(上方/侧边移回窗口)时，若直接落在光斑影响范围内，
+    // 首个 mousemove 会瞬时全亮(突兀)。改为：进入后 ~FADE_IN_MS 内，
+    // 亮度 = 目标亮度 × easeOut(进度)，从 0 平滑亮起；位置照常跟手。
+    // 与"移出渐渐熄灭"对称，视觉更柔和统一。
+    var FADE_IN_MS = 240
+    var enterAt = 0    // 最近一次进入文档的时间戳；0=已在文档内
+    var fadeInRaf = null
+    function easeOutCubic(k) { return 1 - Math.pow(1 - k, 3) }
+    function onDocEnter(e) {
+      if (e && typeof e.clientX === 'number') { lastX = e.clientX; lastY = e.clientY }
+      enterAt = performance.now()
+      // 进入瞬间若恰在淡出中，取消淡出改由淡入接管
+      if (fadeRaf !== null) { cancelAnimationFrame(fadeRaf); fadeRaf = null }
+      if (fadeInRaf === null) fadeInRaf = requestAnimationFrame(fadeInTick)
+    }
+    function fadeInTick(now) {
+      fadeInRaf = null
+      if (!enterAt) return // 已被取消/完成
+      var k = (now - enterAt) / FADE_IN_MS
+      var done = k >= 1
+      var prog = done ? 1 : easeOutCubic(k)
+      if (done) enterAt = 0
+      writePos() // 位置跟手
+      setAlpha(targetAlphaAt(lastX, lastY) * prog)
+      if (!done) {
+        fadeInRaf = requestAnimationFrame(fadeInTick)
+      } else if (raf === null && inGlowRange(lastX, lastY)) {
+        raf = requestAnimationFrame(writeGlow) // 回到常态直写
+      }
+    }
+    function cancelFadeIn() {
+      if (fadeInRaf !== null) { cancelAnimationFrame(fadeInRaf); fadeInRaf = null }
+      enterAt = 0
+    }
+
     function track(e) {
       lastX = e.clientX
       lastY = e.clientY
-      // 鼠标回到可影响范围：取消任何进行中的淡出，恢复跟手点亮
-      if (fadeRaf !== null) { cancelAnimationFrame(fadeRaf); fadeRaf = null }
+      // 淡入进行中：坐标已更新，位置/亮度由 fadeInTick 每帧写入，无需重复调度
+      if (fadeInRaf !== null) {
+        if (!inGlowRange(lastX, lastY)) { cancelFadeIn(); fadeOut() }
+        return
+      }
       // 仅当鼠标进入"光斑可影响导航栏"的椭圆范围才调度写入并点亮
       if (inGlowRange(lastX, lastY)) {
         if (raf === null) raf = requestAnimationFrame(writeGlow)
@@ -114,16 +158,6 @@
         if (raf !== null) { cancelAnimationFrame(raf); raf = null }
         fadeOut()
       }
-    }
-    function inGlowRange(x, y) {
-      if (!rect) return false
-      var dx = 0, dy = 0
-      if (x < rect.left) dx = rect.left - x
-      else if (x > rect.right) dx = x - rect.right
-      if (y < rect.top) dy = rect.top - y
-      else if (y > rect.bottom) dy = y - rect.bottom
-      var nx = dx / RX, ny = dy / RY
-      return nx * nx + ny * ny <= 1
     }
     // 渐隐淡出：从当前亮度在 ~250ms 内线性衰减到 0（每次 mousemove 离开范围
     // 时若已在淡出则不重启，只有从有光到无光才启动一次）
@@ -143,6 +177,7 @@
     }
     // 立即熄灭（窗口 blur 用：窗口已不可见，淡出无意义且 rAF 可能被节流）
     function extinguishNow() {
+      cancelFadeIn()
       if (fadeRaf !== null) { cancelAnimationFrame(fadeRaf); fadeRaf = null }
       if (raf !== null) { cancelAnimationFrame(raf); raf = null }
       setAlpha(0)
@@ -158,6 +193,12 @@
     document.documentElement.addEventListener('mouseleave', fadeOut)
     document.addEventListener('mouseout', function (e) {
       if (!e.relatedTarget) fadeOut()
+    })
+    // 移入渐亮：鼠标从文档外进入页面（mouseover 的 relatedTarget 为 null，
+    // 或 documentElement mouseenter），若落在光斑范围则从 0 平滑亮起。
+    document.documentElement.addEventListener('mouseenter', onDocEnter)
+    document.addEventListener('mouseover', function (e) {
+      if (!e.relatedTarget) onDocEnter(e)
     })
     window.addEventListener('blur', extinguishNow)
   })()
