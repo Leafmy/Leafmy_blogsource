@@ -42,6 +42,8 @@
     var lastX = 0, lastY = 0 // 最近一次指针(视口坐标)，帧回调时使用
     var raf = null
     var lastA = -1 // 最近一次写入的亮度(-1=从未写)，用于避免重复写 0
+    // 渐隐淡出用：移出范围/窗口时从当前亮度线性衰减到 0
+    var fadeRaf = null, fadeFrom = 0, fadeT0 = 0
     // 光斑径向渐变椭圆半径(px)：radial-gradient(96px 76px at 50% 50%) 的 ending-shape。
     // 以此作为"光效可影响导航栏"的范围，指针进入该椭圆即点亮。
     var RX = 96, RY = 76
@@ -88,27 +90,29 @@
       //    只能经 CSS 变量定位其渐变中心；继续写 --gx/--gy 与 --glow-a。
       nav.style.setProperty('--gx', px.toFixed(2) + 'px')
       nav.style.setProperty('--gy', py.toFixed(2) + 'px')
+      setAlpha(a)
+    }
+    // 把亮度写到光斑 opacity 与边缘环 --glow-a（带 lastA 去重）
+    function setAlpha(a) {
+      a = Math.max(0, Math.min(1, a))
       a = +a.toFixed(3)
-      if (a !== lastA) {
-        spot.style.opacity = String(a)
-        nav.style.setProperty('--glow-a', String(a))
-        lastA = a
-      }
+      if (a === lastA) return
+      spot.style.opacity = String(a)
+      nav.style.setProperty('--glow-a', String(a))
+      lastA = a
     }
     function track(e) {
       lastX = e.clientX
       lastY = e.clientY
+      // 鼠标回到可影响范围：取消任何进行中的淡出，恢复跟手点亮
+      if (fadeRaf !== null) { cancelAnimationFrame(fadeRaf); fadeRaf = null }
       // 仅当鼠标进入"光斑可影响导航栏"的椭圆范围才调度写入并点亮
       if (inGlowRange(lastX, lastY)) {
         if (raf === null) raf = requestAnimationFrame(writeGlow)
       } else {
-        // 完全离开范围：立即熄灭（亮度归 0），取消待写帧
+        // 完全离开范围：取消待写帧，从当前亮度渐渐淡出（250ms）
         if (raf !== null) { cancelAnimationFrame(raf); raf = null }
-        if (lastA !== 0) {
-          spot.style.opacity = '0'
-          nav.style.setProperty('--glow-a', '0')
-          lastA = 0
-        }
+        fadeOut()
       }
     }
     function inGlowRange(x, y) {
@@ -121,28 +125,41 @@
       var nx = dx / RX, ny = dy / RY
       return nx * nx + ny * ny <= 1
     }
-    // 熄灭光效：取消待写帧并把光斑/边缘环亮度归 0（带 lastA 去重）
-    function extinguish() {
-      if (raf !== null) { cancelAnimationFrame(raf); raf = null }
-      if (lastA !== 0) {
-        spot.style.opacity = '0'
-        nav.style.setProperty('--glow-a', '0')
-        lastA = 0
+    // 渐隐淡出：从当前亮度在 ~250ms 内线性衰减到 0（每次 mousemove 离开范围
+    // 时若已在淡出则不重启，只有从有光到无光才启动一次）
+    function fadeOut() {
+      if (fadeRaf !== null) return // 已在淡出，不重启
+      if (lastA <= 0) return
+      fadeFrom = lastA
+      fadeT0 = performance.now()
+      var step = function (now) {
+        var k = Math.min(1, (now - fadeT0) / 250)
+        var a = fadeFrom * (1 - k)
+        if (k >= 1) { fadeRaf = null; setAlpha(0); return }
+        setAlpha(a)
+        fadeRaf = requestAnimationFrame(step)
       }
+      fadeRaf = requestAnimationFrame(step)
+    }
+    // 立即熄灭（窗口 blur 用：窗口已不可见，淡出无意义且 rAF 可能被节流）
+    function extinguishNow() {
+      if (fadeRaf !== null) { cancelAnimationFrame(fadeRaf); fadeRaf = null }
+      if (raf !== null) { cancelAnimationFrame(raf); raf = null }
+      setAlpha(0)
     }
     // 挂在 document：鼠标从正文/窗口其它区域接近导航栏时也能点亮，
-    // 离开范围后自动熄灭（每次 mousemove 重新判定）
+    // 离开范围后自动渐渐熄灭（每次 mousemove 重新判定）
     document.addEventListener('mousemove', track)
     // 顶部导航栏：鼠标向上移出浏览器窗口后 DOM 不再有 mousemove，光效会
-    // 卡在移出前的位置 → 监听"鼠标离开文档"立即熄灭。
+    // 卡在移出前的位置 → 监听"鼠标离开文档"触发渐渐熄灭。
     //   - documentElement.mouseleave：鼠标离开 <html> 边界(含移出窗口)触发；
     //   - document mouseout 且 relatedTarget===null：同样表示离开文档进入
     //     浏览器 UI / 视口外，作为兜底（mouseleave 在某些情况不冒泡可靠）。
-    document.documentElement.addEventListener('mouseleave', extinguish)
+    document.documentElement.addEventListener('mouseleave', fadeOut)
     document.addEventListener('mouseout', function (e) {
-      if (!e.relatedTarget) extinguish()
+      if (!e.relatedTarget) fadeOut()
     })
-    window.addEventListener('blur', extinguish)
+    window.addEventListener('blur', extinguishNow)
   })()
 
   // ---- 悬浮下拉：最新文章 / 归档 ----
