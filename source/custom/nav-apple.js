@@ -34,18 +34,29 @@
     var rect = null
     var lastX = 0, lastY = 0 // 最近一次指针(视口坐标)，帧回调时使用
     var raf = null
+
+    // 光斑做成独立合成层：裁剪容器 + 光斑元素，用 transform 平移。
+    // transform 只走合成器(compositor)不触发重绘(paint)，比在 ::after 上
+    // 移动 radial-gradient 中心省得多——后者每帧都要重绘整条导航栏。
+    var clip = document.createElement('div')
+    clip.className = 'nav-glow-clip'
+    var spot = document.createElement('div')
+    spot.className = 'nav-glow-spot'
+    clip.appendChild(spot)
+    nav.appendChild(clip)
+
     function measure() { rect = nav.getBoundingClientRect() }
     measure()
     window.addEventListener('resize', measure)
+
     function writeGlow() {
       raf = null
       if (!rect || !rect.width || !rect.height) return
       var px = lastX - rect.left
       var py = lastY - rect.top
-      var x = Math.max(0, Math.min(100, (px / rect.width) * 100)).toFixed(2)
-      var y = Math.max(0, Math.min(100, (py / rect.height) * 100)).toFixed(2)
-      nav.style.setProperty('--gx', x + '%')
-      nav.style.setProperty('--gy', y + '%')
+      // 写像素坐标(px)：光斑用 transform 平移，边缘环 ::before 用 px 定位渐变中心
+      nav.style.setProperty('--gx', px.toFixed(2) + 'px')
+      nav.style.setProperty('--gy', py.toFixed(2) + 'px')
     }
     function track(e) {
       lastX = e.clientX
@@ -53,8 +64,12 @@
       if (raf === null) raf = requestAnimationFrame(writeGlow)
     }
     nav.addEventListener('mousemove', track)
-    // 进入时立即定位一次，避免光斑停留在默认 50% 处（rAF 下一帧即写）
-    nav.addEventListener('mouseenter', track)
+    // 进入时同步定位一次，避免光斑从默认位置跳变到指针处
+    nav.addEventListener('mouseenter', function (e) {
+      lastX = e.clientX
+      lastY = e.clientY
+      writeGlow()
+    })
   })()
 
   // ---- 悬浮下拉：最新文章 / 归档 ----

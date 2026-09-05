@@ -41,27 +41,40 @@
   border: 1px solid rgba(255, 255, 255, .60);
 }
 
-/* 跟随指针的局部光晕层：absolute 铺满 nav，径向渐变定位在 --gx/--gy。
-   光斑轻量 (96x76px)：仅指针附近微亮，不泛满整栏。
-   羽化拉高：过渡带拉长到 28%/52%/75% 均匀停点，边缘渐进弥散到 100% 透明，
-   中心柔、向外绵长衰减，无生硬边界。 */
-#nav::after {
-  content: '';
+/* 跟随指针的局部光晕层：改为独立合成层(元素) + transform 平移。
+   原方案是在 ::after 上移动 radial-gradient 中心(改 --gx/--gy)，
+   但那属于每帧重绘(paint)；改用固定尺寸光斑元素 + transform:translate3d，
+   transform 只走合成器(compositor)不触发重绘，帧数更高、更跟手。
+   光斑轻量 (椭圆 96x76px，即元素 192x152)：仅指针附近微亮，不泛满整栏。
+   羽化拉高：过渡带 28%/52%/75% 均匀停点，边缘渐进弥散到 100% 透明。 */
+#nav .nav-glow-clip {
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  overflow: hidden;   /* 只裁光斑到 nav 圆角内；不影响 .nav-drop(它不在本容器) */
+  pointer-events: none;
+  z-index: 0;
+}
+#nav .nav-glow-spot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 192px;
+  height: 152px;
+  border-radius: 50%;
   background: radial-gradient(
-    96px 76px at var(--gx, 50%) var(--gy, 50%),
+    96px 76px at 50% 50%,
     rgba(140, 195, 255, .30),
     rgba(150, 205, 255, .20) 28%,
     rgba(160, 210, 255, .12) 52%,
     rgba(170, 215, 255, .05) 75%,
     transparent 100%
   );
+  /* 中心对齐指针：translate 使元素中心落在 (--gx, --gy)，减半自身尺寸 */
+  transform: translate3d(calc(var(--gx, 0px) - 96px), calc(var(--gy, 0px) - 76px), 0);
+  will-change: transform;
   opacity: 0;
   transition: opacity .2s ease;
-  pointer-events: none;
-  z-index: 0;
 }
 /* ---- 光斑点亮时导航栏边缘高亮（跟随指针方向） ----
    在光斑引发的同时, 胶囊边缘也泛起一圈描边高亮, 且最亮处跟随指针:
@@ -93,7 +106,7 @@
   z-index: 0;
 }
 /* 指针进入导航栏时点亮光斑 */
-#nav:hover::after {
+#nav:hover .nav-glow-spot {
   opacity: 1;
 }
 /* 与光斑同步: 点亮边缘高亮环 */
@@ -103,7 +116,7 @@
 /* 文字与内容浮在光斑之上 */
 #nav #blog-info,
 #nav #menus,
-#nav > *:not(::after) {
+#nav > *:not(.nav-glow-clip) {
   position: relative;
   z-index: 1;
 }
@@ -114,9 +127,9 @@ html[data-theme='dark'] #nav {
   border: 1px solid rgba(255, 255, 255, .12);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .40) !important;
 }
-html[data-theme='dark'] #nav::after {
+html[data-theme='dark'] #nav .nav-glow-spot {
   background: radial-gradient(
-    96px 76px at var(--gx, 50%) var(--gy, 50%),
+    96px 76px at 50% 50%,
     rgba(100, 160, 255, .28),
     rgba(85, 135, 235, .18) 28%,
     rgba(75, 125, 225, .10) 52%,
