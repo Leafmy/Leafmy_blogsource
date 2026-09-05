@@ -23,17 +23,28 @@
   document.body.appendChild(nav);
 
   // ---- 指针周围局部光斑（跟随鼠标） ----
-  // 光斑用 nav::after 的 radial-gradient 定位在 --gx/--gy（相对 nav 内坐标 %）。
-  // mousemove 时换算指针相对 nav 的百分比并写入 CSS 变量，光斑即跟随指针。
-  // 性能（保证"跟手"）：
-  //   1) nav 是 fixed 定位，rect 几乎不变 → 缓存，仅在 resize 时重测；
+  // 光斑做成独立合成层(.nav-glow-spot) + transform 平移，位置由 --gx/--gy 控制。
+  // 点亮范围：不止"悬停在导航栏上"才亮——鼠标移动到光斑可影响导航栏的
+  // 椭圆范围(渐变半径 ~96x76px)内，导航栏就开始泛光（苹果官网式"接近即泛光"）。
+  // 关键技巧：光斑中心取"鼠标到导航栏矩形的最近投影点"(clamp)。
+  //   - 鼠标在导航栏内 → 投影点=鼠标本身，光斑跟手(与原行为一致)；
+  //   - 鼠标在导航栏外但靠近 → 投影点落在最近的边上，强光中心压在该边上，
+  //     导航栏边缘明显被照亮且随鼠标滑动；越近越亮(--glow-a 随距离渐变)。
+  //   否则若光斑中心锁真实鼠标，鼠标在外围时导航栏只截到光斑几乎透明的
+  //   远缘，看起来"根本没亮"。
+  // 性能：
+  //   1) nav 是 fixed 定位，rect 几乎不变 → 缓存，仅 resize 时重测，
   //      避免每次 mousemove 都 getBoundingClientRect() 强制同步布局(reflow)。
   //   2) mousemove 事件频率远高于屏幕刷新率 → rAF 节流：一帧最多写一次
-  //      CSS 变量，去掉每事件都触发样式重算造成的掉帧/滞后感。
+  //      CSS 变量；且仅在"已进入点亮范围"时才调度写入，范围外不写。
   ;(function initGlow() {
     var rect = null
     var lastX = 0, lastY = 0 // 最近一次指针(视口坐标)，帧回调时使用
     var raf = null
+    var lastA = -1 // 最近一次写入的亮度(-1=从未写)，用于避免重复写 0
+    // 光斑径向渐变椭圆半径(px)：radial-gradient(96px 76px at 50% 50%) 的 ending-shape。
+    // 以此作为"光效可影响导航栏"的范围，指针进入该椭圆即点亮。
+    var RX = 96, RY = 76
 
     // 光斑做成独立合成层：裁剪容器 + 光斑元素，用 transform 平移。
     // transform 只走合成器(compositor)不触发重绘(paint)，比在 ::after 上
@@ -49,26 +60,57 @@
     measure()
     window.addEventListener('resize', measure)
 
+    function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v) }
+
     function writeGlow() {
       raf = null
       if (!rect || !rect.width || !rect.height) return
-      var px = lastX - rect.left
-      var py = lastY - rect.top
-      // 写像素坐标(px)：光斑用 transform 平移，边缘环 ::before 用 px 定位渐变中心
+      // 1) 光斑中心 = 鼠标到导航栏矩形的最近投影点(clamp)，保证外围时也照在边上
+      var cx = clamp(lastX, rect.left, rect.right)
+      var cy = clamp(lastY, rect.top, rect.bottom)
+      // 2) 椭圆归一化距离 t∈[0,∞)：0=在导航栏内，1=在影响椭圆边界
+      var dx = 0, dy = 0
+      if (lastX < rect.left) dx = rect.left - lastX
+      else if (lastX > rect.right) dx = lastX - rect.right
+      if (lastY < rect.top) dy = rect.top - lastY
+      else if (lastY > rect.bottom) dy = lastY - rect.bottom
+      var t = Math.sqrt((dx / RX) * (dx / RX) + (dy / RY) * (dy / RY))
+      var a = Math.max(0, Math.min(1, 1 - t)) // 越近越亮，范围内随距离线性衰减
+      // 3) 写入：位置用 px（相对 nav 左上角）；亮度用 --glow-a
+      var px = cx - rect.left
+      var py = cy - rect.top
       nav.style.setProperty('--gx', px.toFixed(2) + 'px')
       nav.style.setProperty('--gy', py.toFixed(2) + 'px')
+      a = +a.toFixed(3)
+      if (a !== lastA) { nav.style.setProperty('--glow-a', String(a)); lastA = a }
     }
     function track(e) {
       lastX = e.clientX
       lastY = e.clientY
-      if (raf === null) raf = requestAnimationFrame(writeGlow)
+      // 仅当鼠标进入"光斑可影响导航栏"的椭圆范围才调度写入并点亮
+      if (inGlowRange(lastX, lastY)) {
+        if (raf === null) raf = requestAnimationFrame(writeGlow)
+      } else {
+        // 完全离开范围：立即熄灭（亮度归 0），取消待写帧
+        if (raf !== null) { cancelAnimationFrame(raf); raf = null }
+        if (lastA !== 0) { nav.style.setProperty('--glow-a', '0'); lastA = 0 }
+      }
     }
-    nav.addEventListener('mousemove', track)
-    // 进入时同步定位一次，避免光斑从默认位置跳变到指针处
-    nav.addEventListener('mouseenter', function (e) {
-      lastX = e.clientX
-      lastY = e.clientY
-      writeGlow()
+    function inGlowRange(x, y) {
+      if (!rect) return false
+      var dx = 0, dy = 0
+      if (x < rect.left) dx = rect.left - x
+      else if (x > rect.right) dx = x - rect.right
+      if (y < rect.top) dy = rect.top - y
+      else if (y > rect.bottom) dy = y - rect.bottom
+      var nx = dx / RX, ny = dy / RY
+      return nx * nx + ny * ny <= 1
+    }
+    // 挂在 document：鼠标从正文/窗口其它区域接近导航栏时也能点亮，
+    // 离开范围后自动熄灭（每次 mousemove 重新判定）
+    document.addEventListener('mousemove', track)
+    window.addEventListener('blur', function () {
+      if (lastA !== 0) { nav.style.setProperty('--glow-a', '0'); lastA = 0 }
     })
   })()
 

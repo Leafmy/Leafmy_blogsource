@@ -73,8 +73,10 @@
   /* 中心对齐指针：translate 使元素中心落在 (--gx, --gy)，减半自身尺寸 */
   transform: translate3d(calc(var(--gx, 0px) - 96px), calc(var(--gy, 0px) - 76px), 0);
   will-change: transform;
-  opacity: 0;
-  transition: opacity .2s ease;
+  /* 亮度由 JS 写 --glow-a(0~1，鼠标到导航栏距离越近越大)：实现
+     "鼠标移到光斑可影响的导航栏范围即泛光、越近越亮"。 */
+  opacity: var(--glow-a, 0);
+  transition: opacity .15s ease;
 }
 /* ---- 光斑点亮时导航栏边缘高亮（跟随指针方向） ----
    在光斑引发的同时, 胶囊边缘也泛起一圈描边高亮, 且最亮处跟随指针:
@@ -100,16 +102,16 @@
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   padding: 1.5px;
-  opacity: 0;
-  transition: opacity .2s ease;
+  /* 亮度与光斑同步由 JS 写 --glow-a(0~1)：鼠标进入光斑影响范围即渐亮 */
+  opacity: var(--glow-a, 0);
+  transition: opacity .15s ease;
   pointer-events: none;
   z-index: 0;
 }
-/* 指针进入导航栏时点亮光斑 */
+/* 悬停兜底（纯 CSS，JS 未启用时鼠标进入导航栏仍会点亮） */
 #nav:hover .nav-glow-spot {
   opacity: 1;
 }
-/* 与光斑同步: 点亮边缘高亮环 */
 #nav:hover::before {
   opacity: 1;
 }
