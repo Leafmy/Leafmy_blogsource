@@ -86,6 +86,8 @@
   panel.className = 'nav-search-panel'
   panel.setAttribute('role', 'listbox')
   panel.innerHTML =
+    '<div class="nav-drop-edge"><div class="nav-drop-edge-light"></div></div>' +
+    '<div class="nav-drop-glow"></div>' +
     '<div class="nav-search-status" hidden></div>' +
     '<ul class="nav-search-results" hidden></ul>'
   wrap.appendChild(panel)
@@ -406,6 +408,24 @@
   input.addEventListener('keyup', positionCaret)
   input.addEventListener('click', positionCaret)
   input.addEventListener('select', positionCaret)
+  // 结果浮层: 顶部导航栏同款光效 —— 指针光斑 + 边缘发光环跟随指针
+  // (复用 .nav-drop-glow/.nav-drop-edge 样式, transform 直写, 冷雾蓝)
+  var panelEdgeLight = panel.querySelector('.nav-drop-edge-light')
+  var panelGlow = panel.querySelector('.nav-drop-glow')
+  function setSearchGlow(gx, gy) {
+    if (panelGlow) panelGlow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
+    if (panelEdgeLight) panelEdgeLight.style.transform = 'translate3d(' + (gx - 340).toFixed(2) + 'px,' + (gy - 120).toFixed(2) + 'px,0)'
+  }
+  panel.addEventListener('mousemove', function (e) {
+    var r = panel.getBoundingClientRect()
+    if (!r.width || !r.height) return
+    setSearchGlow(e.clientX - r.left, e.clientY - r.top)
+  })
+  panel.addEventListener('mouseleave', function () {
+    // 移出: 光心移回不可见位置(熄灭)
+    if (panelGlow) panelGlow.style.transform = 'translate3d(-130px, -90px, 0)'
+    if (panelEdgeLight) panelEdgeLight.style.transform = 'translate3d(-340px, -120px, 0)'
+  })
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return
