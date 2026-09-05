@@ -411,8 +411,10 @@
   input.addEventListener('keyup', positionCaret)
   input.addEventListener('click', positionCaret)
   input.addEventListener('select', positionCaret)
-  // 结果浮层: "文章"下拉页(nav-drop)同款光效 —— 光斑常亮, 光心 clamp
-  // 到面板内跟随指针(指针在面板内跟随, 移出则停靠最近边缘, 不停左上角)
+  // 结果浮层: "文章"下拉页(nav-drop)同款光效质感(冷雾蓝 + 边缘环 +
+  // 光斑), 但可见性改为"进入光效范围才发光、移出渐灭":
+  // 光心 clamp 到面板内跟随指针, opacity 由范围判定控制
+  var panelEdge = panel.querySelector('.nav-drop-edge')
   var panelEdgeLight = panel.querySelector('.nav-drop-edge-light')
   var panelGlow = panel.querySelector('.nav-drop-glow')
   var lastMouseX = 0
@@ -422,7 +424,11 @@
     lastMouseY = y
     var r = panel.getBoundingClientRect()
     if (!r.width || !r.height) return
-    // clamp 到面板矩形内(与 nav-drop 的 updateDropGlow 同构)
+    // 光效范围 = 面板矩形: 指针在范围内才发光(移出渐灭, transition 平滑)
+    var inRange = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
+    if (panelEdge) panelEdge.style.opacity = inRange ? '1' : '0'
+    if (panelGlow) panelGlow.style.opacity = inRange ? '.9' : '0'
+    // 光心 clamp 到面板内跟随指针(与 nav-drop 的 updateDropGlow 同构)
     var gx = (x < r.left ? r.left : (x > r.right ? r.right : x)) - r.left
     var gy = (y < r.top ? r.top : (y > r.bottom ? r.bottom : y)) - r.top
     if (panelGlow) panelGlow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'

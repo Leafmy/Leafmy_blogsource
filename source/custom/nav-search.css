@@ -327,9 +327,17 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   position: relative;
   z-index: 1;
 }
-/* 光效元素(.nav-drop-edge/.nav-drop-glow)复用 nav-apple.css 的样式,
-   保持"文章"下拉页同款: 光斑常亮(glow opacity .9), 光心由 JS clamp
-   到面板内跟随指针 —— 指针在面板内跟随, 移出则停靠最近边缘。 */
+/* 光效元素(.nav-drop-edge/.nav-drop-glow)复用 nav-apple.css 的冷雾蓝
+   质感, 但可见性改为"进入光效范围才发光、移出渐灭":
+   - 默认 opacity 0(熄灭)
+   - JS 判定指针是否在面板范围内, 在范围内写 opacity(edge=1, glow=.9),
+     范围外写 0, 由 transition 平滑渐亮/渐灭
+   - 位置仍由 JS clamp 到面板内跟随指针 */
+#nav .nav-search-panel .nav-drop-edge,
+#nav .nav-search-panel .nav-drop-glow {
+  opacity: 0;
+  transition: opacity .25s ease;
+}
 
 /* 状态(loading/无结果/错误) */
 #nav .nav-search-status {
