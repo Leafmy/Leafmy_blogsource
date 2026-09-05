@@ -1081,6 +1081,7 @@ inject:
     - <link rel="stylesheet" href="/custom/visit-card.css">
     - <link rel="stylesheet" href="/custom/light-text-contrast.css">
     - <link rel="stylesheet" href="/custom/nav-search.css">
+    - <link rel="stylesheet" href="/custom/custom-font.css">
   bottom:
     # - <script src="xxxx"></script>
     - <script src="/custom/nav-apple.js"></script>

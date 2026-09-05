@@ -1,0 +1,56 @@
+/* ============================================================
+   全站字体统一 —— PingFang Medium (苹方)
+   用户要求：统一网站整体字体为 PingFang-Medium。
+   - 通过 @font-face 加载本机 PingFang-Medium.ttf 字体资源
+   - 覆盖 body 及其文本子元素的 font-family，全站统一为苹方
+   - 说明：PingFang-Medium 仅含 Medium(中)字重，故 font-weight 设为 500
+   ============================================================ */
+
+/* --- 注册字体 ---
+   font-display: swap 让文本先以 fallback 显示，字体加载完成后替换，
+   避免整页等待 10MB 字体导致白屏。 */
+@font-face {
+  font-family: 'PingFangMedium';
+  src: url('/custom/fonts/PingFang-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --- 全站文本统一 ---
+   用 !important 覆盖主题 body 的 `font-family: $font-family`(Stylus 内联)。
+   选择器覆盖 body 及所有可能自定义字体的文本容器，确保彻底统一。 */
+body,
+html,
+#page-header,
+#post,
+#post .post-title,
+#post #post-meta,
+#archive,
+.recent-post-item,
+.card-widget,
+#site-title,
+#site-subtitle,
+#nav,
+#nav .site-name,
+#nav .site-page,
+h1, h2, h3, h4, h5, h6,
+p, span, a, li, div, section, article,
+input, textarea, select, button,
+.nav-search-item, .nav-search-marquee, .nav-search-status,
+.recent-post-info, .article-sort-title, .article-sort-item,
+.nav-drop, .nav-drop-list a {
+  font-family: 'PingFangMedium', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+}
+
+/* --- 侧重：正文与标题用苹方 Medium(500)，比主题默认更清晰 --- */
+body {
+  font-weight: 400; /* body 保持默认字重，避免整站过粗 */
+}
+#post .post-title,
+#post h1, #post h2, #post h3,
+#site-title,
+#site-subtitle {
+  font-weight: 500; /* 标题用 Medium 字重 */
+}
