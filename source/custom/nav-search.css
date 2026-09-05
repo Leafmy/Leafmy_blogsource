@@ -304,8 +304,7 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   -webkit-backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
   backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
   border: 1px solid rgba(255, 255, 255, .60);
-  /* 常驻只留深度投影 + 内高光; 彩色边框发光改由 ::after 的鼠标跟随
-     光效触发(边缘进入鼠标光效影响范围才发光) */
+  /* 常态只留深度投影 + 内高光; 彩色边框发光在悬停时才亮(悬浮光效) */
   box-shadow:
     0 24px 56px rgba(40, 54, 88, .24),
     0 6px 16px rgba(40, 54, 88, .10),
@@ -314,6 +313,7 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   visibility: hidden;
   transform: translateY(-6px) scale(.98);
   transition:
+    box-shadow .3s ease,
     opacity .26s ease,
     transform .32s cubic-bezier(.22, 1, .36, 1),
     visibility .26s;
@@ -324,35 +324,16 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   visibility: visible;
   transform: translateY(0) scale(1);
 }
-
-/* ---- 鼠标跟随边缘光效 ----
-   面板边缘的彩色发光不常驻, 只在鼠标悬停面板(边缘进入光效影响
-   范围)时亮起, 且光晕位置跟随鼠标。实现: ::after 用径向渐变生成
-   彩色光晕, 位置由 JS 更新的 --mx/--my 定位, 再用 mask 裁成外缘
-   2px 环带 → 鼠标在哪, 附近的边缘就亮。 */
-#nav .nav-search-panel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(
-    260px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(90, 150, 255, .60) 0%,
-    rgba(124, 58, 237, .28) 40%,
-    rgba(8, 145, 178, .16) 60%,
-    transparent 78%
-  );
-  padding: 2px;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity .35s ease;
-}
-#nav .nav-search-panel:hover::after {
-  opacity: 1;
+/* ---- 悬浮光效: 鼠标悬停面板时边框彩色发光 ----
+   边缘进入鼠标影响范围(hover)才亮, 用 box-shadow 多层光晕, 可靠且明显 */
+#nav .nav-search-panel:hover {
+  box-shadow:
+    0 0 0 1.5px rgba(110, 150, 235, .42),
+    0 0 20px rgba(90, 150, 255, .32),
+    0 0 48px rgba(124, 58, 237, .20),
+    0 24px 56px rgba(40, 54, 88, .24),
+    0 6px 16px rgba(40, 54, 88, .10),
+    inset 0 1px 0 rgba(255, 255, 255, .8);
 }
 
 /* 状态(loading/无结果/错误) */
@@ -477,15 +458,14 @@ html[data-theme='dark'] #nav .nav-search-panel {
     0 24px 56px rgba(0, 0, 0, .6),
     inset 0 1px 0 rgba(255, 255, 255, .10);
 }
-/* dark 鼠标跟随边缘光效: 冷蓝紫青 */
-html[data-theme='dark'] #nav .nav-search-panel::after {
-  background: radial-gradient(
-    260px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(120, 160, 255, .55) 0%,
-    rgba(140, 120, 255, .30) 40%,
-    rgba(60, 200, 180, .18) 60%,
-    transparent 78%
-  );
+/* dark 悬浮光效: 冷蓝紫青发光 */
+html[data-theme='dark'] #nav .nav-search-panel:hover {
+  box-shadow:
+    0 0 0 1.5px rgba(130, 170, 255, .38),
+    0 0 20px rgba(120, 160, 255, .28),
+    0 0 48px rgba(140, 120, 255, .18),
+    0 24px 56px rgba(0, 0, 0, .6),
+    inset 0 1px 0 rgba(255, 255, 255, .10);
 }
 html[data-theme='dark'] #nav .nav-search-status { color: rgba(205, 214, 235, .85) }
 html[data-theme='dark'] #nav .nav-search-status b { color: rgba(255, 255, 255, .95) }

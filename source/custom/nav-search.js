@@ -335,6 +335,9 @@
     wrap.classList.add('nav-search-open')
     // 打开时若上次有残留值, 同步控件状态
     updateControls(input.value.trim())
+    // 有残留值: 重新检索并恢复结果面板(收起时面板被隐藏 + lastQuery 清空,
+    // 重新展开若不重新 runSearch, 结果栏就不会再出现)
+    if (input.value.trim()) runSearch(input.value)
     if (doFocus !== false) {
       clearTimeout(showTimer)
       showTimer = setTimeout(function () {
@@ -403,14 +406,6 @@
   input.addEventListener('keyup', positionCaret)
   input.addEventListener('click', positionCaret)
   input.addEventListener('select', positionCaret)
-  // 结果浮层: 鼠标跟随边缘光效 —— 更新 --mx/--my(百分比), 让
-  // ::after 的径向光晕位置跟随鼠标, 边缘进入光效范围才发光
-  panel.addEventListener('mousemove', function (e) {
-    var r = panel.getBoundingClientRect()
-    if (!r.width || !r.height) return
-    panel.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(2) + '%')
-    panel.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(2) + '%')
-  })
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return
