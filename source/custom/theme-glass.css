@@ -356,9 +356,13 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
    子元素下方)，因此 mask 只淡出背景、永不伤文字 → 可与 hero 参数逐项一致。
    ============================================================ */
 
-/* ---- light：通透深蓝玻璃（与 hero light 完全一致） ---- */
+/* ---- light：通透深蓝玻璃（与 hero light 完全一致） ----
+   关键：isolation:isolate 强制 #page-header 形成独立 stacking context，
+   否则 ::before/::after 的 z-index:-1 会相对祖先 #body-wrap(z=1) 定位，
+   被推到页面 body 深色底之后 → 玻璃渐变与底部羽化在像素上不可见(无效)。 */
 #page-header.not-home-page,
 #page-header.post-bg {
+  isolation: isolate;
   background: linear-gradient(
     150deg,
     rgba(40, 60, 110, .40) 0%,
@@ -430,6 +434,7 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
 /* ---- dark：深色磨砂玻璃（与 hero dark 完全一致） ---- */
 html[data-theme='dark'] #page-header.not-home-page,
 html[data-theme='dark'] #page-header.post-bg {
+  isolation: isolate;
   background: linear-gradient(
     150deg,
     rgba(30, 40, 66, .42) 0%,
