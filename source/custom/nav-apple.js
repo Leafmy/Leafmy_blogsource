@@ -239,20 +239,37 @@
   }
 
   // 构建下拉面板（仅首次构建）
+  // DOM 结构（与导航栏光效同构）：
+  //   .nav-drop                       外层：定位/毛玻璃/圆角裁切/阴影
+  //     .nav-drop-edge > .nav-drop-edge-light   边缘发光(同 .nav-edge)
+  //     .nav-drop-glow                          面板内指针光斑
+  //     .nav-drop-scroll                        滚动内容(head + list)
   function buildPanel(item, label, articles) {
     if (item.querySelector('.nav-drop')) return
     var drop = document.createElement('div')
     drop.className = 'nav-drop'
+
+    // 边缘发光：固定 mask 环 + 大渐变层(transform 直写平移光心)，与导航一致
+    var edge = document.createElement('div')
+    edge.className = 'nav-drop-edge'
+    var edgeLight = document.createElement('div')
+    edgeLight.className = 'nav-drop-edge-light'
+    edge.appendChild(edgeLight)
+    drop.appendChild(edge)
 
     // 面板内指针光斑（同款光效语言）：transform 直写，跟随面板内指针
     var dropGlow = document.createElement('div')
     dropGlow.className = 'nav-drop-glow'
     drop.appendChild(dropGlow)
 
+    // 滚动内容容器
+    var scroll = document.createElement('div')
+    scroll.className = 'nav-drop-scroll'
+
     var head = document.createElement('div')
     head.className = 'nav-drop-head'
     head.textContent = label
-    drop.appendChild(head)
+    scroll.appendChild(head)
 
     var list = document.createElement('ul')
     list.className = 'nav-drop-list'
@@ -262,7 +279,7 @@
       empty.textContent = '暂无文章'
       list.appendChild(empty)
     } else {
-      articles.slice(0, 8).forEach(function (a) {
+      articles.slice(0, 12).forEach(function (a) {
         var li = document.createElement('li')
         var link = document.createElement('a')
         link.href = a.href
@@ -271,26 +288,30 @@
         list.appendChild(li)
       })
     }
-    drop.appendChild(list)
+    scroll.appendChild(list)
+    drop.appendChild(scroll)
     item.appendChild(drop)
     // fetch 是异步的：面板可能在鼠标静止(悬停按钮)后才构建完，
     // 此时没有新的 mousemove tick 来定位 glow → 立即用最近坐标初始化一次
     if (item.classList.contains('open')) updateDropGlow(dropX, dropY)
   }
 
-  // 更新已打开下拉面板内的指针光斑：光心 = 指针 clamp 到面板矩形内，
-  // 用 transform 直写(合成层)，鼠标在面板上时毛玻璃泛起与导航一致的辉光。
+  // 更新已打开下拉面板内的光效：边缘环光心(edge-light)与指针光斑(glow)
+  // 都跟随"指针 clamp 到面板矩形内"的位置，与导航栏两处光效同构同步。
   function updateDropGlow(x, y) {
     menus.forEach(function (item) {
       if (!item.classList.contains('open')) return
-      var glow = item.querySelector('.nav-drop .nav-drop-glow')
-      if (!glow) return
-      var r = glow.parentNode.getBoundingClientRect()
+      var drop = item.querySelector('.nav-drop')
+      if (!drop) return
+      var r = drop.getBoundingClientRect()
       if (!r.width || !r.height) return
       var gx = (x < r.left ? r.left : (x > r.right ? r.right : x)) - r.left
       var gy = (y < r.top ? r.top : (y > r.bottom ? r.bottom : y)) - r.top
-      // glow 260x180，中心(130,90)平移到指针
-      glow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
+      var glow = drop.querySelector('.nav-drop-glow')
+      if (glow) glow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
+      var el = drop.querySelector('.nav-drop-edge-light')
+      // edge-light 680x240，中心(340,120) 平移到指针(与导航 340x120 渐变参数一致)
+      if (el) el.style.transform = 'translate3d(' + (gx - 340).toFixed(2) + 'px,' + (gy - 120).toFixed(2) + 'px,0)'
     })
   }
 

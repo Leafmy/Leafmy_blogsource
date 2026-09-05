@@ -346,15 +346,11 @@ html[data-theme='dark'] #nav #toggle-menu i {
   transform: translateX(-50%) translateY(-6px);
   min-width: 240px;
   max-width: 340px;
-  max-height: 420px;
-  overflow: hidden auto;
-  padding: 10px;
+  /* 滚动区在内部 .nav-drop-scroll，外层只负责裁切圆角 */
+  overflow: hidden;
   border-radius: 16px;
-  /* 面板边缘发光：0 0 0 1px 细光边 + 外柔光，与导航栏光效语言呼应 */
-  box-shadow:
-    0 0 0 1px rgba(130, 185, 255, .35),
-    0 0 14px rgba(130, 185, 255, .18),
-    0 18px 50px rgba(15, 25, 50, .24);
+  /* 常规投影阴影；边缘发光由 .nav-drop-edge(环) 承担，与导航一致 */
+  box-shadow: 0 18px 50px rgba(15, 25, 50, .24);
   border: 1px solid rgba(255, 255, 255, .62);
 
   background: linear-gradient(150deg, rgba(246, 248, 252, .94), rgba(238, 243, 250, .90)) !important;
@@ -376,10 +372,43 @@ html[data-theme='dark'] #nav #toggle-menu i {
   top: -12px;
   height: 12px;
 }
+/* ---- 面板边缘发光（与导航栏 .nav-edge 完全同构）----
+   外层 .nav-drop-edge 用固定 mask 抠出 1.5px 环（同 .nav-edge），内嵌
+   .nav-drop-edge-light 大径向渐变层，JS transform 直写把光心平移到
+   面板内指针位置——颜色/强度/范围/过渡与导航边缘高亮一致。 */
+#nav .nav-drop-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  padding: 1.5px;
+  overflow: hidden;
+  z-index: 0;
+}
+#nav .nav-drop-edge-light {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 680px;
+  height: 240px;
+  background: radial-gradient(
+    340px 120px at 50% 50%,
+    rgba(140, 195, 255, .55),
+    rgba(150, 205, 255, .22) 45%,
+    rgba(160, 210, 255, .08) 70%,
+    transparent 90%
+  );
+  transform: translate3d(-340px, -120px, 0);
+  will-change: transform;
+}
 /* ---- 面板内指针光斑（与导航栏同款光效语言）----
    面板由 JS 构建时注入 .nav-drop-glow（固定渐变层, transform 直写平移），
    鼠标在面板上移动时, 光心跟随, 毛玻璃上泛起与导航栏一致的柔和辉光。
-   glow 为面板第一个子元素、z-index:0；head/list 浮在其上。 */
+   glow 为面板内层；head/list 浮在其上。 */
 #nav .nav-drop-glow {
   position: absolute;
   left: 0;
@@ -400,6 +429,15 @@ html[data-theme='dark'] #nav #toggle-menu i {
   z-index: 0;
   opacity: .9;
 }
+html[data-theme='dark'] #nav .nav-drop-edge-light {
+  background: radial-gradient(
+    340px 120px at 50% 50%,
+    rgba(120, 180, 255, .60),
+    rgba(90, 150, 250, .25) 45%,
+    rgba(70, 120, 230, .08) 70%,
+    transparent 90%
+  );
+}
 html[data-theme='dark'] #nav .nav-drop-glow {
   background: radial-gradient(
     130px 90px at 50% 50%,
@@ -414,6 +452,48 @@ html[data-theme='dark'] #nav .nav-drop-glow {
 #nav .nav-drop-empty {
   position: relative;
   z-index: 1;
+}
+/* ---- 面板滚动区：内容承载 + 自定义滚动条 ----
+   外层 .nav-drop 不滚动(仅裁圆角)；head/list 放进 .nav-drop-scroll，
+   超高时出现细窄的半透明主题色滚动条，与毛玻璃面板协调。 */
+#nav .nav-drop-scroll {
+  position: relative;
+  z-index: 1;
+  display: block;
+  padding: 10px;
+  max-height: 400px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Firefox 细滚动条 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 170, 255, .45) rgba(120, 170, 255, .08);
+}
+/* WebKit/Chromium 滚动条：窄轨 + 圆角半透明主题色滑块 */
+#nav .nav-drop-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+#nav .nav-drop-scroll::-webkit-scrollbar-track {
+  background: rgba(120, 170, 255, .07);
+  border-radius: 999px;
+}
+#nav .nav-drop-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(130, 185, 255, .55), rgba(100, 160, 255, .45));
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+#nav .nav-drop-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(150, 200, 255, .75), rgba(110, 170, 255, .60));
+}
+html[data-theme='dark'] #nav .nav-drop-scroll {
+  scrollbar-color: rgba(110, 175, 255, .5) rgba(110, 175, 255, .06);
+}
+html[data-theme='dark'] #nav .nav-drop-scroll::-webkit-scrollbar-track {
+  background: rgba(110, 175, 255, .06);
+}
+html[data-theme='dark'] #nav .nav-drop-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(110, 175, 255, .6), rgba(90, 150, 250, .5));
+  border: 1px solid rgba(255, 255, 255, .08);
 }
 /* 显示：桌面用 :hover，触屏用 .open（JS 点击切换）。
    不用 @media (hover:hover) 包裹（它在触屏/部分设备误判为 none，
@@ -495,10 +575,7 @@ html[data-theme='dark'] #nav .nav-drop-empty {
 /* 深色模式面板 */
 html[data-theme='dark'] #nav .nav-drop {
   background: linear-gradient(150deg, rgba(34, 40, 58, .96), rgba(20, 24, 36, .93)) !important;
-  box-shadow:
-    0 0 0 1px rgba(110, 175, 255, .28),
-    0 0 16px rgba(110, 175, 255, .15),
-    0 16px 44px rgba(0, 0, 0, .55);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, .55);
   border: 1px solid rgba(255, 255, 255, .12);
 }
 
@@ -516,6 +593,8 @@ html[data-theme='dark'] #nav .nav-drop {
     right: 0 !important;
     transform: translateY(-6px) !important;
     max-width: none;
+  }
+  #nav .nav-drop-scroll {
     max-height: 300px;
   }
   /* 触屏 .open 生效时也要去掉 translateX(-50%)，用全宽定位 */
