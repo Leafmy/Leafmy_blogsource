@@ -419,15 +419,25 @@
   var panelGlow = panel.querySelector('.nav-drop-glow')
   var lastMouseX = 0
   var lastMouseY = 0
+  var SEARCH_RX = 140  // 面板外扩椭圆半径 X(水平光效影响范围)
+  var SEARCH_RY = 120  // 面板外扩椭圆半径 Y(垂直光效影响范围)
   function updateSearchGlow(x, y) {
     lastMouseX = x
     lastMouseY = y
     var r = panel.getBoundingClientRect()
     if (!r.width || !r.height) return
-    // 光效范围 = 面板矩形: 指针在范围内才发光(移出渐灭, transition 平滑)
-    var inRange = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom
-    if (panelEdge) panelEdge.style.opacity = inRange ? '1' : '0'
-    if (panelGlow) panelGlow.style.opacity = inRange ? '.9' : '0'
+    // 椭圆影响范围 + 距离衰减(与导航栏 targetAlphaAt 同构):
+    // 指针在面板内 t=0 → 最亮; 在面板外但椭圆内 → 亮度 1-t 渐暗;
+    // 椭圆外 → 0 熄灭。即"光标在外面, 但光效影响范围先触及边缘, 边框就发光"。
+    var dx = 0, dy = 0
+    if (x < r.left) dx = r.left - x
+    else if (x > r.right) dx = x - r.right
+    if (y < r.top) dy = r.top - y
+    else if (y > r.bottom) dy = y - r.bottom
+    var t = Math.sqrt((dx / SEARCH_RX) * (dx / SEARCH_RX) + (dy / SEARCH_RY) * (dy / SEARCH_RY))
+    var alpha = Math.max(0, Math.min(1, 1 - t))
+    if (panelEdge) panelEdge.style.opacity = alpha.toFixed(3)
+    if (panelGlow) panelGlow.style.opacity = (alpha * 0.9).toFixed(3)
     // 光心 clamp 到面板内跟随指针(与 nav-drop 的 updateDropGlow 同构)
     var gx = (x < r.left ? r.left : (x > r.right ? r.right : x)) - r.left
     var gy = (y < r.top ? r.top : (y > r.bottom ? r.bottom : y)) - r.top
