@@ -382,6 +382,12 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(120, 170, 255, .45) rgba(120, 170, 255, .08);
+  /* 毛玻璃结果层：把背后透上来的指针光斑(.nav-drop-glow)模糊成
+     柔和磨砂光晕(而非实心浅蓝色块糊住文字), 文字浮于其上保持清晰 */
+  -webkit-backdrop-filter: blur(14px) saturate(165%);
+  backdrop-filter: blur(14px) saturate(165%);
+  background: rgba(255, 255, 255, .14);
+  border-radius: 12px;
 }
 /* WebKit/Chromium 滚动条: 窄轨 + 圆角半透明主题色滑块(与下拉面板同款) */
 #nav .nav-search-results::-webkit-scrollbar { width: 7px }
@@ -396,6 +402,10 @@ html[data-theme='dark'] #nav .nav-search-marquee {
 }
 html[data-theme='dark'] #nav .nav-search-results {
   scrollbar-color: rgba(110, 175, 255, .5) rgba(110, 175, 255, .06);
+  /* dark 磨砂玻璃结果层：深色薄雾膜, 光斑模糊成柔光, 文字清晰 */
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
+  background: rgba(20, 26, 42, .30);
 }
 html[data-theme='dark'] #nav .nav-search-results::-webkit-scrollbar-track {
   background: rgba(110, 175, 255, .06);
