@@ -416,16 +416,19 @@
     if (panelGlow) panelGlow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
     if (panelEdgeLight) panelEdgeLight.style.transform = 'translate3d(' + (gx - 340).toFixed(2) + 'px,' + (gy - 120).toFixed(2) + 'px,0)'
   }
+  panel.addEventListener('mouseenter', function (e) {
+    // 进入面板立即定位光心(避免鼠标静止进入时卡在初始左上角)
+    var r = panel.getBoundingClientRect()
+    if (!r.width || !r.height) return
+    setSearchGlow(e.clientX - r.left, e.clientY - r.top)
+  })
   panel.addEventListener('mousemove', function (e) {
     var r = panel.getBoundingClientRect()
     if (!r.width || !r.height) return
     setSearchGlow(e.clientX - r.left, e.clientY - r.top)
   })
-  panel.addEventListener('mouseleave', function () {
-    // 移出: 光心移回不可见位置(熄灭)
-    if (panelGlow) panelGlow.style.transform = 'translate3d(-130px, -90px, 0)'
-    if (panelEdgeLight) panelEdgeLight.style.transform = 'translate3d(-340px, -120px, 0)'
-  })
+  // 移出: 光斑熄灭由 CSS :hover 的 opacity 过渡承担(像顶部导航栏,
+  // 边缘离开影响范围才熄灭), 这里不再把光心移到左上角
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return

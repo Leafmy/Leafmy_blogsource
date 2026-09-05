@@ -327,6 +327,22 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   position: relative;
   z-index: 1;
 }
+/* ---- 光效可见性: 顶部导航栏同款"边缘进入影响范围才发光" ----
+   复用 .nav-drop-edge/.nav-drop-glow, 但它们的 opacity 是常亮(.9),
+   这里覆盖为默认熄灭(opacity:0), 鼠标进入面板(:hover, 即边缘进入
+   影响范围)才渐亮; 移出则渐灭。光心位置由 JS mouseenter/mousemove
+   直写 transform 跟随指针。 */
+#nav .nav-search-panel .nav-drop-edge,
+#nav .nav-search-panel .nav-drop-glow {
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+#nav .nav-search-panel:hover .nav-drop-edge {
+  opacity: 1;
+}
+#nav .nav-search-panel:hover .nav-drop-glow {
+  opacity: .9;
+}
 
 /* 状态(loading/无结果/错误) */
 #nav .nav-search-status {
