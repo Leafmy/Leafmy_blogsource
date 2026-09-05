@@ -25,19 +25,36 @@
   // ---- 指针周围局部光斑（跟随鼠标） ----
   // 光斑用 nav::after 的 radial-gradient 定位在 --gx/--gy（相对 nav 内坐标 %）。
   // mousemove 时换算指针相对 nav 的百分比并写入 CSS 变量，光斑即跟随指针。
+  // 性能（保证"跟手"）：
+  //   1) nav 是 fixed 定位，rect 几乎不变 → 缓存，仅在 resize 时重测；
+  //      避免每次 mousemove 都 getBoundingClientRect() 强制同步布局(reflow)。
+  //   2) mousemove 事件频率远高于屏幕刷新率 → rAF 节流：一帧最多写一次
+  //      CSS 变量，去掉每事件都触发样式重算造成的掉帧/滞后感。
   ;(function initGlow() {
-    var set = function (e) {
-      var r = nav.getBoundingClientRect()
-      var px = e.clientX - r.left
-      var py = e.clientY - r.top
-      var x = Math.max(0, Math.min(100, (px / r.width) * 100)).toFixed(2)
-      var y = Math.max(0, Math.min(100, (py / r.height) * 100)).toFixed(2)
+    var rect = null
+    var lastX = 0, lastY = 0 // 最近一次指针(视口坐标)，帧回调时使用
+    var raf = null
+    function measure() { rect = nav.getBoundingClientRect() }
+    measure()
+    window.addEventListener('resize', measure)
+    function writeGlow() {
+      raf = null
+      if (!rect || !rect.width || !rect.height) return
+      var px = lastX - rect.left
+      var py = lastY - rect.top
+      var x = Math.max(0, Math.min(100, (px / rect.width) * 100)).toFixed(2)
+      var y = Math.max(0, Math.min(100, (py / rect.height) * 100)).toFixed(2)
       nav.style.setProperty('--gx', x + '%')
       nav.style.setProperty('--gy', y + '%')
     }
-    nav.addEventListener('mousemove', set)
-    // 进入时先定位一次，避免光斑停留在默认 50% 处
-    nav.addEventListener('mouseenter', set)
+    function track(e) {
+      lastX = e.clientX
+      lastY = e.clientY
+      if (raf === null) raf = requestAnimationFrame(writeGlow)
+    }
+    nav.addEventListener('mousemove', track)
+    // 进入时立即定位一次，避免光斑停留在默认 50% 处（rAF 下一帧即写）
+    nav.addEventListener('mouseenter', track)
   })()
 
   // ---- 悬浮下拉：最新文章 / 归档 ----
