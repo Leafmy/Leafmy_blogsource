@@ -388,6 +388,10 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   backdrop-filter: blur(14px) saturate(165%);
   background: rgba(255, 255, 255, .14);
   border-radius: 12px;
+  /* 上下边缘渐隐遮罩：文字滚向列表边缘时先渐隐模糊过渡，再完全消失，
+     而非被生硬截断。顶部/底部各留 20px 渐变区。 */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
 }
 /* WebKit/Chromium 滚动条: 窄轨 + 圆角半透明主题色滑块(与下拉面板同款) */
 #nav .nav-search-results::-webkit-scrollbar { width: 7px }
