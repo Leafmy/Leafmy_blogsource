@@ -37,10 +37,7 @@
   bar.setAttribute('role', 'search')
   bar.setAttribute('aria-label', '搜索')
 
-  var ico = document.createElement('i')
-  ico.className = 'fas fa-search nav-search-ico'
-  bar.appendChild(ico)
-
+  // 图标固定在胶囊右侧(最右)，输入框在其左侧展开 —— 展开时图标不移动
   var input = document.createElement('input')
   input.className = 'nav-search-input'
   input.type = 'search'
@@ -48,6 +45,10 @@
   input.setAttribute('autocomplete', 'off')
   input.setAttribute('spellcheck', 'false')
   bar.appendChild(input)
+
+  var ico = document.createElement('i')
+  ico.className = 'fas fa-search nav-search-ico'
+  bar.appendChild(ico)
   wrap.appendChild(bar)
 
   var panel = document.createElement('div')

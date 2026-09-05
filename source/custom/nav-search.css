@@ -13,6 +13,7 @@
 #nav .nav-search {
   position: relative;
   margin-left: auto;
+  margin-right: 0;      /* 贴导航最右缘 */
   order: 10;
   z-index: 1002;
   display: flex;
@@ -27,9 +28,10 @@
 #nav .nav-search-bar {
   display: flex;
   align-items: center;
+  flex-direction: row;
   gap: 0;
   height: 38px;
-  padding: 0 10px 0 12px;
+  padding: 0 11px;        /* 左右对称, 默认图标水平居中 */
   border-radius: 999px;
   cursor: pointer;
   background: linear-gradient(150deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .14));
@@ -39,7 +41,7 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .6),
     0 2px 8px rgba(40, 54, 88, .06);
-  /* 收起态: 只容纳图标+padding(约42px) */
+  /* 收起态: 只容纳图标+对称padding */
   transition:
     background-color .2s ease,
     border-color .2s ease;
@@ -49,9 +51,10 @@
   border-color: rgba(255, 255, 255, .75);
 }
 
-/* 放大镜图标: 常态展示, 展开时作为输入框左侧图标 */
+/* 放大镜图标: 固定在胶囊右侧(最右), 展开时不移动 */
 #nav .nav-search-ico {
   flex: 0 0 auto;
+  order: 2;                     /* 放最右 */
   color: rgba(70, 84, 116, .85);
   font-size: 15px;
   line-height: 1;
@@ -62,8 +65,9 @@
   color: var(--theme-color, #49b1f5);
 }
 
-/* 输入框: 常态宽0不可见; 展开后滑出 */
+/* 输入框: 常态宽0不可见; 展开后从图标左侧向左滑出 */
 #nav .nav-search-input {
+  order: 1;                     /* 放图标左侧 */
   width: 0;
   height: 34px;
   padding: 0;
