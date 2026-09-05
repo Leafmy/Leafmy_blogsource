@@ -106,12 +106,24 @@
       var nx = dx / RX, ny = dy / RY
       return nx * nx + ny * ny <= 1
     }
+    // 熄灭光效：取消待写帧并把亮度归 0（带 lastA 去重）
+    function extinguish() {
+      if (raf !== null) { cancelAnimationFrame(raf); raf = null }
+      if (lastA !== 0) { nav.style.setProperty('--glow-a', '0'); lastA = 0 }
+    }
     // 挂在 document：鼠标从正文/窗口其它区域接近导航栏时也能点亮，
     // 离开范围后自动熄灭（每次 mousemove 重新判定）
     document.addEventListener('mousemove', track)
-    window.addEventListener('blur', function () {
-      if (lastA !== 0) { nav.style.setProperty('--glow-a', '0'); lastA = 0 }
+    // 顶部导航栏：鼠标向上移出浏览器窗口后 DOM 不再有 mousemove，光效会
+    // 卡在移出前的位置 → 监听"鼠标离开文档"立即熄灭。
+    //   - documentElement.mouseleave：鼠标离开 <html> 边界(含移出窗口)触发；
+    //   - document mouseout 且 relatedTarget===null：同样表示离开文档进入
+    //     浏览器 UI / 视口外，作为兜底（mouseleave 在某些情况不冒泡可靠）。
+    document.documentElement.addEventListener('mouseleave', extinguish)
+    document.addEventListener('mouseout', function (e) {
+      if (!e.relatedTarget) extinguish()
     })
+    window.addEventListener('blur', extinguish)
   })()
 
   // ---- 悬浮下拉：最新文章 / 归档 ----
