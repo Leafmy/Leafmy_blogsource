@@ -170,10 +170,9 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   display: none;
 }
 
-/* ---- 跑马灯: 覆盖输入框内容区, 颜色取大背景主色 ----
-   未输入时循环滚动一段提示文字; 输入后隐藏。
-   "颜色选取大背景的颜色": light 主色 = 液态玻璃冷雾蓝灰梯度;
-   dark 主色 = 深色磨砂蓝黑梯度。用背景渐变而非纯色, 与页面氛围一致。 */
+/* ---- 检索栏提示文字(静止, 不走马灯) ----
+   未输入时显示一段静态提示; 输入后隐藏。
+   颜色取大背景主色(实色, 避免渐变文字降级出黑)。 */
 #nav .nav-search-marquee {
   position: absolute;
   left: 30px;              /* 右移避开输入框文字起点/光标区(闪烁条) */
@@ -187,27 +186,19 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   /* 用明确实色(取大背景冷雾蓝主色), 不用 background-clip:text 渐变,
      避免 color:transparent 在降级时渲染成黑色伪影 */
   color: rgba(108, 130, 175, .95);
-  will-change: transform;
 }
 #nav .nav-search-open .nav-search-marquee {
   display: flex;
 }
 #nav .nav-search-marquee span {
   display: inline-block;
-  padding-right: 60%;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: .02em;
   opacity: .88;
-  animation: nav-search-marquee 16s linear infinite;
 }
 #nav .nav-search-marquee.hidden {
-  display: none;           /* 有输入时覆盖展开态, 隐藏跑马灯 */
-}
-/* 跑马灯循环滚动 */
-@keyframes nav-search-marquee {
-  0%   { transform: translateX(0) }
-  100% { transform: translateX(-100%) }
+  display: none;           /* 有输入时覆盖展开态, 隐藏提示文字 */
 }
 
 /* ---- 清除按钮: 真实可点击, 有输入才显示 ---- */

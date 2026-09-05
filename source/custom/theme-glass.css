@@ -153,34 +153,31 @@ html[data-theme='dark'] body {
 
 /* ================= 玻璃面板 ================= */
 
-/* ---- light：高斯模糊"冷雾玻璃"卡片 ----
-   用户反馈原版是"塑料纯色感"，根因：半透明白渐变(最高 .34)+ 大背
-   景本来是均匀亮蓝，backdrop 模糊后看不到光斑层次，结果是一块奶白
-   塑料板。改为"冷雾玻璃"语言：
-   - 底色降到很低 alpha(更透 → 模糊感可见)
-   - 大幅提高 backdrop blur(34→44px)与 saturate，让背后光斑
-     经模糊后形成彩色光晕 = 高端磨砂玻璃的视觉语言
+/* ---- light：真实磨砂玻璃卡片 ----
+   用户反馈旧版是"假玻璃"：卡片自身带半透明白色渐变(蒙层)，盖在
+   自身背景上，不是真磨砂。真玻璃关键：
+   - 背景【透明】(仅极低 alpha 白膜, 让背后 .bg-liquid 光斑透过来)
+   - 磨砂感完全由 backdrop-filter: blur() 承担(模糊背后光斑)
    - 加多层柔和阴影 + 内阴影模拟玻璃厚度
-   - 边框改为冷雾白(微蓝), 不再是高亮白边
-   - brightness 微降防刺眼 */
+   - 边框冷雾白(微蓝) + 顶部镜面高光 */
 .recent-post-item,
 .card-widget,
 #post {
   background: linear-gradient(
     155deg,
-    rgba(255, 255, 255, .22) 0%,
-    rgba(240, 245, 255, .12) 50%,
-    rgba(255, 255, 255, .18) 100%
+    rgba(255, 255, 255, .10) 0%,
+    rgba(255, 255, 255, .04) 50%,
+    rgba(255, 255, 255, .08) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(44px) saturate(180%) brightness(.96);
-  backdrop-filter: blur(44px) saturate(180%) brightness(.96);
-  border: 1px solid rgba(255, 255, 255, .50) !important;
+  -webkit-backdrop-filter: blur(46px) saturate(180%);
+  backdrop-filter: blur(46px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, .42) !important;
   box-shadow:
-    0 24px 52px rgba(40, 54, 88, .22),
+    0 24px 52px rgba(40, 54, 88, .20),
     0 6px 16px rgba(40, 54, 88, .08),
-    inset 0 1px 0 rgba(255, 255, 255, .85),
-    inset 0 -1px 0 rgba(255, 255, 255, .45),
-    inset 0 0 0 1px rgba(255, 255, 255, .12) !important;
+    inset 0 1px 0 rgba(255, 255, 255, .72),
+    inset 0 -1px 0 rgba(255, 255, 255, .38),
+    inset 0 0 0 1px rgba(255, 255, 255, .10) !important;
 }
 
 /* 顶部细镜面高光（light 更克制） */
@@ -196,24 +193,24 @@ html[data-theme='dark'] body {
   border-radius: inherit;
 }
 
-/* ---- dark：磨砂玻璃 ---- */
+/* ---- dark：真实磨砂玻璃 ---- */
 html[data-theme='dark'] .recent-post-item,
 html[data-theme='dark'] .card-widget,
 html[data-theme='dark'] #post {
   background: linear-gradient(
     160deg,
-    rgba(58, 66, 92, .42) 0%,
-    rgba(20, 24, 38, .38) 52%,
-    rgba(32, 38, 56, .42) 100%
+    rgba(30, 36, 54, .16) 0%,
+    rgba(16, 20, 34, .12) 52%,
+    rgba(24, 30, 46, .16) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(46px) saturate(160%) brightness(1.4);
-  backdrop-filter: blur(46px) saturate(160%) brightness(1.4);
-  border: 1px solid rgba(255, 255, 255, .16) !important;
+  -webkit-backdrop-filter: blur(46px) saturate(170%);
+  backdrop-filter: blur(46px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, .14) !important;
   box-shadow:
-    0 24px 56px rgba(0, 0, 0, .60),
-    0 4px 16px rgba(0, 0, 0, .32),
-    inset 0 1px 0 rgba(255, 255, 255, .28),
-    inset 0 -1px 0 rgba(255, 255, 255, .08) !important;
+    0 24px 56px rgba(0, 0, 0, .55),
+    0 4px 16px rgba(0, 0, 0, .30),
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    inset 0 -1px 0 rgba(255, 255, 255, .06) !important;
 }
 
 /* dark 高光更柔和 */
