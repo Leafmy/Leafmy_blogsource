@@ -30,7 +30,6 @@
 .bg-liquid {
   position: absolute;
   inset: -40%;
-  will-change: transform;
   background-image:
     radial-gradient(1300px 1050px at 12% 14%, rgba(95, 130, 200, .52), transparent 70%),
     radial-gradient(1400px 1080px at 86% 18%, rgba(70, 95, 170, .50), transparent 70%),
@@ -41,9 +40,9 @@
     radial-gradient(420px 320px at 32% 70%, rgba(248, 184, 142, .20), transparent 80%),
     /* 冷雾蓝底(基础色降曝光 + 弱饱和, 避免奶亮刺眼) */
     linear-gradient(160deg, #b8c4d8 0%, #95a5c2 45%, #a8b5cf 100%);
-  /* 液态流动：transform 平移（合成友好），幅度控制在层自身范围内、
-     不露出边缘（层每侧有 40% 越界量，平移 <=20% 安全）。 */
-  animation: glass-liquid-drift 46s ease-in-out infinite alternate;
+  /* [性能] 静态光斑：不做漂移动画。此前 transform 逐帧移动会让
+     16 个卡片 + 全屏 hero 的 backdrop-filter 每帧重新模糊采样
+     (切标签页/唤醒卡顿主因)，改为静态后玻璃只需光栅化一次并可缓存。 */
 }
 
 /* 液态玻璃的光斑漂移（transform 平移，走 GPU 合成层） */
@@ -85,8 +84,6 @@
     radial-gradient(520px 380px at 78% 58%, rgba(255, 255, 255, .05), transparent 72%),
     radial-gradient(430px 320px at 42% 84%, rgba(255, 255, 255, .04), transparent 72%);
   mix-blend-mode: soft-light;
-  will-change: transform;
-  animation: glass-liquid-swirl 34s ease-in-out infinite alternate;
   pointer-events: none;
 }
 
@@ -180,8 +177,8 @@ html[data-theme='dark'] body {
     rgba(255, 255, 255, .04) 50%,
     rgba(255, 255, 255, .08) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(46px) saturate(180%);
-  backdrop-filter: blur(46px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, .42) !important;
   box-shadow:
     0 20px 44px rgba(48, 66, 104, .16),
@@ -216,8 +213,8 @@ html[data-theme='dark'] #archive {
     rgba(16, 20, 34, .12) 52%,
     rgba(24, 30, 46, .16) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(46px) saturate(170%);
-  backdrop-filter: blur(46px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, .14) !important;
   box-shadow:
     0 20px 44px rgba(0, 0, 0, .38),
@@ -290,8 +287,8 @@ html[data-theme='dark'] #archive::before {
     rgba(78, 98, 142, .28) 50%,
     rgba(88, 106, 150, .32) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.04);
-  backdrop-filter: blur(34px) saturate(190%) brightness(1.04);
+  -webkit-backdrop-filter: blur(14px) saturate(160%) brightness(1.04);
+  backdrop-filter: blur(14px) saturate(160%) brightness(1.04);
 }
 
 /* 原有黑色遮罩改为柔和高光渐变，保留玻璃的镜面折射感
@@ -313,8 +310,8 @@ html[data-theme='dark'] #page-header.full_page {
     rgba(12, 16, 28, .44) 48%,
     rgba(22, 30, 48, .40) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
-  backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
+  backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
 }
 
 html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
@@ -414,8 +411,8 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
     rgba(78, 98, 142, .28) 50%,
     rgba(88, 106, 150, .32) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.04);
-  backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  -webkit-backdrop-filter: blur(14px) saturate(160%) brightness(1.04);
+  backdrop-filter: blur(14px) saturate(160%) brightness(1.02);
   /* 底部 260px S 形羽化（与首页 hero 完全相同） */
   -webkit-mask-image: linear-gradient(
     180deg,
@@ -480,8 +477,8 @@ html[data-theme='dark'] #page-header.post-bg::before {
     rgba(12, 16, 28, .34) 48%,
     rgba(22, 30, 48, .30) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
-  backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
+  backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
   -webkit-mask-image: linear-gradient(
     180deg,
     #000 0%,
