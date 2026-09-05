@@ -1133,7 +1133,8 @@ CDN:
     # fancybox:
     # fancybox_css:
     # fireworks:
-    # fontawesome:
+    # fontawesome: /custom/fontawesome/all.min.css
+    fontawesome: /custom/fontawesome/all.min.css
     # gitalk:
     # gitalk_css:
     # giscus:
