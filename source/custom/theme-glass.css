@@ -162,7 +162,8 @@ html[data-theme='dark'] body {
    - 边框冷雾白(微蓝) + 顶部镜面高光 */
 .recent-post-item,
 .card-widget,
-#post {
+#post,
+#archive {
   background: linear-gradient(
     155deg,
     rgba(255, 255, 255, .10) 0%,
@@ -183,7 +184,8 @@ html[data-theme='dark'] body {
 /* 顶部细镜面高光（light 更克制） */
 .recent-post-item::before,
 .card-widget::before,
-#post::before {
+#post::before,
+#archive::before {
   content: '';
   position: absolute;
   inset: 0 0 auto 0;
@@ -196,7 +198,8 @@ html[data-theme='dark'] body {
 /* ---- dark：真实磨砂玻璃 ---- */
 html[data-theme='dark'] .recent-post-item,
 html[data-theme='dark'] .card-widget,
-html[data-theme='dark'] #post {
+html[data-theme='dark'] #post,
+html[data-theme='dark'] #archive {
   background: linear-gradient(
     160deg,
     rgba(30, 36, 54, .16) 0%,
@@ -216,14 +219,16 @@ html[data-theme='dark'] #post {
 /* dark 高光更柔和 */
 html[data-theme='dark'] .recent-post-item::before,
 html[data-theme='dark'] .card-widget::before,
-html[data-theme='dark'] #post::before {
+html[data-theme='dark'] #post::before,
+html[data-theme='dark'] #archive::before {
   background: linear-gradient(180deg, rgba(255, 255, 255, .16), transparent);
 }
 
 /* ---- 卡片定位（供 ::before 与展开浮层使用） ---- */
 .recent-post-item,
 .card-widget,
-#post {
+#post,
+#archive {
   position: relative;
 }
 
@@ -234,7 +239,8 @@ html[data-theme='dark'] #post::before {
   }
   .recent-post-item,
   .card-widget,
-  #post {
+  #post,
+  #archive {
     background: var(--card-bg) !important;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -243,7 +249,8 @@ html[data-theme='dark'] #post::before {
   }
   .recent-post-item::before,
   .card-widget::before,
-  #post::before {
+  #post::before,
+  #archive::before {
     display: none;
   }
 }
