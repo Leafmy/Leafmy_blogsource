@@ -295,6 +295,9 @@
     wrap.classList.remove('nav-search-open')
     wrap.classList.remove('show-panel')
     lastQuery = ''
+    // 收起时隐藏清除按钮: 输入值仍在(供下次展开恢复), 但收起态的小胶囊
+    // 只显示图标, 叉不应浮在上面
+    clearBtn.classList.remove('show')
     input.blur()
   }
 
