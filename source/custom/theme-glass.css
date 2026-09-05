@@ -344,54 +344,97 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
 }
 
 /* ============================================================
-   附属页 header（post / 归档等非首页页）玻璃化 + 羽化
-   用户要求："所有附属页标题背景和大背景也要添加羽化"。
-   原状态：400px 纯主题蓝(#49b1f5)平涂块 + 30% 黑色整幅遮罩，
-   白字硬压、颜色生硬，与正文水平相切。
-   注意：不能用元素级 mask 做底部淡出（文章标题贴底会被一起
-   淡成透明），因此"羽化"改为以下不影响文字的柔和手段：
-   ① 大背景：纵向多停点半透明深色渐变 + backdrop-filter 玻璃化，
-      颜色从顶部到中段自然过渡、不再平涂；
-   ② 遮罩 ::before：纵向羽化渐变(顶深→中浅→底稍深)替代整幅死黑；
-   ③ 文字层之上不加任何淡出层，标题白字始终清晰。
+   附属页 header（文章详情 .post-bg / 归档·标签·分类 .not-home-page）
+   玻璃化 + 与首页 hero 完全一致的底部羽化
+   用户要求："这种副页面都要实现羽化，做到与首页 hero 完全一致"。
+   ------------------------------------------------------------
+   关键难点：文章页标题(.post-title) 与 归档页标题(#site-title) 都在
+   header 底部 / 中部，若像首页 hero 那样把 mask 用在 #page-header
+   本体上做底部淡出，会把标题文字一起淡成透明。
+   解法：把「玻璃渐变 + 底部羽化 mask」全部放在 ::before 背景层上，
+   ::before 是绝对定位、z 在文字之下(header 自身 z 序: ::before 默认在
+   子元素下方)，因此 mask 只淡出背景、永不伤文字 → 可与 hero 参数逐项一致。
    ============================================================ */
 
-/* ---- light：通透深蓝玻璃（多停点柔和渐变） ---- */
+/* ---- light：通透深蓝玻璃（与 hero light 完全一致） ---- */
 #page-header.not-home-page,
 #page-header.post-bg {
   background: linear-gradient(
-    160deg,
-    rgba(44, 66, 120, .52) 0%,
-    rgba(52, 70, 124, .44) 30%,
-    rgba(56, 72, 126, .42) 55%,
-    rgba(60, 76, 132, .46) 100%
+    150deg,
+    rgba(40, 60, 110, .40) 0%,
+    rgba(52, 68, 120, .36) 50%,
+    rgba(58, 72, 128, .40) 100%
   ) !important;
   -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
   backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
 }
 
-/* 遮罩羽化渐变：顶部与中部柔和压暗、底部稍回深承载贴底标题；
-   颜色停点拉开→不再是一整块死黑 */
+/* 背景 + 底部羽化 mask 全部放在 ::before（绝对定位，占满 header） */
 #page-header.not-home-page::before,
 #page-header.post-bg::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;              /* 置于文字/导航之下 */
+  pointer-events: none;
+  /* 玻璃背景复刻到背景层，保证 ::before 自己也是一块"玻璃" */
+  background: linear-gradient(
+    150deg,
+    rgba(40, 60, 110, .40) 0%,
+    rgba(52, 68, 120, .36) 50%,
+    rgba(58, 72, 128, .40) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  /* 底部 260px S 形羽化（与首页 hero 完全相同） */
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 260px),
+    rgba(0, 0, 0, .82) calc(100% - 180px),
+    rgba(0, 0, 0, .46) calc(100% - 120px),
+    rgba(0, 0, 0, .18) calc(100% - 70px),
+    rgba(0, 0, 0, .04) calc(100% - 34px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 260px),
+    rgba(0, 0, 0, .82) calc(100% - 180px),
+    rgba(0, 0, 0, .46) calc(100% - 120px),
+    rgba(0, 0, 0, .18) calc(100% - 70px),
+    rgba(0, 0, 0, .04) calc(100% - 34px),
+    transparent 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+/* 遮罩羽化渐变（覆盖在 ::before 玻璃之上，保留标题区轻微压暗保白字对比；
+   与 hero 的 ::before 高光渐变同一语言，但底部稍回深以承载贴底标题） */
+#page-header.not-home-page::after,
+#page-header.post-bg::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;              /* 在 ::before 之上、文字之下 */
+  pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(20, 30, 60, .38) 0%,
-    rgba(26, 40, 78, .26) 35%,
-    rgba(20, 30, 60, .20) 62%,
-    rgba(14, 22, 48, .36) 100%
+    rgba(20, 30, 60, .30) 0%,
+    rgba(30, 45, 90, .20) 40%,
+    rgba(20, 30, 60, .16) 68%,
+    rgba(14, 22, 48, .30) 100%
   ) !important;
 }
 
-/* ---- dark：深色磨砂玻璃 ---- */
+/* ---- dark：深色磨砂玻璃（与 hero dark 完全一致） ---- */
 html[data-theme='dark'] #page-header.not-home-page,
 html[data-theme='dark'] #page-header.post-bg {
   background: linear-gradient(
-    160deg,
-    rgba(34, 46, 74, .56) 0%,
-    rgba(18, 26, 44, .52) 34%,
-    rgba(12, 16, 28, .54) 66%,
-    rgba(16, 22, 38, .58) 100%
+    150deg,
+    rgba(30, 40, 66, .42) 0%,
+    rgba(12, 16, 28, .44) 48%,
+    rgba(22, 30, 48, .40) 100%
   ) !important;
   -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
   backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
@@ -399,23 +442,64 @@ html[data-theme='dark'] #page-header.post-bg {
 
 html[data-theme='dark'] #page-header.not-home-page::before,
 html[data-theme='dark'] #page-header.post-bg::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    150deg,
+    rgba(30, 40, 66, .42) 0%,
+    rgba(12, 16, 28, .44) 48%,
+    rgba(22, 30, 48, .40) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+  backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 260px),
+    rgba(0, 0, 0, .82) calc(100% - 180px),
+    rgba(0, 0, 0, .46) calc(100% - 120px),
+    rgba(0, 0, 0, .18) calc(100% - 70px),
+    rgba(0, 0, 0, .04) calc(100% - 34px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 260px),
+    rgba(0, 0, 0, .82) calc(100% - 180px),
+    rgba(0, 0, 0, .46) calc(100% - 120px),
+    rgba(0, 0, 0, .18) calc(100% - 70px),
+    rgba(0, 0, 0, .04) calc(100% - 34px),
+    transparent 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+html[data-theme='dark'] #page-header.not-home-page::after,
+html[data-theme='dark'] #page-header.post-bg::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, .04) 0%,
-    rgba(16, 24, 44, .16) 40%,
-    rgba(10, 14, 26, .22) 100%
+    rgba(255, 255, 255, .05) 0%,
+    rgba(16, 24, 44, .14) 40%,
+    rgba(10, 14, 26, .20) 100%
   ) !important;
 }
 
-/* 标题文字：玻璃底上加强投影/柔光，保证清晰可读（羽化柔和光晕） */
+/* 标题文字：玻璃底上加强投影/柔光（与 hero 标题一致的清晰度） */
 #page-header.not-home-page #site-title,
 #page-header.not-home-page #site-subtitle,
 #page-header.post-bg .post-title,
 #page-header.post-bg #post-meta {
   text-shadow:
-    0 1px 2px rgba(0, 0, 0, .45),
-    0 4px 18px rgba(0, 0, 0, .42),
-    0 0 1px rgba(0, 0, 0, .3);
+    0 2px 10px rgba(0, 0, 0, .55),
+    0 0 2px rgba(0, 0, 0, .35);
 }
 
 /* 移动端：玻璃开销大，退回主题纯色（与首页 hero 一致策略） */
@@ -430,8 +514,16 @@ html[data-theme='dark'] #page-header.post-bg::before {
   }
   #page-header.not-home-page::before,
   #page-header.post-bg::before,
+  #page-header.not-home-page::after,
+  #page-header.post-bg::after,
   html[data-theme='dark'] #page-header.not-home-page::before,
-  html[data-theme='dark'] #page-header.post-bg::before {
+  html[data-theme='dark'] #page-header.post-bg::before,
+  html[data-theme='dark'] #page-header.not-home-page::after,
+  html[data-theme='dark'] #page-header.post-bg::after {
     background: var(--mark-bg) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
