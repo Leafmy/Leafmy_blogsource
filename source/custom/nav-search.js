@@ -299,8 +299,11 @@
     if (!isOpen) return
     if (!wrap.contains(e.target)) closeBox()
   })
-  // 滚动收起
+  // 滚动: 仅当检索栏为空(无输入、无结果)时才收起;
+  // 有文字(正在输入/有搜索结果)时保持展开, 方便边滚动边看结果
+  // (导航 #nav 为 position:fixed, 浮层 absolute 随导航固定, 滚动不脱锚)
   window.addEventListener('scroll', function () {
-    if (isOpen) closeBox()
+    if (!isOpen) return
+    if (!input.value.trim()) closeBox()
   }, { passive: true })
 })()
