@@ -32,13 +32,13 @@
   inset: -40%;
   will-change: transform;
   background-image:
-    radial-gradient(1300px 1050px at 12% 14%, rgba(95, 130, 200, .42), transparent 70%),
-    radial-gradient(1400px 1080px at 86% 18%, rgba(70, 95, 170, .40), transparent 70%),
-    radial-gradient(1500px 1150px at 78% 84%, rgba(75, 110, 175, .36), transparent 72%),
-    radial-gradient(1350px 1000px at 14% 88%, rgba(105, 120, 180, .38), transparent 72%),
-    radial-gradient(980px 760px at 50% 46%, rgba(160, 175, 210, .36), transparent 74%),
-    radial-gradient(620px 480px at 58% 24%, rgba(230, 220, 240, .22), transparent 78%),
-    radial-gradient(420px 320px at 32% 70%, rgba(245, 180, 140, .14), transparent 80%),
+    radial-gradient(1300px 1050px at 12% 14%, rgba(95, 130, 200, .52), transparent 70%),
+    radial-gradient(1400px 1080px at 86% 18%, rgba(70, 95, 170, .50), transparent 70%),
+    radial-gradient(1500px 1150px at 78% 84%, rgba(75, 110, 175, .46), transparent 72%),
+    radial-gradient(1350px 1000px at 14% 88%, rgba(105, 120, 180, .48), transparent 72%),
+    radial-gradient(980px 760px at 50% 46%, rgba(165, 180, 214, .44), transparent 74%),
+    radial-gradient(620px 480px at 58% 24%, rgba(236, 226, 246, .30), transparent 78%),
+    radial-gradient(420px 320px at 32% 70%, rgba(248, 184, 142, .20), transparent 80%),
     /* 冷雾蓝底(基础色降曝光 + 弱饱和, 避免奶亮刺眼) */
     linear-gradient(160deg, #b8c4d8 0%, #95a5c2 45%, #a8b5cf 100%);
   /* 液态流动：transform 平移（合成友好），幅度控制在层自身范围内、
@@ -103,11 +103,11 @@
 /* dark：背景层换深色光斑（同样降透明度、拉长过渡去 banding） */
 html[data-theme='dark'] .bg-liquid {
   background-image:
-    radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .38), transparent 70%),
-    radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .33), transparent 70%),
-    radial-gradient(1700px 1300px at 78% 82%, rgba(50, 200, 170, .30), transparent 72%),
-    radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .26), transparent 72%),
-    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .06), transparent 78%),
+    radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .48), transparent 70%),
+    radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .43), transparent 70%),
+    radial-gradient(1700px 1300px at 78% 82%, rgba(50, 200, 170, .40), transparent 72%),
+    radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .34), transparent 72%),
+    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .09), transparent 78%),
     linear-gradient(160deg, #1a2138 0%, #121728 45%, #12182a 100%);
 }
 
@@ -174,10 +174,10 @@ html[data-theme='dark'] body {
   backdrop-filter: blur(46px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, .42) !important;
   box-shadow:
-    0 12px 30px rgba(40, 54, 88, .10),
-    0 3px 10px rgba(40, 54, 88, .05),
-    inset 0 1px 0 rgba(255, 255, 255, .40),
-    inset 0 -1px 0 rgba(255, 255, 255, .20) !important;
+    0 20px 44px rgba(48, 66, 104, .16),
+    0 6px 22px rgba(48, 66, 104, .09),
+    inset 0 1px 0 rgba(255, 255, 255, .48),
+    inset 0 -1px 0 rgba(255, 255, 255, .24) !important;
 }
 
 /* 顶部镜面高光已按用户要求去除（不再显示） */
@@ -210,9 +210,9 @@ html[data-theme='dark'] #archive {
   backdrop-filter: blur(46px) saturate(170%);
   border: 1px solid rgba(255, 255, 255, .14) !important;
   box-shadow:
-    0 12px 30px rgba(0, 0, 0, .28),
-    0 3px 10px rgba(0, 0, 0, .14),
-    inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+    0 20px 44px rgba(0, 0, 0, .38),
+    0 6px 22px rgba(0, 0, 0, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .16) !important;
 }
 
 /* dark 顶部高光也已去除 */
@@ -270,26 +270,27 @@ html[data-theme='dark'] #archive::before {
    若用半透明白色玻璃，白字配白底会看不清（显示 bug）。
    因此 light glass 采用蓝紫渐变压暗调，保留 backdrop 模糊的玻璃感，
    同时让白色标题清晰可读。
-   [v8] 用户反馈白色模式大标题背景偏深，减淡 alpha(.40→.26)并降低底色
-   饱和度(更偏冷雾灰蓝)，让背后 .bg-liquid 光斑透出更多、背景更轻盈；
-   仍保留足够灰度承载白色标题。 */
+   [v9] 恢复空间层次(去扁平化)：不再用深蓝紫蒙层把光斑压死，改
+   「冷雾蓝灰」低饱和渐变 + 适中 alpha(.32)，配合增强后的 .bg-liquid
+   光斑(.52)，透出明显的磨砂玻璃纵深; 白字对比靠 text-shadow 保证。 */
 #page-header.full_page {
   background: linear-gradient(
     150deg,
-    rgba(40, 60, 110, .26) 0%,
-    rgba(52, 68, 120, .22) 50%,
-    rgba(58, 72, 128, .26) 100%
+    rgba(64, 84, 128, .32) 0%,
+    rgba(78, 98, 142, .28) 50%,
+    rgba(88, 106, 150, .32) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
-  backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.04);
+  backdrop-filter: blur(34px) saturate(190%) brightness(1.04);
 }
 
-/* 原有黑色遮罩改为柔和高光渐变，保留玻璃的镜面折射感 */
+/* 原有黑色遮罩改为柔和高光渐变，保留玻璃的镜面折射感
+   [v9] 减弱遮罩(.25→.14), 不再压平首屏纵深 */
 #page-header.full_page:not(.not-top-img)::before {
   background: linear-gradient(
     180deg,
-    rgba(20, 30, 60, .25) 0%,
-    rgba(30, 45, 90, .20) 60%,
+    rgba(20, 30, 60, .14) 0%,
+    rgba(30, 45, 90, .12) 60%,
     transparent 100%
   ) !important;
 }
@@ -396,14 +397,14 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
   z-index: -1;              /* 置于文字/导航之下 */
   pointer-events: none;
   /* 玻璃背景复刻到背景层，保证 ::before 自己也是一块"玻璃"
-     [v8] 与首页 hero light 同步减淡 alpha(.40→.26), 让光斑更多透出 */
+     [v9] 与首页 hero light 同步: 冷雾蓝灰 + 适中 alpha(.32), 透出光斑纵深 */
   background: linear-gradient(
     150deg,
-    rgba(40, 60, 110, .26) 0%,
-    rgba(52, 68, 120, .22) 50%,
-    rgba(58, 72, 128, .26) 100%
+    rgba(64, 84, 128, .32) 0%,
+    rgba(78, 98, 142, .28) 50%,
+    rgba(88, 106, 150, .32) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.04);
   backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
   /* 底部 260px S 形羽化（与首页 hero 完全相同） */
   -webkit-mask-image: linear-gradient(
@@ -438,14 +439,14 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
   inset: 0;
   z-index: -1;              /* 在 ::before 之上、文字之下 */
   pointer-events: none;
-  /* [v7] 减弱压暗层，让 ::before 玻璃透出的光斑更多显现（标题对比
-     已由 text-shadow 保证） */
+  /* [v9] 压暗层保持轻盈(比 v7 略弱), 配合增强光斑透出纵深; 标题对比
+     已由 text-shadow 保证 */
   background: linear-gradient(
     180deg,
-    rgba(20, 30, 60, .18) 0%,
-    rgba(30, 45, 90, .12) 40%,
-    rgba(20, 30, 60, .10) 68%,
-    rgba(14, 22, 48, .20) 100%
+    rgba(20, 30, 60, .14) 0%,
+    rgba(30, 45, 90, .10) 40%,
+    rgba(20, 30, 60, .08) 68%,
+    rgba(14, 22, 48, .16) 100%
   ) !important;
 }
 
