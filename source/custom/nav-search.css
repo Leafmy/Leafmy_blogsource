@@ -26,7 +26,7 @@
    收起是同一胶囊: 不占位不遮挡, 不推挤菜单项(绝对定位外层无, 由
    #menus flex 提供; 胶囊自身宽度会变, 但胶囊在最右, 左侧是空白区)。 */
 #nav .nav-search-bar {
-  position: relative;      /* 供跑马灯 absolute 定位 */
+  position: relative;      /* 供跑马灯/marquee absolute 定位 */
   display: flex;
   align-items: center;
   flex-direction: row;
@@ -35,10 +35,10 @@
   padding: 0 11px;        /* 左右对称, 默认图标水平居中 */
   border-radius: 999px;
   cursor: pointer;
-  background: linear-gradient(150deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .14));
+  background: linear-gradient(150deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, .18));
   -webkit-backdrop-filter: blur(18px) saturate(170%);
   backdrop-filter: blur(18px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, .55);
+  border: 1px solid transparent;    /* 边框让给流光跑马灯层 */
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .6),
     0 2px 8px rgba(40, 54, 88, .06);
@@ -47,9 +47,67 @@
     background-color .2s ease,
     border-color .2s ease;
 }
+
+/* ---- 边框流光跑马灯(conic-gradient 旋转) ----
+   用户要求: 检索栏边框加跑马灯, 颜色取大背景的颜色。
+   原理: ::before 覆盖整个胶囊, background 用 conic-gradient 取大背景
+   主色渐变并随 --angle 旋转(流光); 用 mask 裁出"外缘 1.5px 环带"
+   (content-box 挖空中心), 只在边框处显色 → 沿胶囊圆角边缘流动的光。
+   @property 注册 --angle 让 conic 渐变角度可动画(Chrome/Edge 支持)。 */
+@property --nav-flow {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+#nav .nav-search-bar::before {
+  content: '';
+  position: absolute;
+  inset: -1px;            /* 盖住 1px 边框区域 */
+  border-radius: 999px;
+  z-index: 1;            /* 盖在 bar 背景之上; 中心由 mask 排除, 不遮挡内容 */
+  pointer-events: none;
+  /* light: 取 .bg-liquid 冷雾蓝主色做角向流光 */
+  background: conic-gradient(
+    from var(--nav-flow),
+    rgba(95, 130, 200, 0) 0%,
+    rgba(120, 150, 220, .85) 18%,
+    rgba(160, 178, 212, .95) 32%,
+    rgba(70, 95, 170, .85) 50%,
+    rgba(160, 178, 212, .95) 68%,
+    rgba(120, 150, 220, .85) 82%,
+    rgba(95, 130, 200, 0) 100%
+  );
+  /* 裁出外缘 1.5px 环带: content-box 显示, padding-box 之外露出 */
+  padding: 1.5px;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: nav-flow-rotate 6s linear infinite;
+}
+@keyframes nav-flow-rotate {
+  to { --nav-flow: 360deg }
+}
+
+/* dark: 边框流光取深色玻璃主色 */
+html[data-theme='dark'] #nav .nav-search-bar::before {
+  background: conic-gradient(
+    from var(--nav-flow),
+    rgba(90, 135, 240, 0) 0%,
+    rgba(120, 160, 250, .85) 18%,
+    rgba(180, 120, 245, .88) 32%,
+    rgba(60, 200, 180, .80) 50%,
+    rgba(245, 145, 82, .78) 68%,
+    rgba(120, 160, 250, .85) 82%,
+    rgba(90, 135, 240, 0) 100%
+  );
+}
 #nav .nav-search-bar:hover {
   background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
-  border-color: rgba(255, 255, 255, .75);
 }
 
 /* 放大镜图标: 固定在胶囊右侧(最右), 展开时不移动 */
@@ -322,12 +380,12 @@ html[data-theme='dark'] #nav .nav-search-marquee {
 /* ---- dark ---- */
 html[data-theme='dark'] #nav .nav-search-bar {
   background: linear-gradient(150deg, rgba(58, 66, 92, .55), rgba(20, 24, 38, .5));
-  border-color: rgba(255, 255, 255, .14);
+  border-color: transparent;   /* 边框让给流光跑马灯层 */
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .10), 0 2px 8px rgba(0, 0, 0, .3);
 }
 html[data-theme='dark'] #nav .nav-search-bar:hover {
   background: linear-gradient(150deg, rgba(70, 80, 108, .6), rgba(28, 34, 50, .56));
-  border-color: rgba(255, 255, 255, .22);
+  border-color: transparent;
 }
 html[data-theme='dark'] #nav .nav-search-ico { color: rgba(200, 212, 235, .85) }
 html[data-theme='dark'] #nav .nav-search-input { color: rgba(255, 255, 255, .9) }

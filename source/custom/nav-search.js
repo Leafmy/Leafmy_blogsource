@@ -54,7 +54,7 @@
   marquee.className = 'nav-search-marquee'
   marquee.setAttribute('aria-hidden', 'true')
   var marqueeInner = document.createElement('span')
-  marqueeInner.textContent = '搜索文章、标签、分类 · 输入关键字即可匹配 · 支持标题 / 标签 / 摘要命中'
+  marqueeInner.textContent = '搜索文章、标签、分类'
   marquee.appendChild(marqueeInner)
   bar.appendChild(marquee)
 
