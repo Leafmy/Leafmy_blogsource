@@ -153,7 +153,7 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
 }
 #nav .nav-search-open .nav-search-input {
   width: 290px;
-  padding: 0 4px 0 10px;
+  padding: 0 30px 0 10px;   /* 右 padding 30px 给绝对定位的清除按钮留位, 避免文字穿到×下 */
   opacity: 1;
   pointer-events: auto;
 }
@@ -201,13 +201,17 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   display: none;           /* 有输入时覆盖展开态, 隐藏提示文字 */
 }
 
-/* ---- 清除按钮: 真实可点击, 有输入才显示 ---- */
+/* ---- 清除按钮: 真实可点击, 有输入才显示 ----
+   用绝对定位锚在输入框右侧/图标左侧, 不参与 flex 布局,
+   这样输入前后胶囊宽度恒定(不因出现清除按钮而变宽)。 */
 #nav .nav-search-clear {
-  flex: 0 0 auto;
-  order: 2;                /* 输入框之后、图标之前 */
+  position: absolute;
+  right: 42px;             /* 图标宽18.8 + bar右padding 11 ~ 30, 取42避图标 */
+  top: 50%;
+  transform: translateY(-50%);
+  order: 2;
   width: 22px;
   height: 22px;
-  margin: 0 2px 0 0;
   display: none;
   align-items: center;
   justify-content: center;
@@ -216,7 +220,7 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   font-size: 13px;
   line-height: 1;
   cursor: pointer;
-  transition: color .18s ease, background-color .18s ease, transform .15s ease;
+  transition: color .18s ease, background-color .18s ease;
 }
 #nav .nav-search-clear.show {
   display: flex;
@@ -224,7 +228,6 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
 #nav .nav-search-clear:hover {
   color: var(--theme-color, #49b1f5);
   background: rgba(120, 170, 255, .16);
-  transform: scale(1.08);
 }
 
 /* ---- dark 跑马灯: 取深色玻璃主色(实色) ---- */
