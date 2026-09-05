@@ -48,8 +48,8 @@
     border-color .2s ease;
 }
 
-/* ---- 边框流光跑马灯(conic-gradient 旋转) ----
-   用户要求: 检索栏边框加跑马灯, 颜色取大背景的颜色。
+/* ---- 边框流光跑马灯(conic-gradient 旋转), 仅展开态显示 ----
+   用户要求: 检索栏边框加跑马灯, 颜色取大背景的颜色; 默认态不显示。
    原理: ::before 覆盖整个胶囊, background 用 conic-gradient 取大背景
    主色渐变并随 --angle 旋转(流光); 用 mask 裁出"外缘 1.5px 环带"
    (content-box 挖空中心), 只在边框处显色 → 沿胶囊圆角边缘流动的光。
@@ -59,6 +59,10 @@
   inherits: false;
   initial-value: 0deg;
 }
+@keyframes nav-flow-rotate {
+  to { --nav-flow: 360deg }
+}
+/* 弹性过渡: 展开态淡入, 收起态淡出(默认态不显示) */
 #nav .nav-search-bar::before {
   content: '';
   position: absolute;
@@ -66,6 +70,8 @@
   border-radius: 999px;
   z-index: 1;            /* 盖在 bar 背景之上; 中心由 mask 排除, 不遮挡内容 */
   pointer-events: none;
+  opacity: 0;
+  transition: opacity .4s ease;
   /* light: 取 .bg-liquid 冷雾蓝主色做角向流光 */
   background: conic-gradient(
     from var(--nav-flow),
@@ -89,8 +95,8 @@
   mask-composite: exclude;
   animation: nav-flow-rotate 6s linear infinite;
 }
-@keyframes nav-flow-rotate {
-  to { --nav-flow: 360deg }
+#nav .nav-search-open .nav-search-bar::before {
+  opacity: 1;
 }
 
 /* dark: 边框流光取深色玻璃主色 */
@@ -170,7 +176,7 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
    dark 主色 = 深色磨砂蓝黑梯度。用背景渐变而非纯色, 与页面氛围一致。 */
 #nav .nav-search-marquee {
   position: absolute;
-  left: 14px;
+  left: 30px;              /* 右移避开输入框文字起点/光标区(闪烁条) */
   right: 48px;             /* 给清除按钮/图标留位 */
   height: 100%;
   display: none;           /* 仅展开态显示, 常态(只剩图标)不出现 */
@@ -178,16 +184,9 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   overflow: hidden;
   pointer-events: none;    /* 不拦截输入框点击 */
   white-space: nowrap;
-  /* light: 取 .bg-liquid 基础色线性渐变(冷雾蓝) */
-  background-image: linear-gradient(90deg,
-    rgba(120, 140, 180, .90) 0%,
-    rgba(150, 168, 205, .90) 30%,
-    rgba(110, 132, 176, .90) 55%,
-    rgba(160, 178, 212, .90) 80%,
-    rgba(120, 140, 180, .90) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* 用明确实色(取大背景冷雾蓝主色), 不用 background-clip:text 渐变,
+     避免 color:transparent 在降级时渲染成黑色伪影 */
+  color: rgba(108, 130, 175, .95);
   will-change: transform;
 }
 #nav .nav-search-open .nav-search-marquee {
@@ -199,7 +198,7 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: .02em;
-  opacity: .9;
+  opacity: .88;
   animation: nav-search-marquee 16s linear infinite;
 }
 #nav .nav-search-marquee.hidden {
@@ -237,14 +236,9 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   transform: scale(1.08);
 }
 
-/* ---- dark 跑马灯: 取深色磨砂玻璃主色 ---- */
+/* ---- dark 跑马灯: 取深色玻璃主色(实色) ---- */
 html[data-theme='dark'] #nav .nav-search-marquee {
-  background-image: linear-gradient(90deg,
-    rgba(120, 150, 230, .82) 0%,
-    rgba(170, 120, 245, .82) 30%,
-    rgba(60, 200, 180, .82) 55%,
-    rgba(245, 145, 82, .78) 80%,
-    rgba(120, 150, 230, .82) 100%);
+  color: rgba(150, 175, 235, .88);
 }
 
 /* ---- 结果浮层(仅检索有内容才出现) ----
