@@ -368,18 +368,14 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
 /* ---- light：通透深蓝玻璃（与 hero light 完全一致） ----
    关键：isolation:isolate 强制 #page-header 形成独立 stacking context，
    否则 ::before/::after 的 z-index:-1 会相对祖先 #body-wrap(z=1) 定位，
-   被推到页面 body 深色底之后 → 玻璃渐变与底部羽化在像素上不可见(无效)。 */
+   被推到页面 body 深色底之后 → 玻璃渐变与底部羽化在像素上不可见(无效)。
+   [v7 修复] 玻璃渐变只保留在 ::before 单层：本体会背景改透明+去掉backdrop，
+   避免「本体渐变 + ::before 渐变」两层 alpha≈.40 叠加压死背后 .bg-liquid
+   彩色光斑（此前文章页标题区呈纯色平渐变的根因）。 */
 #page-header.not-home-page,
 #page-header.post-bg {
   isolation: isolate;
-  background: linear-gradient(
-    150deg,
-    rgba(40, 60, 110, .40) 0%,
-    rgba(52, 68, 120, .36) 50%,
-    rgba(58, 72, 128, .40) 100%
-  ) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
-  backdrop-filter: blur(34px) saturate(190%) brightness(1.02);
+  background: transparent !important;
 }
 
 /* 背景 + 底部羽化 mask 全部放在 ::before（绝对定位，占满 header） */
@@ -431,12 +427,14 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
   inset: 0;
   z-index: -1;              /* 在 ::before 之上、文字之下 */
   pointer-events: none;
+  /* [v7] 减弱压暗层，让 ::before 玻璃透出的光斑更多显现（标题对比
+     已由 text-shadow 保证） */
   background: linear-gradient(
     180deg,
-    rgba(20, 30, 60, .30) 0%,
-    rgba(30, 45, 90, .20) 40%,
-    rgba(20, 30, 60, .16) 68%,
-    rgba(14, 22, 48, .30) 100%
+    rgba(20, 30, 60, .18) 0%,
+    rgba(30, 45, 90, .12) 40%,
+    rgba(20, 30, 60, .10) 68%,
+    rgba(14, 22, 48, .20) 100%
   ) !important;
 }
 
@@ -444,14 +442,8 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
 html[data-theme='dark'] #page-header.not-home-page,
 html[data-theme='dark'] #page-header.post-bg {
   isolation: isolate;
-  background: linear-gradient(
-    150deg,
-    rgba(30, 40, 66, .42) 0%,
-    rgba(12, 16, 28, .44) 48%,
-    rgba(22, 30, 48, .40) 100%
-  ) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
-  backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
+  /* [v7] 玻璃只留 ::before 单层，本体改透明避免双层叠加压死光斑 */
+  background: transparent !important;
 }
 
 html[data-theme='dark'] #page-header.not-home-page::before,
@@ -462,9 +454,9 @@ html[data-theme='dark'] #page-header.post-bg::before {
   pointer-events: none;
   background: linear-gradient(
     150deg,
-    rgba(30, 40, 66, .42) 0%,
-    rgba(12, 16, 28, .44) 48%,
-    rgba(22, 30, 48, .40) 100%
+    rgba(30, 40, 66, .32) 0%,
+    rgba(12, 16, 28, .34) 48%,
+    rgba(22, 30, 48, .30) 100%
   ) !important;
   -webkit-backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
   backdrop-filter: blur(40px) saturate(150%) brightness(1.15);
@@ -498,11 +490,13 @@ html[data-theme='dark'] #page-header.post-bg::after {
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  /* [v7] 大幅减弱压暗层（此前 .14/.20 把光斑压得太实，标题对比
+     已由 text-shadow 保证），让 ::before 玻璃透出的彩色光斑更多显现 */
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, .05) 0%,
-    rgba(16, 24, 44, .14) 40%,
-    rgba(10, 14, 26, .20) 100%
+    rgba(255, 255, 255, .03) 0%,
+    rgba(16, 24, 44, .07) 40%,
+    rgba(10, 14, 26, .11) 100%
   ) !important;
 }
 
