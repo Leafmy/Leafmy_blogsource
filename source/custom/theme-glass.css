@@ -135,6 +135,16 @@ html[data-theme='dark'] .bg-liquid::after {
   }
 }
 
+/* ---- 标签页不可见时暂停所有动画（降低切换/唤醒卡顿）----
+   tab-visibility.js 在 document.hidden 时给 <html> 加 .tab-hidden,
+   此处暂停全站 CSS 动画。浏览器从后台节流恢复时无需再重算动画,
+   大幅减轻「从别的网页切回 / 从后台叫起」时的重绘卡顿。 */
+html.tab-hidden *,
+html.tab-hidden *::before,
+html.tab-hidden *::after {
+  animation-play-state: paused !important;
+}
+
 /* ---------- 内容层：垫在背景层之上 ---------- */
 #body-wrap {
   position: relative;

@@ -7,11 +7,14 @@
    ============================================================ */
 
 /* --- 注册字体 ---
+   [v2 性能优化] 字体已从 10.7MB TTF 子集化为 ~33KB woff2
+   (fonttools 按 GB2312 常用字 + 页面实际字符子集化, 约 18742 码点)。
+   仅保留 woff2(现代浏览器全面支持), 避免超大 ttf 双下载拖慢首屏。
    font-display: swap 让文本先以 fallback 显示，字体加载完成后替换，
-   避免整页等待 10MB 字体导致白屏。 */
+   避免整页等待字体下载导致白屏/卡顿。 */
 @font-face {
   font-family: 'PingFangMedium';
-  src: url('/custom/fonts/PingFang-Medium.ttf') format('truetype');
+  src: url('/custom/fonts/PingFang-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;

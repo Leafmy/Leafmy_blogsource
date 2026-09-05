@@ -1091,6 +1091,7 @@ inject:
     - <script src="/custom/announce-hover.js"></script>
     - <script src="/custom/visit-card.js"></script>
     - <script src="/custom/nav-search.js"></script>
+    - <script src="/custom/tab-visibility.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
