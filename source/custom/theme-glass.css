@@ -23,24 +23,24 @@
 }
 
 /* 液体层：放大到视口约 180%，承载全部彩色光斑渐变 + 漂移动画。
-   光斑透明度/停点保持不变（继续去 banding）。 */
+   v6 light 调整：用户反馈原版本过亮刺眼、缺少高级感，改为"冷雾
+   液态玻璃"——基础色由高亮浅蓝降为低饱和冷雾蓝(灰蓝系), 降低白
+   色高光透明度, 光斑色差拉大(冷蓝/雾紫/雾青/一点暖橘点缀), 让
+   卡片 backdrop-filter 模糊后能透出明显光斑层次 = "通透高级"。 */
 .bg-liquid {
   position: absolute;
   inset: -40%;
   will-change: transform;
-  /* 白色模式：与暗色模式同构的「液态玻璃」质感，用天蓝/青/白色调。
-     关键：光斑颜色必须拉开对比（深天蓝→亮青→白高光→一点暖色点缀），
-     否则色彩太接近（此前全是近似的浅天蓝）经 hero backdrop 模糊后融为一体，
-     看不出光斑层次 = "没效果"。加大色差让光斑透出、有液体流动感。 */
   background-image:
-    radial-gradient(1200px 1000px at 14% 16%, rgba(70, 150, 230, .50), transparent 70%),
-    radial-gradient(1300px 1000px at 88% 20%, rgba(60, 175, 250, .48), transparent 70%),
-    radial-gradient(1400px 1100px at 76% 82%, rgba(40, 120, 210, .44), transparent 72%),
-    radial-gradient(1250px 950px at 16% 88%, rgba(90, 140, 210, .46), transparent 72%),
-    radial-gradient(900px 700px at 50% 46%, rgba(150, 210, 250, .50), transparent 74%),
-    radial-gradient(520px 420px at 60% 26%, rgba(255, 255, 255, .55), transparent 78%),
-    radial-gradient(380px 300px at 34% 68%, rgba(255, 190, 150, .18), transparent 80%),
-    linear-gradient(160deg, #cdeafb 0%, #a5d8fb 45%, #c6ebff 100%);
+    radial-gradient(1300px 1050px at 12% 14%, rgba(95, 130, 200, .42), transparent 70%),
+    radial-gradient(1400px 1080px at 86% 18%, rgba(70, 95, 170, .40), transparent 70%),
+    radial-gradient(1500px 1150px at 78% 84%, rgba(75, 110, 175, .36), transparent 72%),
+    radial-gradient(1350px 1000px at 14% 88%, rgba(105, 120, 180, .38), transparent 72%),
+    radial-gradient(980px 760px at 50% 46%, rgba(160, 175, 210, .36), transparent 74%),
+    radial-gradient(620px 480px at 58% 24%, rgba(230, 220, 240, .22), transparent 78%),
+    radial-gradient(420px 320px at 32% 70%, rgba(245, 180, 140, .14), transparent 80%),
+    /* 冷雾蓝底(基础色降曝光 + 弱饱和, 避免奶亮刺眼) */
+    linear-gradient(160deg, #b8c4d8 0%, #95a5c2 45%, #a8b5cf 100%);
   /* 液态流动：transform 平移（合成友好），幅度控制在层自身范围内、
      不露出边缘（层每侧有 40% 越界量，平移 <=20% 安全）。 */
   animation: glass-liquid-drift 46s ease-in-out infinite alternate;
@@ -143,7 +143,9 @@ html[data-theme='dark'] .bg-liquid::after {
 
 /* ---------- body 兜底 ---------- */
 body {
-  background-color: #e9eef8;
+  /* light：冷雾灰蓝兜底，避免 .glass-bg 被覆盖/未注入时露出
+     高亮奶蓝刺眼 */
+  background-color: #b0bbcf;
 }
 html[data-theme='dark'] body {
   background-color: #0f1116;
@@ -151,24 +153,34 @@ html[data-theme='dark'] body {
 
 /* ================= 玻璃面板 ================= */
 
-/* ---- light：通透玻璃（saturate 降低防刺眼，保持清透） ---- */
+/* ---- light：高斯模糊"冷雾玻璃"卡片 ----
+   用户反馈原版是"塑料纯色感"，根因：半透明白渐变(最高 .34)+ 大背
+   景本来是均匀亮蓝，backdrop 模糊后看不到光斑层次，结果是一块奶白
+   塑料板。改为"冷雾玻璃"语言：
+   - 底色降到很低 alpha(更透 → 模糊感可见)
+   - 大幅提高 backdrop blur(34→44px)与 saturate，让背后光斑
+     经模糊后形成彩色光晕 = 高端磨砂玻璃的视觉语言
+   - 加多层柔和阴影 + 内阴影模拟玻璃厚度
+   - 边框改为冷雾白(微蓝), 不再是高亮白边
+   - brightness 微降防刺眼 */
 .recent-post-item,
 .card-widget,
 #post {
   background: linear-gradient(
     155deg,
-    rgba(255, 255, 255, .34) 0%,
-    rgba(255, 255, 255, .16) 50%,
-    rgba(255, 255, 255, .26) 100%
+    rgba(255, 255, 255, .22) 0%,
+    rgba(240, 245, 255, .12) 50%,
+    rgba(255, 255, 255, .18) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(170%) brightness(1.04);
-  backdrop-filter: blur(34px) saturate(170%) brightness(1.04);
-  border: 1px solid rgba(255, 255, 255, .70) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(180%) brightness(.96);
+  backdrop-filter: blur(44px) saturate(180%) brightness(.96);
+  border: 1px solid rgba(255, 255, 255, .50) !important;
   box-shadow:
-    0 20px 44px rgba(30, 48, 96, .16),
-    0 4px 12px rgba(30, 48, 96, .05),
-    inset 0 1px 0 rgba(255, 255, 255, .95),
-    inset 0 -1px 0 rgba(255, 255, 255, .60) !important;
+    0 24px 52px rgba(40, 54, 88, .22),
+    0 6px 16px rgba(40, 54, 88, .08),
+    inset 0 1px 0 rgba(255, 255, 255, .85),
+    inset 0 -1px 0 rgba(255, 255, 255, .45),
+    inset 0 0 0 1px rgba(255, 255, 255, .12) !important;
 }
 
 /* 顶部细镜面高光（light 更克制） */
@@ -179,7 +191,7 @@ html[data-theme='dark'] body {
   position: absolute;
   inset: 0 0 auto 0;
   height: 20%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .38), transparent);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .28), transparent);
   pointer-events: none;
   border-radius: inherit;
 }
