@@ -285,7 +285,7 @@
         var len = input.value.length
         if (len && input.setSelectionRange) input.setSelectionRange(len, len)
         positionCaret()
-      }, 280)
+      }, 430) // 对齐输入框展开动画(width .4s), 让自定义光标在展开完成后才出现
     }
     // 静默预取索引(不显示 loading, 输入时才用)
     if (!indexCache && indexState === 'idle') loadIndex().catch(function () {})

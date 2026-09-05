@@ -192,17 +192,26 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
     0 0 7px rgba(90, 150, 255, .60),
     0 0 16px rgba(90, 150, 255, .30);
   pointer-events: none;
-  opacity: 0;               /* 默认隐藏, .on 才显示 */
-  transition: opacity .18s ease;
-  animation: nav-caret-breathe 1.15s ease-in-out infinite;
+  /* 可见性由 .on 控制: 用 visibility + opacity 组合, visibility 是
+     硬开关(即使 opacity 过渡异常也能保证隐藏), opacity 负责柔和淡入淡出 */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .15s ease, visibility 0s linear .15s;
 }
 #nav .nav-search-caret.on {
+  visibility: visible;
   opacity: 1;
+  transition: opacity .15s ease, visibility 0s;
+  /* 呼吸动画放在 transform 上, 不与 opacity 可见性冲突;
+     出现时机由 JS 的 focus 延迟(对齐展开 0.4s)控制 */
+  animation: nav-caret-breathe 1.15s ease-in-out infinite;
 }
-/* 呼吸: 淡入淡出, 比原生 step 闪烁更柔和高级 */
+/* 呼吸: 轻微 scaleY 脉动(高度 1↔.84), 比原生 step 闪烁柔和;
+   关键: 只动 transform, 不动 opacity —— 否则动画会覆盖上面的
+   可见性 opacity, 导致光标在展开前就可见。 */
 @keyframes nav-caret-breathe {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: .28; }
+  0%, 100% { transform: translateY(-50%) scaleY(1); }
+  50%      { transform: translateY(-50%) scaleY(.84); }
 }
 /* dark: 光晕偏冷紫, 与深色玻璃协调 */
 html[data-theme='dark'] #nav .nav-search-caret {
