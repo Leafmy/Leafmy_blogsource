@@ -216,8 +216,9 @@
   var menus = nav.querySelectorAll('.menus_items .menus_item')
   var cache = {} // url -> [{ title, href }]
 
-  // 抓取目标页面的文章标题链接（利用同源 fetch + 模板解析，避免依赖已启用搜索）
-  function fetchArticles(url, selector) {
+  // 抓取目标页面的链接列表（利用同源 fetch + 模板解析，避免依赖已启用搜索）
+  // url: 抓取页; selector: 链接选择器; titleSel: 可选，取链接内更精确的标题节点
+  function fetchArticles(url, selector, titleSel) {
     if (cache[url]) return Promise.resolve(cache[url])
     return fetch(url, { credentials: 'same-origin' })
       .then(function (r) { return r.text() })
@@ -225,8 +226,10 @@
         var doc = new DOMParser().parseFromString(html, 'text/html')
         var out = []
         doc.querySelectorAll(selector).forEach(function (a) {
+          var tEl = titleSel ? a.querySelector(titleSel) : null
+          var title = tEl ? tEl.textContent : (a.getAttribute('title') || a.textContent)
           out.push({
-            title: (a.getAttribute('title') || a.textContent).replace(/\s+/g, ' ').trim(),
+            title: title.replace(/\s+/g, ' ').trim(),
             href: a.getAttribute('href')
           })
         })
@@ -292,9 +295,10 @@
   }
 
   // 菜单 href → 下拉配置
+  // 文章：首页最近文章标题；归档：归档页侧栏的"月度归档"入口(如 九月 2026 → /archives/2026/09/)
   var config = [
     { href: '/', label: '文章', selector: '.recent-post-items a.article-title' },
-    { href: '/archives/', label: '归档', selector: '.article-sort-item-title' }
+    { href: '/archives/', label: '归档', selector: '.card-archive-list-link', titleSel: '.card-archive-list-date' }
   ]
 
   menus.forEach(function (item) {
@@ -309,7 +313,7 @@
       // 是否打开：若鼠标此刻已在"文字/图标<a>"区内则打开；否则交给 mousemove 状态机。
       // 避免指针刚触碰胶囊边缘(padding 留白)就弹面板（用户嫌检测范围太大）。
       if (isInLinkZone(item, e.clientX, e.clientY)) setOpen(item, true)
-      fetchArticles(conf.href, conf.selector)
+      fetchArticles(conf.href, conf.selector, conf.titleSel)
         .then(function (articles) { buildPanel(item, conf.label, articles) })
         .catch(function () { buildPanel(item, conf.label, []) })
     })
