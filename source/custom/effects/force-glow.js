@@ -14,6 +14,7 @@
 
   /* ---------- 全局 rAF 调度(所有实例共享一个循环) ---------- */
   var tickers = []        // 活跃实例
+  var allHosts = []       // 全部实例(用于鼠标在 host 外松开的兜底释放)
   var rafId = 0
   function scheduleTick() {
     if (rafId || !tickers.length) return
@@ -137,7 +138,15 @@
           (self.opts.maxForce - self.opts.minForce) * Math.max(0.15, pressureOf(e))
       }
       self._ensureActive()
-      host.setPointerCapture && host.setPointerCapture(e.pointerId)
+      // pointer capture 会把后续 mouseup/click 的目标重定向到 host(容器),
+      // 链接(<a>)点击的默认跳转会因此失效(桌面导航菜单点击无效的根因)。
+      // → 鼠标绝不 capture: 点击链接需 click 落在 <a> 上, 且鼠标本身无
+      //   "按住移出仍跟随"的需求 —— 在 host 外松开由模块底部 document
+      //   pointerup 兜底释放。触屏/压感笔保留 capture(按住拖出元素仍持续
+      //   跟随光效, 其点击跳转由浏览器合成 click 处理, 不受 capture 影响)。
+      if (e.pointerType !== 'mouse') {
+        host.setPointerCapture && host.setPointerCapture(e.pointerId)
+      }
     })
     host.addEventListener('pointerup', function () { self._release() })
     host.addEventListener('pointercancel', function () { self._release() })
@@ -275,10 +284,22 @@
     ;[].forEach.call(list, function (el) {
       if (!el || el._forceGlow) return
       el._forceGlow = new ForceGlowHost(el, o)
+      allHosts.push(el._forceGlow)
       out.push(el._forceGlow)
     })
     return out
   }
+
+  /* 鼠标不再 pointer capture 后, 若按住鼠标移出 host 再松开, host 的
+     pointerup 不会触发 → pressed 会卡住。全局兜底: 任意位置松开鼠标都
+     释放所有按压中的实例(_release 幂等, 已释放的会直接 return)。
+     注意: 该监听需在 host 的 pointerup 冒泡后仍执行 → 挂在 document
+     冒泡阶段即可(host 内松开时先走 host._release, 此处重复调用无副作用)。 */
+  document.addEventListener('pointerup', function () {
+    for (var i = 0; i < allHosts.length; i++) {
+      if (allHosts[i].pressed) allHosts[i]._release()
+    }
+  })
 
   /* 自动挂载: 导航栏菜单项(替代旧 hover 静态光晕) */
   function autoMount() {
