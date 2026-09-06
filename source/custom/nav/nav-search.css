@@ -94,18 +94,18 @@ html[data-theme='dark'] #nav .nav-search-bar {
 }
 #nav .nav-search-rail .nav-rail-head {
   will-change: transform;
-  /* 移动点端点柔化(去掉突兀大亮斑): 轻微模糊 + 缩小, 让光带端点柔和过渡 */
-  filter: blur(1.5px) saturate(1.1);
+  /* 动点 = 光带前沿的一团柔光, 不是清晰硬圆点: 大模糊 + 轻微降饱和, 彻底去掉"无端光"感 */
+  filter: blur(3.5px) saturate(1.05);
+  opacity: .92;
 }
-/* 移动点: 去掉外扩大光晕, 只保留贴合光带端点的柔和亮芯 */
+/* 柔光主体: 大而淡的光晕, 取代原来清晰的实心亮圆 */
 #nav .nav-search-rail .nav-rail-head .nav-rail-head-glow {
-  fill: hsla(var(--rail-hue), var(--rail-sat), 70%, .35);
-  /* 保留轻微柔光, 但无生硬 drop-shadow 大光斑 */
+  fill: hsla(var(--rail-hue), var(--rail-sat), 62%, .42);
 }
+/* 动点芯: 更淡更模糊, 与光带尖端融为一体的柔光, 不再单独成像 */
 #nav .nav-search-rail .nav-rail-head .nav-rail-head-dot {
-  fill: hsl(var(--rail-hue), var(--rail-sat), 88%);
-  /* 光带端点更亮但不突兀; 光晕已由模糊承担, 去掉厚重 drop-shadow */
-  filter: blur(.3px);
+  fill: hsla(var(--rail-hue), var(--rail-sat), 78%, .55);
+  filter: blur(1px);
 }
 #nav .nav-search-bar:hover {
   background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));

@@ -175,11 +175,11 @@
     railPath.setAttribute('d', d)
     railTail.setAttribute('d', d)
     railPathLen = railPath.getTotalLength()
-    // 移动点半径与流光带线宽(glow 仅作贴合光带端点的柔和亮芯, 不再大范围外扩)
+    // 动点 = 光带前端的柔光团: glow 大而淡(柔光主体), dot 只作淡芯
     var dotSize = parseFloat(getComputedStyle(bar).getPropertyValue('--rail-dot')) || 8
     var headR = Math.max(2.4, dotSize / 2)
-    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', headR * 1.6)
-    railHead.querySelector('.nav-rail-head-dot').setAttribute('r', headR)
+    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', headR * 2.6)
+    railHead.querySelector('.nav-rail-head-dot').setAttribute('r', headR * 0.85)
   }
 
   // rAF: 移动点从固定起点出发沿闭合路径前进, 流光带"描边生长"逐渐变长,
