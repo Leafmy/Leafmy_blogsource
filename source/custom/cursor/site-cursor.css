@@ -1,125 +1,20 @@
 /* ============================================================
-   全站自定义光标 (site-cursor.css)
+   全站自定义光标 (site-cursor.css) —— 系统光标图片方案
    ------------------------------------------------------------
-   参考图同款「箭头光标」：跟手 + 不掉帧优先。
-   - 亮色: 白描边 + 黑芯
-   - 暗色: 亮芯 + 淡描边 + 冷光晕
-   - 内部: 流光溢彩(静态渐变 + opacity 呼吸, 无 transform 动画)
-   - 无蓝色磨砂底
-   性能关键(消除掉帧):
-   - 无 SVG filter / 无 clip-path / 无持续 transform 动画
-   - 光标本体只 translate3d(走 GPU 合成层)
-   - 流光靠预渲染渐变层 + opacity 呼吸(compositor 友好)
-   - 光晕 = 纯 CSS radial-gradient, 无滤镜
+   参考图同款「箭头光标」，用 CSS cursor:url() 挂真实图片，
+   由操作系统引擎直接渲染，天然零延迟、零掉帧(完全绕开网页合成器)。
+   - 亮色: 黑芯+深灰描边 (cursor-light.png)  白底清晰
+   - 暗色: 白芯+冷灰描边+冷蓝光晕 (cursor-dark.png) 深底清晰
+   - 热点(尖端) = (4,4)
+   两张图已用 4x 超采样抗锯齿生成, 边缘圆润。
    ============================================================ */
 
-/* 全站隐藏系统默认光标 */
-* {
-  cursor: none !important;
+/* 亮色: 黑芯箭头(覆盖 light + 未设主题的默认) */
+html[data-theme='light'] *,
+html:not([data-theme='dark']) * {
+  cursor: url('/custom/cursor/cursor-light.png') 4 4, auto;
 }
-
-/* 位置经 CSS 变量承载, transform 由 CSS 合成(translate3d 走 GPU), 无插值延迟 */
-:root {
-  --cur-x: 0px;
-  --cur-y: 0px;
-  --pressed-scale: 1;
-  --flow-opacity: 0;      /* 流光默认灭; 悬停 = 1 */
-  --core-alpha: 0.90;     /* 芯的不透明度, 让流光从边缘透出 */
-}
-#site-cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 26px;
-  height: 26px;
-  margin-left: -2px;      /* 箭头尖端对准坐标点 */
-  margin-top: -2px;
-  pointer-events: none;
-  z-index: 99999;
-  opacity: 0;
-  transition: opacity .18s ease;   /* 只过渡 opacity, transform 不过渡以保持跟手 */
-  will-change: transform;
-  transform: translate3d(var(--cur-x), var(--cur-y), 0)
-             scale(var(--pressed-scale));
-  transform-origin: 2px 2px;       /* 以尖端为缩放原点 */
-}
-#site-cursor.on  { opacity: 1; }
-#site-cursor.pressed { --pressed-scale: .86; }
-
-#site-cursor .cur-arrow {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-/* 流光层(箭头形状的静态渐变, 只做 opacity 呼吸, 无 transform 动画) */
-#site-cursor .a-flow {
-  fill: url(#cur-flow-grad);
-  opacity: var(--flow-opacity);
-  transition: opacity .22s ease;      /* compositor 友好 */
-}
-#site-cursor.glow .a-flow { --flow-opacity: 1; }
-
-/* 芯(盖在流光影上, 半透明让流光从边缘透出) */
-#site-cursor .a-core {
-  fill: #171a20;                      /* 亮色=黑芯 */
-  fill-opacity: var(--core-alpha);
-}
-/* 暗色: 亮芯 */
-html[data-theme='dark'] #site-cursor .a-core {
-  fill: #f5f8ff;
-}
-
-/* 白描边(亮色=参考图同款) */
-#site-cursor .a-stroke {
-  fill: none;
-  stroke: rgba(255, 255, 255, .95);
-  stroke-width: 1.4;
-  stroke-linejoin: round;
-}
-html[data-theme='dark'] #site-cursor .a-stroke {
-  stroke: rgba(255, 254, 254, .55);
-}
-
-/* 暗色冷光晕: 用外层 ring 的 radial-gradient 承担, 不带 SVG 滤镜 */
-html[data-theme='dark'] #site-cursor .a-core {
-  filter: none;
-}
-
-/* ---------- 光晕(纯 CSS radial-gradient, 无滤镜) ---------- */
-#site-cursor-ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 30px;
-  height: 30px;
-  margin-left: -15px;
-  margin-top: -15px;
-  pointer-events: none;
-  z-index: 99998;
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity .18s ease;   /* 只过渡 opacity */
-  will-change: transform;
-  transform: translate3d(var(--cur-x), var(--cur-y), 0)
-             scale(var(--pressed-scale));
-  transform-origin: center;
-  --pressed-scale: 1;
-}
-#site-cursor-ring.on     { opacity: 1; }
-#site-cursor-ring.pressed { --pressed-scale: .70; opacity: .5; }
-/* 亮色柔光环 */
-#site-cursor-ring {
-  background: radial-gradient(circle, rgba(130, 160, 210, .10) 0%, rgba(130, 160, 210, 0) 70%);
-  border: 1px solid rgba(120, 140, 175, .32);
-}
-/* 暗色冷光晕 */
-html[data-theme='dark'] #site-cursor-ring {
-  background: radial-gradient(circle, rgba(150, 190, 255, .10) 0%, rgba(150, 190, 255, 0) 70%);
-  border-color: rgba(160, 185, 255, .30);
-}
-
-/* ---------- 触屏/无精细指针: 彻底隐藏, 保留系统行为 ---------- */
-@media (pointer: coarse), (hover: none) {
-  #site-cursor, #site-cursor-ring { display: none !important; }
+/* 暗色: 白芯箭头 */
+html[data-theme='dark'] * {
+  cursor: url('/custom/cursor/cursor-dark.png') 4 4, auto;
 }
