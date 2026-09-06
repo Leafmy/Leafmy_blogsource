@@ -7,9 +7,6 @@
      (渐变玻璃 + backdrop blur + 细白描边 + 内高光), 不再用透明
      扁平圆点 —— 视觉上成为检索键的"兄弟胶囊", 而不再像和检索栏
      连成一体(用户反馈"切换键移动像和检索栏一体, 很奇怪")。
-   - 仅桌面端(min-width:769px): 检索栏宽度过渡期间, darkmode-move.js
-     给 #nav 加 .nav-moving, 触发检索胶囊 + 切换键各播放一次运动模糊
-     脉冲(动态模糊), 强化"移动"的速度感。
    依赖 darkmode-move.js 把 #darkmode 移入 #menus。
    ============================================================ */
 
@@ -75,21 +72,3 @@ html[data-theme='dark'] #nav #darkmode:hover {
   }
 }
 
-/* 运动模糊脉冲(动态模糊)关键帧: 起 → 峰值 blur → 归零。
-   只用于移动瞬间的"速度感", 常态 blur(0) 不残留。 */
-@keyframes nav-motion-blur {
-  0%   { filter: blur(0); }
-  35%  { filter: blur(2.4px); }
-  100% { filter: blur(0); }
-}
-
-/* 仅桌面端: 检索胶囊宽度过渡期间, darkmode-move.js 给 #nav 加
-   .nav-moving, 让检索胶囊 + 切换键各播放一次 blur 脉冲。
-   时长(.34s)略短于宽度过渡(.4s), 保证模糊在移动停止前先归零,
-   不会在停止后残留或抖动。 */
-@media (min-width: 769px) {
-  #nav.nav-moving .nav-search-bar,
-  #nav.nav-moving #darkmode {
-    animation: nav-motion-blur .34s ease-out;
-  }
-}

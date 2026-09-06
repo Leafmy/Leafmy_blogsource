@@ -18,6 +18,15 @@
   z-index: 1002;
   display: flex;
   align-items: center;
+  /* 桌面端显式宽度 + 过冲缓动 = "回收惯性"手感(与手机端同款结构)。
+     若把过冲放在输入框 width 上, 收到 0 时会被钳制无法下冲 → 惯性消失;
+     故把过冲放在容器 width 上(可下冲到 43px 以下再回弹), 胶囊体 100% 填充。 */
+  width: 43px;
+  transition: width .4s cubic-bezier(.3, 1.25, .3, 1);
+}
+#nav .nav-search.nav-search-open {
+  /* 展开态总宽: 输入 290 + 图标 19 + 左右 padding 22 + 边框 2 = 333 */
+  width: 333px;
 }
 
 /* ---- 一体胶囊本体(图标 + 输入同盒) ----
@@ -31,6 +40,9 @@
   align-items: center;
   flex-direction: row;
   gap: 0;
+  width: 100%;             /* 撑满 .nav-search 容器, 由容器宽度过渡带动过冲惯性 */
+  min-width: 0;
+  box-sizing: border-box;
   height: 38px;
   padding: 0 11px;        /* 左右对称, 默认图标水平居中 */
   border-radius: 999px;
@@ -147,7 +159,9 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
 /* 输入框: 常态宽0不可见; 展开后从图标左侧向左滑出 */
 #nav .nav-search-input {
   order: 1;                     /* 放图标左侧 */
+  flex: 0 0 0%;                 /* 收起态: 零宽 */
   width: 0;
+  min-width: 0;
   height: 34px;
   padding: 0;
   border: 0;
@@ -159,17 +173,17 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   opacity: 0;
   pointer-events: none;
   cursor: text;
-  /* [美化] 隐藏原生光标: 由 .nav-search-caret 自定义光标接管
-     (渐变 + 柔和光晕 + 呼吸动画), 原生细竖线/块光标质感不够 */
+  /* [美化] 隐藏原生光标: 由 .nav-search-caret 自定义光标接管 */
   caret-color: transparent;
-  /* 非线性滑出: 先慢后快的缓入, 视觉上平滑"从右向左生长" */
+  /* 宽度不再自行过渡: 由 .nav-search 容器 width 过渡统一驱动(过冲惯性),
+     输入框用 flex-grow 填满图标左侧空间 */
   transition:
-    width .4s cubic-bezier(.3, 1.25, .3, 1),
     opacity .28s ease .06s,
     padding .28s ease .06s;
 }
 #nav .nav-search-open .nav-search-input {
-  width: 290px;
+  flex: 1 1 0%;                 /* 展开态: 填满图标左侧的胶囊内容区(~290px) */
+  width: auto;
   padding: 0 30px 0 10px;   /* 右 padding 30px 给绝对定位的清除按钮留位, 避免文字穿到×下 */
   opacity: 1;
   pointer-events: auto;
@@ -532,10 +546,12 @@ html[data-theme='dark'] #nav .nav-search-item a:hover {
   #nav .nav-search {
     flex: 0 0 auto;
     width: 39px;
-    transition: width .4s cubic-bezier(.3, 1.25, .3, 1), flex-grow .4s cubic-bezier(.3, 1.25, .3, 1);
+    transition: width .4s cubic-bezier(.3, 1.25, .3, 1);
   }
   #nav .nav-search.nav-search-open {
-    flex-grow: 1;                     /* 吸收 justify-end 的尾差, 左缘贴齐 */
+    /* 不用 flex-grow:1 —— 否则会把 darkmode 切换键右侧的空隙也吸走,
+       检索栏左缘贴到切换键(碰到)。改为纯 width 定宽, 空隙交给切换键的
+       margin-right:auto 吸收, 检索栏与切换键保持 6px 间距。 */
     width: var(--nav-search-expand-w, 260px);
   }
   /* 胶囊本体: 撑满容器 */

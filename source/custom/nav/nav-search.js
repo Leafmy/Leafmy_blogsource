@@ -334,9 +334,11 @@
   // ---------- 开/关 ----------
   function openBox(doFocus) {
     isOpen = true
-    wrap.classList.add('nav-search-open')
-    // 移动端: 先注入展开宽度(汉堡左缘 - 菜单左缘), 再让 width 过渡展开
+    // 移动端: 在加 .nav-search-open 之前先量算展开宽度(此时 darkmode
+    // 切换键还停在自然位置, 尺寸稳定), 再让 width 过渡展开。若先加类
+    // 再量, 展开态 flex-grow 已把切换键挤出左缘, 量出的菜单左缘失真。
     syncMobileSearchWidth()
+    wrap.classList.add('nav-search-open')
     // 打开时若上次有残留值, 同步控件状态
     updateControls(input.value.trim())
     // 有残留值: 重新检索并恢复结果面板(收起时面板被隐藏 + lastQuery 清空,
@@ -480,19 +482,23 @@
   }
 
   // ---------- 移动端胶囊宽度适配 ----------
-  // 展开宽度 = 汉堡按钮左缘 - #menus 左缘(- 4px 与汉堡留隙)。
+  // 展开宽度 = 汉堡按钮左缘 - 搜索左界(黑白切换键右缘, 若存在) - 左右各 6px 留隙。
   // 收起态 CSS 固定 39px(图标胶囊)。宽由 CSS 变量注入, width 过渡带动画。
   // 仅在窄屏(≤768)生效; 桌面/平板不需要(桌面胶囊宽度是内容自适应)。
+  // 注意: 必须在 .nav-search-open 加入之前调用(见 openBox), 否则切换键
+  // 已被 flex-grow 挤开, 量出的左界失真 → 检索栏会碰到/压掉切换键。
   function syncMobileSearchWidth() {
     if (window.innerWidth > 768) return
     var menusEl = menus
     if (!menusEl) return
     var toggle = menus.querySelector('#toggle-menu')
     if (!toggle) return
-    var m = menusEl.getBoundingClientRect()
     var t = toggle.getBoundingClientRect()
-    // 汉堡左缘相对 #menus 左缘的可用宽度(胶囊展开后右缘贴汉堡左、留 6px)
-    var w = Math.max(60, Math.round(t.left - m.left - 6))
+    // 搜索左界 = 黑白切换键右缘(移动端切换键在最左); 无切换键则退回菜单左缘
+    var dm = menus.querySelector('#darkmode')
+    var leftEdge = dm ? dm.getBoundingClientRect().right : menusEl.getBoundingClientRect().left
+    // 展开宽度 = 汉堡左缘 - 搜索左界 - 左右各留 6px(与切换键、汉堡各留隙)
+    var w = Math.max(60, Math.round(t.left - leftEdge - 12))
     wrap.style.setProperty('--nav-search-expand-w', w + 'px')
   }
   // 窗口尺寸变化(旋转/分屏)时重算; passive 减少开销
