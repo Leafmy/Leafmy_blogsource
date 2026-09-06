@@ -61,7 +61,11 @@
 
   const hasHover = window.matchMedia('(hover: hover)').matches
 
-  // 触屏或指针不精确的设备：点击切换
+  // 触屏或指针不精确的设备：点击切换（可反复展开/收起）
+  // 注意: CSS 已在 @media(hover:none) 里禁用 :hover 展开, 展开只由 .open 类
+  // 驱动 → 点一次 .open 展开, 再点一次移除 .open 收起, 不会因 :hover 粘滞
+  // 而"收不起来"。桌面 hover 设备保持鼠标移入/移出展开收起, 不加 click,
+  // 避免与 hover 冲突。
   if (!hasHover) {
     card.addEventListener('click', (e) => {
       e.stopPropagation()

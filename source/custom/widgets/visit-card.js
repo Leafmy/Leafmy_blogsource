@@ -1,9 +1,14 @@
 /* ============================================================
-   Visit card — swap text (custom inject, v9)
-   个人信息卡（.card-info）双人切换：
+   Visit card — swap text (custom inject, v10)
+   个人信息卡（.card-info）双人切换，桌面与移动端行为一致：
    - 默认显示站主 l3AFovxs（蓝发侦探头像）
-   - 鼠标移入：名字+简介先模糊淡出 -> 换成 HexShane（斗篷头像）+ 简介「卡密」-> 清晰浮现
-   - 鼠标移出：换回站主
+   - 桌面（hover 设备）：鼠标移入换成 HexShane（斗篷头像）+ 简介「卡密」，
+     移出换回站主——天然的"进/出"双向切换。
+   - 移动（触屏/无 hover 设备）：点击整卡在「站主 <-> 我」之间反复切换
+     （问题4：支持双向切换，点一次换、再点一次换回）；
+     点击头像直接切到「我的头像」（问题7）。
+     —— 因为触屏没有 mouseenter/mouseleave，之前这套逻辑在手机上完全失效，
+        点一下能换、再点无法换回。现在用 click 双向 toggle 实现等价交互。
    - 头像去掉 hover 旋转；文字切换带模糊遮罩过渡，无整卡动画。
    ============================================================ */
 (function () {
@@ -92,12 +97,53 @@
     }, 220)
   }
 
-  card.addEventListener('mouseenter', function () {
-    desired = 'visit'
-    if (state !== 'visit') applyWithBlur(visitHTML, config.visit.avatar, 'visit')
-  })
-  card.addEventListener('mouseleave', function () {
-    desired = 'owner'
-    if (state !== 'owner') applyWithBlur(ownerHTML, config.owner.avatar, 'owner')
-  })
+  // ---------- 事件：桌面 hover 进出 / 移动点击双向切换 ----------
+  const hasHover = window.matchMedia('(hover: hover)').matches
+  const isCoarse = window.matchMedia('(pointer: coarse)').matches
+
+  // 统一：把当前期望指向某个状态并触发切换（防抖/竞态由 applyWithBlur 处理）
+  const setDesired = function (next) {
+    desired = next
+    if (state !== next) {
+      applyWithBlur(
+        next === 'visit' ? visitHTML : ownerHTML,
+        next === 'visit' ? config.visit.avatar : config.owner.avatar,
+        next
+      )
+    }
+  }
+
+  // 桌面 / 精确指针设备：沿用 hover 进出（已是双向：进=visit，出=owner）
+  // 与触屏 click 分支互斥，避免混合设备重复绑定
+  if (hasHover && !isCoarse) {
+    card.addEventListener('mouseenter', function () { setDesired('visit') })
+    card.addEventListener('mouseleave', function () { setDesired('owner') })
+  }
+
+  // 触屏 / 无 hover 设备：click 双向 toggle（点一下换另一人，再点一次换回）
+  // —— 修复"点开换过去后，再点无法切回"的问题（问题4）
+  // —— 同时支持点头像直接切到「我」（问题7）
+  // toggle 基于 desired 翻转：即使处于 220ms 模糊过渡中，快速连点也会正确换向
+  // 注意: 纯鼠标(hasHover && !isCoarse)走上面 hover 分支; 触屏(含支持触屏的
+  // 混合笔记本, 因其 isCoarse=true)都走这里——保证任何设备都能双向切换。
+  if (!hasHover || isCoarse) {
+    card.addEventListener('click', function (e) {
+      e.stopPropagation()
+      setDesired(desired === 'visit' ? 'owner' : 'visit')
+    })
+
+    // 头像点击：直接切换成"我的头像"（切换到我侧）
+    if (avatarImg && avatarImg.closest('.avatar-img')) {
+      const avatarWrap = avatarImg.closest('.avatar-img')
+      avatarWrap.addEventListener('click', function (e) {
+        e.stopPropagation()
+        setDesired('visit')
+      })
+    }
+
+    // 点击卡片外部时，回到站主默认态
+    document.addEventListener('click', function (e) {
+      if (!card.contains(e.target)) setDesired('owner')
+    })
+  }
 })()

@@ -1084,6 +1084,7 @@ inject:
     - <link rel="stylesheet" href="/custom/widgets/visit-card.css">
     - <link rel="stylesheet" href="/custom/widgets/footer-reveal.css">
     - <link rel="stylesheet" href="/custom/widgets/light-text-contrast.css">
+    - <link rel="stylesheet" href="/custom/widgets/mobile-fix.css">
     # --- theme 主题切换动画/字体 ---
     - <link rel="stylesheet" href="/custom/theme/theme-reveal.css">
     - <link rel="stylesheet" href="/custom/theme/custom-font.css">

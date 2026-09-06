@@ -1,0 +1,111 @@
+/* ============================================================
+   移动端界面统一修复 (custom inject)
+   - 解决"三条杠/侧边栏菜单项底部残留线"(主题 .site-page:after 下划线)
+   - 统一侧边栏各栏目视觉(卡片一致性)
+   - 归档页等副级页面精简
+   - 结果栏光效对齐桌面(移动端也显示边缘环+光斑)
+   兼顾桌面端一致性: 规则同时作用于桌面与移动端(除明确标注 mobile 外)
+   ============================================================ */
+
+/* ============ 1. 消除 .site-page:after 残留下划线 ============
+   主题在 head.styl 给 .site-page:not(.child) 加了一条 3px 彩色下划线,
+   hover 时 width 0→100%。它在:
+   - 桌面导航 = 有意设计(下划线 hover 特效)
+   - 移动端/侧边栏抽屉(#sidebar-menus) = 触屏 :hover 粘滞残留 → 底部一条线
+   因此: 全局关掉这条 :after 下划线(让桌面/移动视觉一致、无残留),
+   但保留 .menus_item:hover 的文字变色(那才是导航项真正的 hover 反馈)。
+   若想桌面也保留下划线特效, 可放开桌面端; 为一致性这里全局关闭。 */
+.site-page:not(.child)::after {
+  display: none !important;
+}
+/* 同时兜底: 侧边栏抽屉菜单项与导航项都不再有任何 ::after 残留 */
+#sidebar #sidebar-menus .menus_item .site-page::after,
+#nav #menus .menus_item .site-page::after,
+#nav #toggle-menu span.site-page::after,
+#sidebar-menus .site-page::after {
+  display: none !important;
+}
+
+/* ============ 5. 副级页面(归档/标签/分类)精简 ============
+   副级页面为列表型页面(含 #archive / #tag / #category 容器), 与首页
+   (#recent-posts) 区分。用户要求"只保留归档相关内容"。
+   做法: 移动端在 /archives /tags /categories 等列表页隐藏与内容本身
+   无关的 aside widget(公告/最近文章/标签云/分类/信息卡/网页信息等),
+   只保留归档/标签/分类列表本体的主区域。
+   注: 页面容器是 #body-wrap.page(主题把 class=pageType 加在 #body-wrap,
+   且首页也是 page, 故不能用 body.page)。用 :has() 精确定位存在
+   #archive/#tag/#category 的列表页。桌面端侧边栏仍有导航价值, 仅移动端
+   精简, 避免误伤桌面布局。 */
+@media (max-width: 768px) {
+  #body-wrap:has(#archive) #aside-content .card-widget,
+  #body-wrap:has(#tag) #aside-content .card-widget,
+  #body-wrap:has(#category) #aside-content .card-widget {
+    display: none !important;
+  }
+  /* 列表页侧边栏整体隐藏后, 主区占满更清爽 */
+  #body-wrap:has(#archive) #aside-content,
+  #body-wrap:has(#tag) #aside-content,
+  #body-wrap:has(#category) #aside-content {
+    display: none !important;
+  }
+}
+
+/* ============ 6. 移动端检索结果栏光效对齐桌面 ============
+   桌面端面板有 .nav-drop-edge(边缘环) + .nav-drop-glow(指针光斑),
+   移动端因触屏改为"常亮 + CSS 固定居中"。问题: 移动端面板 position:fixed
+   后, 光效元素若未正确居中/显示会缺失。这里补足:
+   - 移动端面板光效固定居中并常亮(边缘环 + 光斑都居中)
+   - 边缘环可见(alpha 由 JS 写 1, 但需 CSS 兜底可见)
+   - 面板毛玻璃背景不要太浓, 让光斑透上来 */
+@media (hover: none) and (pointer: coarse),
+       (max-width: 768px) {
+  #nav .nav-search-panel .nav-drop-edge {
+    opacity: 1 !important;
+  }
+  #nav .nav-search-panel .nav-drop-edge-light,
+  #nav .nav-search-panel .nav-drop-glow {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  #nav .nav-search-panel .nav-drop-edge-light {
+    opacity: .9;
+  }
+  #nav .nav-search-panel .nav-drop-glow {
+    opacity: 1;
+  }
+  /* 面板居中光斑要可见, 结果列表背景不要太实(让光透上来) */
+  #nav .nav-search-results {
+    background: rgba(255, 255, 255, .08) !important;
+  }
+  html[data-theme='dark'] #nav .nav-search-results {
+    background: rgba(20, 26, 42, .20) !important;
+  }
+}
+
+/* ============ 2. 侧边栏抽屉统一视觉 ============
+   移动端点三条杠打开的 #sidebar-menus 抽屉: 菜单项(.menus_items)是白色
+   圆角卡片, 与上方头像/数据区视觉割裂。统一:
+   - 菜单项卡片去掉生硬边框感, 与整体毛玻璃协调
+   - 菜单项 hover/active 态与桌面 .menus_item 一致(圆角淡光) */
+#sidebar #sidebar-menus .menus_items {
+  background: var(--sidebar-menu-bg);
+  border-radius: 12px !important;
+  box-shadow: 0 0 1px 1px rgba(7, 17, 27, .05);
+}
+#sidebar #sidebar-menus .menus_items .site-page {
+  border-radius: 8px !important;
+}
+#sidebar #sidebar-menus .menus_items .site-page:hover,
+#sidebar #sidebar-menus .menus_items .site-page.active {
+  background: var(--text-bg-hover) !important;
+  box-shadow: none !important;
+  transform: translateX(2px);
+}
+/* 侧边栏抽屉头像与数据区间距统一 */
+#sidebar #sidebar-menus > .avatar-img {
+  margin: 22px auto 10px !important;
+}
+#sidebar #sidebar-menus .site-data {
+  padding: 0 10px 6px !important;
+}

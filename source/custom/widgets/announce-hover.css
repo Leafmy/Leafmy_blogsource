@@ -81,6 +81,20 @@
   padding: 2px;
 }
 
+/* ---- 触屏/无 hover 设备: 禁用 :hover 展开, 只由 .open 类控制 ----
+   原因: 触屏点击会触发 sticky :hover, 点一次后 :hover 一直粘住, 即便
+   .open 被 toggle 掉, :hover 仍让正文保持展开 → "点第二次收不起来"。
+   所以在 (hover:none) 设备上把 :hover 规则关掉, 展开/收起完全交给
+   JS 的 .open toggle。桌面 hover 设备保持原样(鼠标移入展开/移出收起)。 */
+@media (hover: none) {
+  .card-announcement:hover .announcement_body {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    padding: 0 2px;
+  }
+}
+
 /* ---- 标题与正文之间的分隔线（展开时可见） ---- */
 .card-announcement .announcement_body {
   border-top: 1px solid transparent;
