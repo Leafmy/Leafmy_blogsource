@@ -39,7 +39,6 @@
   var railRunning = false     // rAF 是否在跑
   var railRaf = null
   var railStartTs = 0
-  var railStartSeed = null    // 起点相位(随机但固定: 首次取, 之后恒定)
 
   // ---------- DOM: 一体胶囊 ----------
   var wrap = document.createElement('div')
@@ -86,14 +85,14 @@
   caret.setAttribute('aria-hidden', 'true')
   bar.appendChild(caret)
 
-  // ========== 闭环跑马灯(移动点拖流光带沿轮廓闭合流动) ==========
-  // 需求: 一个高亮移动点从起点出发, 拖着"跑马灯"彩色流光带(拖尾)沿检索栏
-  // 轮廓流动一整圈回到起点闭合; 循环播放。起点由 railStartSeed 平移(随机但
-  // 固定: 首次取 Math.random(), 之后恒定)。
+  // ========== 闭环跑马灯(移动点从固定起点出发, 流光带描边生长铺满一圈) ==========
+  // 需求: 一个高亮移动点从固定起点(胶囊顶部中点, d 起点)出发, 拖着"跑马灯"
+  // 彩色流光带沿检索栏轮廓前进; 光带从起点开始随移动点前进而逐渐变长(描边
+  // 生长), 移动点回到起点时光带铺满整圈形成闭环, 循环播放。起点固定不随机。
   // 实现: bar 内注入 SVG, 内含贴合轮廓的驱动 <path> + 一条 stroke 流光带
-  // (dasharray 只露出拖尾窗口, stroke 用 2D 彩虹渐变 url() 随时间旋转 →
-  // 色彩流动) + 移动点。每帧 getPointAtLength(弧长) 采样移动点相位, 带窗口
-  // 与之平移; 全部走合成器(transform / dashoffset), 零重绘。
+  // (dasharray=移动点已走长, dashoffset=0 锚死起点 → 只生长不平移, 光带不是被
+  // 拖着跑而是越来越长; stroke 用 2D 彩虹渐变 url() 随移动点流动) + 移动点。
+  // 每帧 getPointAtLength(弧长) 采样移动点相位; 全部走合成器, 零重绘。
   function buildRail() {
     if (rail) return
     var NS = 'http://www.w3.org/2000/svg'
@@ -183,37 +182,33 @@
     railHead.querySelector('.nav-rail-head-dot').setAttribute('r', headR)
   }
 
-  // rAF: 移动点沿闭合路径匀速流动, 流光带窗口随之平移(拖尾跟随)
+  // rAF: 移动点从固定起点出发沿闭合路径前进, 流光带"描边生长"逐渐变长,
+  // 移动点回到起点时光带铺满整圈闭合。起点=d 起点(顶部中点, 固定不随机)。
   function railTick(now) {
     if (!railRunning) return
     var st = getComputedStyle(bar)
     var DUR = (parseFloat(st.getPropertyValue('--rail-duration')) || 3.8) * 1000
     var DIR = (parseFloat(st.getPropertyValue('--rail-dir')) || 1) > 0 ? 1 : -1
-    var TAIL = parseFloat(st.getPropertyValue('--rail-tail')) || 0.34
     if (!railStartTs) railStartTs = now
     var t = (now - railStartTs) / DUR
     var k = t - Math.floor(t)               // 0..1 循环
-    var prog = DIR > 0 ? k : (1 - k)        // 方向
+    var headPos = DIR > 0 ? k : (1 - k)     // 移动点相位 0..1(0=起点)
 
-    // 移动点相位(起点偏移 railStartSeed → 随机但固定起点)
-    var headPos = prog + railStartSeed * DIR
-    headPos = headPos - Math.floor(headPos)
-    var p = railPath.getPointAtLength(headPos * railPathLen)
+    // 移动点位置 = 已走弧长
+    var headLen = headPos * railPathLen
+    var p = railPath.getPointAtLength(headLen)
     railHead.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ')')
     // 移动点光晕半径脉冲(能量点质感)——r 动画走合成器
     var pulse = 1 + 0.12 * Math.sin(now / 300)
     railHead.querySelector('.nav-rail-head-glow').setAttribute('r', (pulse * 2.3).toFixed(2))
 
-    // 流光带: dasharray = [带长, 周长-带长], 从移动点落后一段拖尾
-    // dashoffset = -(移动点相位 - 拖尾长度) 平移窗口, 拖尾跟在移动点后
-    var tailLen = TAIL * railPathLen
-    // 移动点相位转到弧长; 带窗口起点 = 移动点相位 - 拖尾长度(落后于移动点)
-    var winStart = headPos - TAIL
-    winStart = winStart - Math.floor(winStart)
-    var dashOff = -(winStart * railPathLen)
-    railTail.setAttribute('stroke-dasharray', tailLen + ' ' + (railPathLen - tailLen))
-    railTail.setAttribute('stroke-dashoffset', dashOff)
-    // 渐变随移动点旋转(色彩流动): 用 x1/y1/x2/y2 沿轮廓点方向
+    // 流光带"描边生长": 固定从 d 起点(顶部中点)开始, 长度 = 移动点已走距离。
+    // dasharray=[已走长, 剩余长], dashoffset=0(锚死在起点不动) → 光带不跟着
+    // 移动点平移, 而是随移动点前进不断变长, 到达起点时铺满整圈闭合。
+    var drawnLen = Math.min(headLen, railPathLen)
+    railTail.setAttribute('stroke-dasharray', drawnLen + ' ' + (railPathLen))
+    railTail.setAttribute('stroke-dashoffset', 0)
+    // 渐变随移动点位置流动(色彩沿光带分布): 指向移动点与对侧
     var b = bar.getBoundingClientRect()
     var w = b.width, h = b.height
     var p2 = railPath.getPointAtLength(((headPos + 0.5) % 1) * railPathLen)
@@ -228,7 +223,6 @@
   }
   function startRail() {
     if (railRunning) return
-    if (railStartSeed === null) railStartSeed = Math.random()   // 随机但固定(首次)
     railRunning = true
     railStartTs = 0
     railRaf = requestAnimationFrame(railTick)
