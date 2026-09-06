@@ -3,8 +3,13 @@
    - 桌面端：放在检索键(.nav-search)左边，靠右紧贴搜索胶囊；
      搜索胶囊展开变宽时会把它向左推 → 按键随搜索栏一起移动。
    - 移动端：放在导航栏最左边(order:0 + margin-right:auto)。
-   按钮样式与导航图标(汉堡)一致：透明扁平、hover 淡光、无主题
-   rightside 的实色块背景。
+   - 按钮底：与检索胶囊(.nav-search-bar)同款 macOS 毛玻璃胶囊底
+     (渐变玻璃 + backdrop blur + 细白描边 + 内高光), 不再用透明
+     扁平圆点 —— 视觉上成为检索键的"兄弟胶囊", 而不再像和检索栏
+     连成一体(用户反馈"切换键移动像和检索栏一体, 很奇怪")。
+   - 仅桌面端(min-width:769px): 检索栏宽度过渡期间, darkmode-move.js
+     给 #nav 加 .nav-moving, 触发检索胶囊 + 切换键各播放一次运动模糊
+     脉冲(动态模糊), 强化"移动"的速度感。
    依赖 darkmode-move.js 把 #darkmode 移入 #menus。
    ============================================================ */
 
@@ -12,30 +17,45 @@
   order: 9;
   margin: 0 8px 0 auto;          /* 左 auto 吸收剩余空间靠右; 右侧留 8px 贴搜索 */
   padding: 0;
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: rgba(40, 44, 60, .90);
-  font-size: 15px;
-  line-height: 1;
+  border-radius: 999px;
   cursor: pointer;
+  color: rgba(70, 84, 116, .85);
+  font-size: 16px;
+  line-height: 1;
+  /* 与检索胶囊(.nav-search-bar)同款毛玻璃底 */
+  background: linear-gradient(150deg, rgba(246, 248, 252, .50), rgba(232, 238, 248, .40));
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, .60);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .6),
+    0 2px 8px rgba(40, 54, 88, .08);
   transition: background-color .2s ease, color .2s ease, transform .2s ease;
 }
 #nav #darkmode:hover {
-  background: rgba(120, 170, 255, .16);
+  background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
   color: var(--theme-color, #49b1f5);
 }
 #nav #darkmode:active {
-  transform: scale(.9);
+  transform: scale(.92);
 }
 html[data-theme='dark'] #nav #darkmode {
   color: rgba(255, 255, 255, .88);
+  background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52));
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border-color: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 8px rgba(0, 0, 0, .3);
+}
+html[data-theme='dark'] #nav #darkmode:hover {
+  background: linear-gradient(150deg, rgba(44, 52, 74, .58), rgba(26, 32, 46, .55));
+  border-color: rgba(255, 255, 255, .16);
 }
 
 /* 检索胶囊自身靠右的 auto margin 会让 darkmode 与搜索之间被均分空隙,
@@ -44,13 +64,32 @@ html[data-theme='dark'] #nav #darkmode {
   margin-left: 0;
 }
 
-/* 移动端: darkmode 移到导航栏最左边(其余功能键靠右) */
+/* 移动端: darkmode 移到导航栏最左边(其余功能键靠右), 尺寸略缩 */
 @media (max-width: 768px) {
   #nav #darkmode {
     order: 0;
     margin: 0 auto 0 0;         /* 右 auto 把搜索/汉堡推到最右 */
     width: 32px;
     height: 32px;
-    font-size: 16px;
+    font-size: 15px;
+  }
+}
+
+/* 运动模糊脉冲(动态模糊)关键帧: 起 → 峰值 blur → 归零。
+   只用于移动瞬间的"速度感", 常态 blur(0) 不残留。 */
+@keyframes nav-motion-blur {
+  0%   { filter: blur(0); }
+  35%  { filter: blur(2.4px); }
+  100% { filter: blur(0); }
+}
+
+/* 仅桌面端: 检索胶囊宽度过渡期间, darkmode-move.js 给 #nav 加
+   .nav-moving, 让检索胶囊 + 切换键各播放一次 blur 脉冲。
+   时长(.34s)略短于宽度过渡(.4s), 保证模糊在移动停止前先归零,
+   不会在停止后残留或抖动。 */
+@media (min-width: 769px) {
+  #nav.nav-moving .nav-search-bar,
+  #nav.nav-moving #darkmode {
+    animation: nav-motion-blur .34s ease-out;
   }
 }
