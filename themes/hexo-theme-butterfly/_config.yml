@@ -1089,6 +1089,8 @@ inject:
     # --- theme 主题切换动画/字体 ---
     - <link rel="stylesheet" href="/custom/theme/theme-reveal.css">
     - <link rel="stylesheet" href="/custom/theme/custom-font.css">
+    # --- cursor 全站自定义光标 ---
+    - <link rel="stylesheet" href="/custom/cursor/site-cursor.css">
   bottom:
     # - <script src="xxxx"></script>
     # --- nav 顶部导航栏 + 检索 ---
@@ -1106,6 +1108,8 @@ inject:
     - <script src="/custom/widgets/sidebar-mask.js"></script>
     # --- theme 主题切换动画 ---
     - <script src="/custom/theme/theme-reveal.js"></script>
+    # --- cursor 全站自定义光标 ---
+    - <script src="/custom/cursor/site-cursor.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
