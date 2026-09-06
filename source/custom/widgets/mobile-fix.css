@@ -26,26 +26,26 @@
   display: none !important;
 }
 
-/* ============ 5. 副级页面(归档/标签/分类)精简 ============
-   副级页面为列表型页面(含 #archive / #tag / #category 容器), 与首页
-   (#recent-posts) 区分。用户要求"只保留归档相关内容"。
-   做法: 移动端在 /archives /tags /categories 等列表页隐藏与内容本身
-   无关的 aside widget(公告/最近文章/标签云/分类/信息卡/网页信息等),
-   只保留归档/标签/分类列表本体的主区域。
-   注: 页面容器是 #body-wrap.page(主题把 class=pageType 加在 #body-wrap,
-   且首页也是 page, 故不能用 body.page)。用 :has() 精确定位存在
-   #archive/#tag/#category 的列表页。桌面端侧边栏仍有导航价值, 仅移动端
-   精简, 避免误伤桌面布局。 */
+/* ============ 5. 副级/详情页(归档/标签/分类/文章)精简 ============
+   目标: 移动端这些页面只保留内容本体, 隐藏与内容无关的 aside widget。
+   - 列表型页面: 含 #archive / #tag / #category 容器
+   - 文章页: 含 #post 容器(body-wrap 类为 post, 不是 page)
+   页面容器: 主题把 class=pageType 加在 #body-wrap, 首页是 page、文章是
+   post, 且首页也有 .page, 故不能用 body.page。改用 :has() 精确命中含
+   内容容器的页面。
+   注: 桌面端侧边栏仍有导航价值, 仅移动端精简, 避免误伤桌面布局。 */
 @media (max-width: 768px) {
   #body-wrap:has(#archive) #aside-content .card-widget,
   #body-wrap:has(#tag) #aside-content .card-widget,
-  #body-wrap:has(#category) #aside-content .card-widget {
+  #body-wrap:has(#category) #aside-content .card-widget,
+  #body-wrap:has(#post) #aside-content .card-widget {
     display: none !important;
   }
-  /* 列表页侧边栏整体隐藏后, 主区占满更清爽 */
+  /* 列表/详情页侧边栏整体隐藏后, 主区占满更清爽 */
   #body-wrap:has(#archive) #aside-content,
   #body-wrap:has(#tag) #aside-content,
-  #body-wrap:has(#category) #aside-content {
+  #body-wrap:has(#category) #aside-content,
+  #body-wrap:has(#post) #aside-content {
     display: none !important;
   }
 }
@@ -83,29 +83,54 @@
   }
 }
 
-/* ============ 2. 侧边栏抽屉统一视觉 ============
-   移动端点三条杠打开的 #sidebar-menus 抽屉: 菜单项(.menus_items)是白色
-   圆角卡片, 与上方头像/数据区视觉割裂。统一:
-   - 菜单项卡片去掉生硬边框感, 与整体毛玻璃协调
-   - 菜单项 hover/active 态与桌面 .menus_item 一致(圆角淡光) */
-#sidebar #sidebar-menus .menus_items {
-  background: var(--sidebar-menu-bg);
-  border-radius: 12px !important;
-  box-shadow: 0 0 1px 1px rgba(7, 17, 27, .05);
-}
-#sidebar #sidebar-menus .menus_items .site-page {
-  border-radius: 8px !important;
-}
-#sidebar #sidebar-menus .menus_items .site-page:hover,
-#sidebar #sidebar-menus .menus_items .site-page.active {
-  background: var(--text-bg-hover) !important;
-  box-shadow: none !important;
-  transform: translateX(2px);
-}
-/* 侧边栏抽屉头像与数据区间距统一 */
-#sidebar #sidebar-menus > .avatar-img {
-  margin: 22px auto 10px !important;
-}
-#sidebar #sidebar-menus .site-data {
-  padding: 0 10px 6px !important;
+/* ============ 2. 侧边栏抽屉统一视觉 (移动端专属) ============
+   移动端点三条杠打开的 #sidebar-menus 抽屉。当前视觉割裂:
+   - 抽屉背景 var(--sidebar-bg)=#f6f8fa 灰蓝, 无圆角
+   - 头像区/站点数据区直接坐在灰蓝背景上
+   - 菜单卡 var(--sidebar-menu-bg)=白 圆角 12px
+   三块背景色不一致、圆角不连贯 → "风格不统一"。
+   统一做法: 让抽屉整体呈现一张连贯卡片, 头像/数据区/菜单卡融合:
+   - 抽屉本体改为页面卡片一致背景 + 圆角, 去掉生硬灰蓝
+   - 菜单卡透明融入抽屉(去掉独立白卡感), 只保留菜单项自身圆角
+   - 菜单项统一圆角, hover/active 淡光光带 + 微位移
+   注: #toggle-menu 移动端才显示、抽屉移动端才打开, 桌面用 aside 卡片,
+   故限定在移动端媒体查询内, 不影响桌面端。 */
+@media (max-width: 768px) {
+  #sidebar #sidebar-menus {
+    background: var(--card-bg);
+    border-radius: 14px 0 0 14px !important;
+    box-shadow: 0 0 1px 1px rgba(7, 17, 27, .06);
+  }
+
+  #sidebar #sidebar-menus > .avatar-img {
+    margin: 22px auto 10px !important;
+  }
+  #sidebar #sidebar-menus .site-data {
+    padding: 0 20px 10px !important;
+    background: transparent !important;
+  }
+
+  #sidebar #sidebar-menus .menus_items {
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 4px 14px 20px !important;
+    padding: 4px 0 !important;
+  }
+
+  #sidebar #sidebar-menus .menus_items .site-page {
+    border-radius: 8px !important;
+    padding: 9px 14px !important;
+    margin: 2px 0 !important;
+  }
+  #sidebar #sidebar-menus .menus_items .site-page:hover,
+  #sidebar #sidebar-menus .menus_items .site-page.active {
+    background: var(--text-bg-hover) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .10) !important;
+    transform: translateX(3px);
+  }
+  html[data-theme='dark'] #sidebar #sidebar-menus .menus_items .site-page:hover,
+  html[data-theme='dark'] #sidebar #sidebar-menus .menus_items .site-page.active {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .35) !important;
+  }
 }
