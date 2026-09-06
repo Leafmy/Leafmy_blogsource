@@ -83,26 +83,57 @@
   }
 }
 
-/* ============ 2. 侧边栏抽屉统一视觉 (移动端专属) ============
+/* ============ 2. 侧边栏抽屉统一视觉 + 卡片同款玻璃 (移动端专属) ============
    移动端点三条杠打开的 #sidebar-menus 抽屉。当前视觉割裂:
-   - 抽屉背景 var(--sidebar-bg) 无圆角, 头像/数据区直接坐在上面
+   - 抽屉背景 var(--sidebar-bg) 实色无圆角, 头像/数据区直接坐在上面
    - 菜单卡 var(--sidebar-menu-bg) 独立白卡圆角, 与抽屉脱节
    - 抽屉自带 padding-left:5px → 左侧漏出一条页面背景竖边
-   统一做法: 让抽屉整体呈现一张连贯卡片, 头像/数据区/菜单卡融合:
-   - 抽屉本体改为页面卡片一致背景 + 圆角, 负 margin 抵消左侧竖边
+   统一做法: 让抽屉整体呈现【一张与页面卡片同款的高斯模糊/磨砂玻璃卡】,
+   头像/数据区/菜单卡透明融入:
+   - 抽屉本体背景改为与 .card-widget 一致的半透明玻璃渐变 + backdrop-filter
+     blur(与 theme-glass.css 卡片同款: light 通透玻璃 / dark 磨砂玻璃)
    - 菜单卡用 !important 强置透明, 彻底压掉主题 --sidebar-menu-bg 色块
    - 菜单项统一圆角, hover/active 淡光光带 + 微位移
    注: #toggle-menu 移动端才显示、抽屉移动端才打开, 桌面用 aside 卡片,
    故限定在移动端媒体查询内, 不影响桌面端。 */
 @media (max-width: 768px) {
-  /* 抽屉本体: 与卡片一致背景 + 左侧圆角; 负 margin 抵消主题 padding-left:5px,
-     去除左侧漏出的背景竖边 */
+  /* 抽屉本体: 与页面卡片同款玻璃背景 + 左侧圆角; 负 margin 抵消主题
+     padding-left:5px, 去除左侧漏出的背景竖边。
+     backdrop-filter 模糊其背后 .bg-liquid 光斑 → 玻璃感与卡片一致。 */
   #sidebar #sidebar-menus {
-    background: var(--card-bg) !important;
+    background: linear-gradient(
+      155deg,
+      rgba(255, 255, 255, .10) 0%,
+      rgba(255, 255, 255, .04) 50%,
+      rgba(255, 255, 255, .08) 100%
+    ) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
     border-radius: 14px 0 0 14px !important;
-    box-shadow: 0 0 1px 1px rgba(7, 17, 27, .06);
+    box-shadow:
+      0 0 0 1px rgba(180, 200, 235, .20),
+      0 0 18px rgba(140, 180, 235, .10),
+      0 8px 20px -8px rgba(48, 66, 104, .18),
+      inset 0 1px 0 rgba(255, 255, 255, .40) !important;
     padding-left: 0 !important;
     margin-left: -5px !important;
+  }
+
+  /* dark: 磨砂玻璃(与卡片 dark 同款) */
+  html[data-theme='dark'] #sidebar #sidebar-menus {
+    background: linear-gradient(
+      160deg,
+      rgba(30, 36, 54, .16) 0%,
+      rgba(16, 20, 34, .12) 52%,
+      rgba(24, 30, 46, .16) 100%
+    ) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
+    box-shadow:
+      0 0 0 1px rgba(150, 180, 240, .16),
+      0 0 18px rgba(110, 150, 220, .12),
+      0 8px 20px -8px rgba(0, 0, 0, .40),
+      inset 0 1px 0 rgba(255, 255, 255, .14) !important;
   }
 
   /* 头像与站点数据区: 透明融入抽屉 */
@@ -165,5 +196,19 @@
   body:has(#sidebar-menus.open) #nav .nav-drop-edge,
   body:has(#sidebar-menus.open) #nav .nav-edge {
     opacity: 0 !important;
+  }
+}
+
+/* ============ 4. 抽屉打开时调低遮罩, 让光斑透出 ============
+   主题 #menu-mask 开态是 rgba(0,0,0,.8) 几乎全黑。抽屉(103)在遮罩(102)
+   之上, 遮罩属于抽屉 backdrop-filter 的"背后内容", 被 80% 黑挡住后,
+   light 模式下抽屉即使配了半透明白玻璃也会被模糊成深色, 与卡片(直接
+   透光斑的亮白玻璃)不一致。
+   修复: 抽屉打开时把遮罩 opacity 降到 .38, 让 .bg-liquid 光斑透过来,
+   → light 抽屉背后是"光斑+暗化", 被白玻璃模糊呈亮白通透玻璃;
+   → dark 抽屉背后是"深光斑+暗化", 被深玻璃模糊呈深色磨砂。 */
+@media (max-width: 768px) {
+  body:has(#sidebar-menus.open) #menu-mask {
+    background: rgba(0, 0, 0, .38) !important;
   }
 }
