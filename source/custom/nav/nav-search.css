@@ -63,7 +63,41 @@
 @keyframes nav-flow-rotate {
   to { --nav-flow: 360deg }
 }
-/* 弹性过渡: 展开态淡入, 收起态淡出(默认态不显示) */
+/* ---- 能量涌起 (surge) ----
+   取代"整圈同时渐显"(用户觉得怪): 展开后一小段能量环从中心爆开
+   (scale .25→1.1→1), 亮度先冲高(brightness 3)再回落定住, 视觉是
+   "能量从中心涌起并点亮整圈边框", 之后再进入常态 6s 匀速流光。
+   delay .28s: 输入框先展开到位, 能量才涌起(层次递进)。
+   注: ::before 是 1.5px mask 抠环, scale<1 时环收缩向中心 → 从中心
+   扩散到外缘 = 能量涌出感。 */
+@keyframes nav-search-surge {
+  0% {
+    opacity: 0;
+    transform: scale(.25);
+    filter: brightness(3) saturate(1.7);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.12);
+    filter: brightness(2.4) saturate(1.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(.97);
+    filter: brightness(1.55) saturate(1.2);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1.02);
+    filter: brightness(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1) saturate(1);
+  }
+}
+/* 默认态不显示; 收起时靠 transition 快速淡出 */
 #nav .nav-search-bar::before {
   content: '';
   position: absolute;
@@ -72,7 +106,9 @@
   z-index: 1;            /* 盖在 bar 背景之上; 中心由 mask 排除, 不遮挡内容 */
   pointer-events: none;
   opacity: 0;
-  transition: opacity .4s ease;
+  transform-origin: 50% 50%;
+  /* 收起/常态快速熄灭用 transition; 展开的"涌起"由 .open 的 animation 接管 */
+  transition: opacity .18s ease;
   /* light: 暗色高饱和彩色(深蓝→紫→青→橙), 在浅色玻璃上对比明显 */
   background: conic-gradient(
     from var(--nav-flow),
@@ -96,13 +132,11 @@
   mask-composite: exclude;
   animation: nav-flow-rotate 6s linear infinite;
 }
+/* 展开: 能量涌起动画(延迟 .28s, 播一次), 随后由上面的常态旋转接管 */
 #nav .nav-search-open .nav-search-bar::before {
-  opacity: 1;
-  /* 打开延迟一拍再亮跑马灯: 输入框展开(width .4s)基本到位后, 流光边框
-     才缓缓浮现, 形成「先展开 → 流光出现」的层次递进。
-     收起不延迟(opacity 回退用默认 transition, delay=0) → 立即灭掉,
-     避免收起时流光还挂着。 */
-  transition: opacity .35s ease .28s;
+  animation:
+    nav-flow-rotate 6s linear infinite,
+    nav-search-surge .7s cubic-bezier(.2, .8, .3, 1) .28s both;
 }
 
 /* dark: 边框流光取深色玻璃主色 */
