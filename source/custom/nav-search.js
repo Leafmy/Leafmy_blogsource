@@ -421,6 +421,7 @@
   var lastMouseY = 0
   var SEARCH_RX = 140  // 面板外扩椭圆半径 X(水平光效影响范围)
   var SEARCH_RY = 120  // 面板外扩椭圆半径 Y(垂直光效影响范围)
+  var lastSearchAlpha = 0  // 上一次 alpha(用于判断趋势, 决定 transition 时长)
   function updateSearchGlow(x, y) {
     lastMouseX = x
     lastMouseY = y
@@ -436,6 +437,14 @@
     else if (y > r.bottom) dy = y - r.bottom
     var t = Math.sqrt((dx / SEARCH_RX) * (dx / SEARCH_RX) + (dy / SEARCH_RY) * (dy / SEARCH_RY))
     var alpha = Math.max(0, Math.min(1, 1 - t))
+    // 趋势判断: alpha 下降 = 熄灭中, 切换到 .1s 快过渡(.glow-fading);
+    // 上升或稳定 = 发光/保持, 恢复 .25s 自然过渡
+    if (alpha < lastSearchAlpha - 0.001) {
+      panel.classList.add('glow-fading')
+    } else if (alpha > lastSearchAlpha + 0.001) {
+      panel.classList.remove('glow-fading')
+    }
+    lastSearchAlpha = alpha
     if (panelEdge) panelEdge.style.opacity = alpha.toFixed(3)
     if (panelGlow) panelGlow.style.opacity = (alpha * 0.9).toFixed(3)
     // 光心 clamp 到面板内跟随指针(与 nav-drop 的 updateDropGlow 同构)

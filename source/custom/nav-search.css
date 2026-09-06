@@ -332,11 +332,23 @@ html[data-theme='dark'] #nav .nav-search-marquee {
    - 默认 opacity 0(熄灭)
    - JS 判定指针是否在面板范围内, 在范围内写 opacity(edge=1, glow=.9),
      范围外写 0, 由 transition 平滑渐亮/渐灭
-   - 位置仍由 JS clamp 到面板内跟随指针 */
+   - 位置仍由 JS clamp 到面板内跟随指针
+   - z-index: 边缘环提到 2(在结果列表 1 之上), 避免被结果列表的毛玻璃
+     背景遮住左/右边框环发光(否则左侧环会被结果列表的白膜+blur 糊掉) */
+#nav .nav-search-panel .nav-drop-edge {
+  z-index: 2;
+}
 #nav .nav-search-panel .nav-drop-edge,
 #nav .nav-search-panel .nav-drop-glow {
   opacity: 0;
   transition: opacity .25s ease;
+}
+/* 熄灭中: 快速响应(用户要求熄灭更及时). JS 追踪 alpha 下降趋势时
+   给面板加 .glow-fading, 切换到 .1s 快过渡; 发光时(上升/稳定)
+   移除该类, 恢复 .25s 自然过渡 */
+#nav .nav-search-panel.glow-fading .nav-drop-edge,
+#nav .nav-search-panel.glow-fading .nav-drop-glow {
+  transition: opacity .1s ease-out;
 }
 
 /* 状态(loading/无结果/错误) */
