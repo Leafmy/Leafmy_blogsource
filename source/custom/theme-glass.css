@@ -26,20 +26,25 @@
    v6 light 调整：用户反馈原版本过亮刺眼、缺少高级感，改为"冷雾
    液态玻璃"——基础色由高亮浅蓝降为低饱和冷雾蓝(灰蓝系), 降低白
    色高光透明度, 光斑色差拉大(冷蓝/雾紫/雾青/一点暖橘点缀), 让
-   卡片 backdrop-filter 模糊后能透出明显光斑层次 = "通透高级"。 */
+   卡片 backdrop-filter 模糊后能透出明显光斑层次 = "通透高级"。
+   [v10 层次] 提高冷暖光斑对比度(颜色 alpha + 形状位置调整), 基础
+   底色降低亮度+加径向暗角(vignette), 让中央稍亮边缘暗 → 层次分明。 */
 .bg-liquid {
   position: absolute;
   inset: -40%;
   background-image:
-    radial-gradient(1300px 1050px at 12% 14%, rgba(95, 130, 200, .52), transparent 70%),
-    radial-gradient(1400px 1080px at 86% 18%, rgba(70, 95, 170, .50), transparent 70%),
-    radial-gradient(1500px 1150px at 78% 84%, rgba(75, 110, 175, .46), transparent 72%),
-    radial-gradient(1350px 1000px at 14% 88%, rgba(105, 120, 180, .48), transparent 72%),
-    radial-gradient(980px 760px at 50% 46%, rgba(165, 180, 214, .44), transparent 74%),
-    radial-gradient(620px 480px at 58% 24%, rgba(236, 226, 246, .30), transparent 78%),
-    radial-gradient(420px 320px at 32% 70%, rgba(248, 184, 142, .20), transparent 80%),
+    /* 四角主光斑: 冷蓝/雾紫/青绿/暖橘, 色相与 alpha 拉大增强对比 */
+    radial-gradient(1300px 1050px at 12% 14%, rgba(95, 130, 220, .62), transparent 70%),
+    radial-gradient(1400px 1080px at 88% 18%, rgba(155, 100, 220, .58), transparent 70%),
+    radial-gradient(1500px 1150px at 78% 84%, rgba(60, 200, 190, .52), transparent 72%),
+    radial-gradient(1350px 1000px at 14% 88%, rgba(248, 168, 120, .46), transparent 72%),
+    /* 中心雾青柔光(打破纯冷蓝紫, 拉冷暖中间色) */
+    radial-gradient(980px 760px at 50% 46%, rgba(190, 200, 230, .38), transparent 74%),
+    /* 中心高光与暗角叠加: 中央径向略亮、边缘径向渐暗(vignette) */
+    radial-gradient(1100px 800px at 50% 40%, rgba(255, 255, 255, .10), transparent 60%),
+    radial-gradient(900px 700px at 50% 55%, transparent 30%, rgba(20, 30, 60, .18) 80%, transparent 100%),
     /* 冷雾蓝底(基础色降曝光 + 弱饱和, 避免奶亮刺眼) */
-    linear-gradient(160deg, #b8c4d8 0%, #95a5c2 45%, #a8b5cf 100%);
+    linear-gradient(160deg, #a8b4c8 0%, #8597b8 45%, #98a8c8 100%);
   /* [性能] 静态光斑：不做漂移动画。此前 transform 逐帧移动会让
      16 个卡片 + 全屏 hero 的 backdrop-filter 每帧重新模糊采样
      (切标签页/唤醒卡顿主因)，改为静态后玻璃只需光栅化一次并可缓存。 */
@@ -97,14 +102,17 @@
   }
 }
 
-/* dark：背景层换深色光斑（同样降透明度、拉长过渡去 banding） */
+/* dark：背景层换深色光斑(同样降透明度、拉长过渡去 banding)
+   [v10 层次] 提高冷暖光斑对比度, 中心高光+暗角叠加 → 层次分明 */
 html[data-theme='dark'] .bg-liquid {
   background-image:
-    radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .48), transparent 70%),
-    radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .43), transparent 70%),
-    radial-gradient(1700px 1300px at 78% 82%, rgba(50, 200, 170, .40), transparent 72%),
-    radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .34), transparent 72%),
-    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .09), transparent 78%),
+    radial-gradient(1400px 1100px at 12% 8%, rgba(90, 135, 240, .58), transparent 70%),
+    radial-gradient(1600px 1200px at 90% 15%, rgba(180, 92, 245, .55), transparent 70%),
+    radial-gradient(1700px 1300px at 78% 82%, rgba(50, 200, 170, .52), transparent 72%),
+    radial-gradient(1500px 1150px at 15% 90%, rgba(245, 145, 82, .46), transparent 72%),
+    /* 中心雾光与暗角 */
+    radial-gradient(2000px 1500px at 50% 50%, rgba(255, 255, 255, .10), transparent 78%),
+    radial-gradient(900px 700px at 50% 60%, transparent 35%, rgba(0, 0, 0, .28) 85%, transparent 100%),
     linear-gradient(160deg, #1a2138 0%, #121728 45%, #12182a 100%);
 }
 
@@ -225,7 +233,9 @@ html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollb
    - 背景【透明】(仅极低 alpha 白膜, 让背后 .bg-liquid 光斑透过来)
    - 磨砂感完全由 backdrop-filter: blur() 承担(模糊背后光斑)
    - 加多层柔和阴影 + 内阴影模拟玻璃厚度
-   - 边框冷雾白(微蓝) + 顶部镜面高光 */
+   - [v10 羽化边缘] 替代硬 1px border: 用多层 box-shadow 形成
+     "光晕边缘"(0 0 16-48px 渐变透明度的冷雾蓝/白色), 让卡片从
+     透明渐变到不透明柔和过渡, 与背景自然融合 */
 .recent-post-item,
 .card-widget,
 #post,
@@ -238,12 +248,19 @@ html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollb
   ) !important;
   -webkit-backdrop-filter: blur(18px) saturate(160%);
   backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, .42) !important;
+  /* 羽化边缘: 去掉硬 1px border, 用多层柔和 box-shadow 形成光晕 */
+  border: 0 !important;
   box-shadow:
-    0 20px 44px rgba(48, 66, 104, .16),
-    0 6px 22px rgba(48, 66, 104, .09),
+    /* 外层光晕(冷雾蓝, 柔和扩散) - 形成卡片外缘的"光圈" */
+    0 0 0 1px rgba(180, 200, 235, .22),
+    0 0 24px rgba(140, 180, 235, .14),
+    0 0 48px rgba(140, 180, 235, .10),
+    /* 落地投影(深色柔和) - 与背景层次分明 */
+    0 24px 48px -12px rgba(48, 66, 104, .28),
+    0 8px 24px -8px rgba(48, 66, 104, .16),
+    /* 内层顶部高光(模拟玻璃厚度与镜面) */
     inset 0 1px 0 rgba(255, 255, 255, .48),
-    inset 0 -1px 0 rgba(255, 255, 255, .24) !important;
+    inset 0 -1px 0 rgba(255, 255, 255, .22) !important;
 }
 
 /* 顶部镜面高光已按用户要求去除（不再显示） */
@@ -261,7 +278,8 @@ html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollb
   display: none;
 }
 
-/* ---- dark：真实磨砂玻璃 ---- */
+/* ---- dark：真实磨砂玻璃 ----
+   [v10 羽化边缘] 同 light: 替代硬 1px border, 用多层冷光晕 box-shadow 形成柔边 */
 html[data-theme='dark'] .recent-post-item,
 html[data-theme='dark'] .card-widget,
 html[data-theme='dark'] #post,
@@ -274,11 +292,17 @@ html[data-theme='dark'] #archive {
   ) !important;
   -webkit-backdrop-filter: blur(18px) saturate(150%);
   backdrop-filter: blur(18px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, .14) !important;
+  border: 0 !important;
   box-shadow:
-    0 20px 44px rgba(0, 0, 0, .38),
-    0 6px 22px rgba(0, 0, 0, .22),
-    inset 0 1px 0 rgba(255, 255, 255, .16) !important;
+    /* 外层冷蓝光晕 */
+    0 0 0 1px rgba(150, 180, 240, .16),
+    0 0 24px rgba(110, 150, 220, .14),
+    0 0 48px rgba(110, 150, 220, .10),
+    /* 落地投影(深色) */
+    0 24px 48px -12px rgba(0, 0, 0, .50),
+    0 8px 24px -8px rgba(0, 0, 0, .32),
+    /* 内层顶部高光 */
+    inset 0 1px 0 rgba(255, 255, 255, .18) !important;
 }
 
 /* dark 顶部高光也已去除 */
