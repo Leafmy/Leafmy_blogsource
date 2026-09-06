@@ -1,0 +1,114 @@
+/* ============================================================
+   鸿蒙 OS 风压感光效组件 (force-glow.css)
+   - 光效实时跟随触点 / 鼠标
+   - 力度(真实压力或按住时长模拟) → 亮度(opacity) + 扩散(scale)
+     + 颜色渐变(冷蓝外晕 ↔ 暖白核心的透明度权重交叉淡化)
+   - 双层: ::before = 冷蓝辉光(外晕), ::after = 暖白高光(核心)
+   - 由 force-glow.js 动态注入 <span class="force-glow">
+   - 性能: 逐帧变化只用 transform(opacity 由 .on/.off 切换),
+     背景渐变静态不重绘; transform 走合成器
+   ============================================================ */
+
+.force-glow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  pointer-events: none;   /* 不拦截点击/触摸/拖拽 */
+  z-index: 0;
+  opacity: 0;
+  will-change: transform, opacity;
+  transform-origin: 0 0;    /* 以触点(容器原点)为基准缩放扩散 */
+  transition: opacity .22s ease-out;   /* 仅淡入淡出用过渡 */
+}
+/* 光晕激活(按压/hover): 淡入; JS 逐帧写 transform 做位置与扩散 */
+.force-glow.on {
+  opacity: 1;
+  transition: opacity .18s ease-out;
+}
+
+/* 双伪层: 圆心都在容器原点(触点), 尺寸固定为基准, 扩散交给父 scale */
+.force-glow::before,
+.force-glow::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+/* 外晕: 冷雾蓝柔光, 基准半径 76px (直径152, scale 1 时) */
+.force-glow::before {
+  background: radial-gradient(
+    circle,
+    rgba(140, 195, 255, .55) 0%,
+    rgba(150, 205, 255, .30) 32%,
+    rgba(160, 210, 255, .14) 56%,
+    rgba(170, 215, 255, .05) 78%,
+    transparent 100%
+  );
+}
+/* 核心: 暖白高光, 基准半径 34px; 与冷蓝外晕叠出冷暖渐变 */
+.force-glow::after {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, .98) 0%,
+    rgba(255, 248, 240, .62) 42%,
+    rgba(255, 238, 218, .20) 74%,
+    transparent 100%
+  );
+}
+
+/* 核心层高亮程度由 --fg-core-alpha 控制(JS 随力度写 0~1):
+   力度小: 核心几乎不可见 → 只见冷蓝辉光
+   力度大: 核心增强 → 中心透出暖白, 形成冷蓝→白热渐变 */
+.force-glow.on::before { opacity: 1 }
+.force-glow.on::after  { opacity: var(--fg-core-alpha, .35) }
+
+/* ---- 目标元素挂载辅助: 文字/内容浮在光晕之上 ---- */
+.force-glow-host > a,
+.force-glow-host > span,
+.force-glow-host > i,
+.force-glow-host > button {
+  position: relative;
+  z-index: 1;
+}
+/* 下拉面板(absolute 于菜单项内)应盖过本地光晕 */
+.force-glow-host .nav-drop {
+  z-index: 10 !important;
+}
+
+/* ---- dark: 外晕降白偏冷紫, 核心仍暖白 ---- */
+html[data-theme='dark'] .force-glow::before {
+  background: radial-gradient(
+    circle,
+    rgba(120, 180, 255, .40) 0%,
+    rgba(110, 165, 250, .22) 32%,
+    rgba(120, 160, 245, .10) 56%,
+    rgba(140, 170, 255, .04) 78%,
+    transparent 100%
+  );
+}
+html[data-theme='dark'] .force-glow::after {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, .92) 0%,
+    rgba(235, 238, 255, .55) 42%,
+    rgba(210, 218, 255, .18) 74%,
+    transparent 100%
+  );
+}
+
+/* 减少动效偏好: 关闭光晕淡入淡出之外的动画 */
+@media (prefers-reduced-motion: reduce) {
+  .force-glow,
+  .force-glow.on {
+    transition: opacity .1s linear !important;
+  }
+}
