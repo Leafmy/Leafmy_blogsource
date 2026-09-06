@@ -4,6 +4,8 @@
    - 统一侧边栏各栏目视觉(卡片一致性)
    - 归档页等副级页面精简
    - 结果栏光效对齐桌面(移动端也显示边缘环+光斑)
+   - 抽屉遮罩改高斯模糊磨砂玻璃(light 不压暗) + 收起动画期间导航条保持低位
+      (配合 sidebar-mask.js 的 body.sb-closing 状态类)
    兼顾桌面端一致性: 规则同时作用于桌面与移动端(除明确标注 mobile 外)
    ============================================================ */
 
@@ -182,33 +184,55 @@
   }
 }
 
-/* ============ 3. 抽屉打开时压暗顶部导航, 消除割裂 ============
+/* ============ 3. 抽屉打开/收起全程压住顶部导航, 消除割裂 ============
    自定义导航 nav-apple.css 把 #nav z-index 提到 999 (高于抽屉 103 与遮罩
-   102)。导致移动端点三条杠打开抽屉时, 顶部那条亮色毛玻璃导航条一直压
-   在最上层, 头像区被它顶出一块 → 视觉割裂。
-   修复: 抽屉打开时把 #nav 降到遮罩(102)之下、维持抽屉(103)最上,
-   让半透明遮罩盖住导航, 顶部不再露那条亮条。点遮罩即可关闭抽屉。 */
+   102)。移动端点三条杠打开抽屉时, 顶部那条亮色毛玻璃导航条会一直压在
+   最上层, 头像区被它顶出一块 → 视觉割裂。
+   必须压住 #nav 的两个时段:
+   - 抽屉打开(保持 .open): #sidebar-menus.open 存在期间, :has() 命中;
+   - 抽屉收起(正在滑出): 主题 JS 关闭时【立即移除 .open】, 抽屉还要过渡
+     .5s 才完全离屏。若 #nav 此刻立刻回到 999, 就会浮到还没收起的抽屉
+     之上(导航条横压在侧边栏上 = 用户反馈的"导航栏遮罩到侧边栏")。
+     由 sidebar-mask.js 在抽屉滑出期间给 body 标 .sb-closing、
+     过渡结束再移除 → 收起全程 #nav 保持低位。
+   压到 101: 低于遮罩(102)与抽屉(103), 磨砂遮罩盖住导航条,
+   顶部不再露亮条。点遮罩即可关闭抽屉(主题默认行为)。 */
 @media (max-width: 768px) {
-  body:has(#sidebar-menus.open) #nav {
+  body:has(#sidebar-menus.open) #nav,
+  body.sb-closing #nav {
     z-index: 101 !important;
     opacity: .85 !important;
   }
   body:has(#sidebar-menus.open) #nav .nav-drop-edge,
-  body:has(#sidebar-menus.open) #nav .nav-edge {
+  body:has(#sidebar-menus.open) #nav .nav-edge,
+  body.sb-closing #nav .nav-drop-edge,
+  body.sb-closing #nav .nav-edge {
     opacity: 0 !important;
   }
 }
 
-/* ============ 4. 抽屉打开时调低遮罩, 让光斑透出 ============
-   主题 #menu-mask 开态是 rgba(0,0,0,.8) 几乎全黑。抽屉(103)在遮罩(102)
-   之上, 遮罩属于抽屉 backdrop-filter 的"背后内容", 被 80% 黑挡住后,
-   light 模式下抽屉即使配了半透明白玻璃也会被模糊成深色, 与卡片(直接
-   透光斑的亮白玻璃)不一致。
-   修复: 抽屉打开时把遮罩 opacity 降到 .38, 让 .bg-liquid 光斑透过来,
-   → light 抽屉背后是"光斑+暗化", 被白玻璃模糊呈亮白通透玻璃;
-   → dark 抽屉背后是"深光斑+暗化", 被深玻璃模糊呈深色磨砂。 */
+/* ============ 4. 抽屉遮罩改"磨砂玻璃": 高斯模糊 + 不压暗 ============
+   主题 #menu-mask 开态 rgba(0,0,0,.8) 几乎全黑; 此前降到 .38 仍是
+   "整体压暗" —— light 模式下白色磨砂抽屉背后被压成灰暗, 效果不佳。
+   现改为全屏【高斯模糊磨砂玻璃】(遮罩只盖住抽屉之外 = 抽屉没遮到的
+   页面区域; 抽屉 z-index 更高, 保持清晰):
+   - light: 白雾(不压暗), 背后页面/光斑被模糊成柔和雾面, 与卡片、
+     抽屉的毛玻璃语言一致 —— 侧边栏展开不再"变黑";
+   - dark:  深灰雾 + 模糊, 保留层次。
+   样式写在 #menu-mask 本体(仅抽屉打开时 display:block, 主题 JS 控制),
+   不依赖 .open —— 否则滑出动画中途(无 .open 但遮罩仍在淡出)会瞬间
+   跳回主题默认的全黑。
+   注: 全屏 backdrop-filter 在低端移动设备有合成开销, 若真机卡顿可
+   下调 blur 半径或改回纯色遮罩。 */
 @media (max-width: 768px) {
-  body:has(#sidebar-menus.open) #menu-mask {
-    background: rgba(0, 0, 0, .38) !important;
+  #menu-mask {
+    background: rgba(243, 247, 252, .34) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+  }
+  html[data-theme='dark'] #menu-mask {
+    background: rgba(8, 12, 22, .42) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
   }
 }

@@ -1101,6 +1101,7 @@ inject:
     - <script src="/custom/widgets/announce-hover.js"></script>
     - <script src="/custom/widgets/visit-card.js"></script>
     - <script src="/custom/widgets/footer-reveal.js"></script>
+    - <script src="/custom/widgets/sidebar-mask.js"></script>
     # --- theme 主题切换动画 ---
     - <script src="/custom/theme/theme-reveal.js"></script>
 
