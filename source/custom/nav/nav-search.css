@@ -20,9 +20,10 @@
   align-items: center;
   /* 桌面端显式宽度 + 过冲缓动 = "回收惯性"手感(与手机端同款结构)。
      若把过冲放在输入框 width 上, 收到 0 时会被钳制无法下冲 → 惯性消失;
-     故把过冲放在容器 width 上(可下冲到 43px 以下再回弹), 胶囊体 100% 填充。 */
+     故把过冲放在容器 width 上(可下冲到 43px 以下再回弹), 胶囊体 100% 填充。
+     过冲量收敛到 ~0.6%(y1=1.15), 避免"抖动太夸张"。 */
   width: 43px;
-  transition: width .4s cubic-bezier(.3, 1.25, .3, 1);
+  transition: width .4s cubic-bezier(.3, 1.15, .3, 1);
 }
 #nav .nav-search.nav-search-open {
   /* 展开态总宽: 输入 290 + 图标 19 + 左右 padding 22 + 边框 2 = 333 */
@@ -546,7 +547,7 @@ html[data-theme='dark'] #nav .nav-search-item a:hover {
   #nav .nav-search {
     flex: 0 0 auto;
     width: 39px;
-    transition: width .4s cubic-bezier(.3, 1.25, .3, 1);
+    transition: width .4s cubic-bezier(.3, 1.15, .3, 1);
   }
   #nav .nav-search.nav-search-open {
     /* 不用 flex-grow:1 —— 否则会把 darkmode 切换键右侧的空隙也吸走,
@@ -562,7 +563,9 @@ html[data-theme='dark'] #nav .nav-search-item a:hover {
     min-width: 0;
     box-sizing: border-box;
   }
-  /* 输入框: 收起 width:0 消除固有宽度贡献; 展开 flex-basis 0 撑满图标左侧 */
+  /* 输入框: 收起 width:0 消除固有宽度贡献; 展开 flex-basis 0 撑满图标左侧。
+     关键: padding 必须与容器 width 同步过渡(0→40px), 否则点击瞬间 padding
+     瞬跳到 40px 会把图标向右挤出约 40px(图标抽搐), 再被容器展开拉回。 */
   #nav .nav-search-input {
     flex: 1 1 0%;
     width: 0;
@@ -570,7 +573,7 @@ html[data-theme='dark'] #nav .nav-search-item a:hover {
     opacity: 0;
     pointer-events: none;
     padding: 0;
-    transition: opacity .28s ease .06s;
+    transition: opacity .28s ease .06s, padding .28s ease .06s;
   }
   #nav .nav-search-open .nav-search-input {
     flex: 1 1 0%;
