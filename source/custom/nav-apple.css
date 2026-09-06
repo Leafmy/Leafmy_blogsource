@@ -115,10 +115,16 @@
   transform: translate3d(-800px, -200px, 0);
   will-change: transform;
 }
-/* 悬停兜底（纯 CSS，JS 未启用时鼠标进入导航栏仍会点亮） */
-#nav:hover .nav-glow-spot,
-#nav:hover .nav-edge {
-  opacity: 1;
+/* 悬停兜底（纯 CSS，JS 未启用时鼠标进入导航栏仍会点亮）。
+   仅限"真正支持 hover"的设备(鼠标/触控板)：触屏点按会触发 sticky :hover,
+   若也亮灯会把光效卡在默认位置不跟手 —— 触屏光效由 JS 的 pointer 事件驱动
+   (nav-apple.js touchTrack), 这里对触屏不写任何 #nav:hover 规则。
+   注意: 不可用 opacity:0 !important 屏蔽触屏(会盖过 JS 的 inline opacity)。 */
+@media (hover: hover) {
+  #nav:hover .nav-glow-spot,
+  #nav:hover .nav-edge {
+    opacity: 1;
+  }
 }
 /* 文字与内容浮在光斑之上 */
 #nav #blog-info,
@@ -562,6 +568,15 @@ html[data-theme='dark'] #nav .nav-drop {
     height: 50px !important;
     padding: 0 16px !important;
     border-radius: 12px !important;
+    /* 触屏跟手关键: 禁止浏览器把手势抢为页面滚动, 否则 touch 滑动即
+       pointercancel, 光效无法跟随手指(nav-apple.js touchTrack 依赖
+       持续的 pointermove)。下拉面板滚动区单独恢复 pan-y。 */
+    touch-action: none !important;
+  }
+  /* 下拉面板列表仍需可滚动: 恢复垂直手势(在菜单项内, 不影响导航栏本体跟手) */
+  #nav .nav-drop-scroll {
+    touch-action: pan-y !important;
+    max-height: 300px;
   }
   /* 移动端导航栏只保留功能按钮(搜索 + 汉堡):
      隐藏站名标题与文章/归档菜单项(用户要求), 避免窄屏拥挤错位。
@@ -591,9 +606,6 @@ html[data-theme='dark'] #nav .nav-drop {
     right: 0 !important;
     transform: translateY(-6px) !important;
     max-width: none;
-  }
-  #nav .nav-drop-scroll {
-    max-height: 300px;
   }
   /* 触屏 .open 生效时也要去掉 translateX(-50%)，用全宽定位 */
   #nav .menus_item.open .nav-drop {

@@ -194,6 +194,54 @@
     // 挂在 document：鼠标从正文/窗口其它区域接近导航栏时也能点亮，
     // 离开范围后自动渐渐熄灭（每次 mousemove 重新判定）
     document.addEventListener('mousemove', track)
+
+    // ---- 触屏支持：光效跟随手指 ----
+    // 触屏没有 mousemove，只有"按下滑动"才有连续坐标。改用 Pointer Events：
+    //   - pointerdown(触屏): 点亮光效并跳到触点
+    //   - pointermove(触屏且按下): 手指滑动 → 光效跟手(与桌面同一套逻辑)
+    //   - pointerup/cancel: 手指离开 → 渐渐熄灭
+    // 只对 pointerType 为 touch/pen 生效（鼠标仍走 mousemove，避免双触发）。
+    // 注意: 触屏 pointermove 只在按住时触发 → 天然等价"按压拖动"交互。
+    var pointerOn = false   // 触屏指针是否按下
+    function isTouchPointer(e) {
+      return e && (e.pointerType === 'touch' || e.pointerType === 'pen')
+    }
+    function touchTrack(e) {
+      if (!pointerOn) return
+      lastX = e.clientX
+      lastY = e.clientY
+      if (fadeInRaf !== null) {
+        if (!inGlowRange(lastX, lastY)) { cancelFadeIn(); fadeOut() }
+        return
+      }
+      if (inGlowRange(lastX, lastY)) {
+        if (raf === null) raf = requestAnimationFrame(writeGlow)
+      } else {
+        if (raf !== null) { cancelAnimationFrame(raf); raf = null }
+        fadeOut()
+      }
+    }
+    document.addEventListener('pointerdown', function (e) {
+      if (!isTouchPointer(e)) return
+      pointerOn = true
+      touchTrack(e)   // 立即用触点坐标点亮(等价桌面"进入即泛光")
+    })
+    document.addEventListener('pointermove', function (e) {
+      if (!isTouchPointer(e)) return
+      touchTrack(e)
+    })
+    function touchEnd() {
+      if (!pointerOn) return
+      pointerOn = false
+      if (raf !== null) { cancelAnimationFrame(raf); raf = null }
+      fadeOut()   // 手指离开 → 渐渐熄灭(与桌面移出范围一致)
+    }
+    document.addEventListener('pointerup', function (e) {
+      if (isTouchPointer(e)) touchEnd()
+    })
+    document.addEventListener('pointercancel', function (e) {
+      if (isTouchPointer(e)) touchEnd()
+    })
     // 顶部导航栏：鼠标向上移出浏览器窗口后 DOM 不再有 mousemove，光效会
     // 卡在移出前的位置 → 监听"鼠标离开文档"触发渐渐熄灭。
     //   - documentElement.mouseleave：鼠标离开 <html> 边界(含移出窗口)触发；
