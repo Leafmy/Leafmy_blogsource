@@ -85,23 +85,27 @@
 
 /* ============ 2. 侧边栏抽屉统一视觉 (移动端专属) ============
    移动端点三条杠打开的 #sidebar-menus 抽屉。当前视觉割裂:
-   - 抽屉背景 var(--sidebar-bg)=#f6f8fa 灰蓝, 无圆角
-   - 头像区/站点数据区直接坐在灰蓝背景上
-   - 菜单卡 var(--sidebar-menu-bg)=白 圆角 12px
-   三块背景色不一致、圆角不连贯 → "风格不统一"。
+   - 抽屉背景 var(--sidebar-bg) 无圆角, 头像/数据区直接坐在上面
+   - 菜单卡 var(--sidebar-menu-bg) 独立白卡圆角, 与抽屉脱节
+   - 抽屉自带 padding-left:5px → 左侧漏出一条页面背景竖边
    统一做法: 让抽屉整体呈现一张连贯卡片, 头像/数据区/菜单卡融合:
-   - 抽屉本体改为页面卡片一致背景 + 圆角, 去掉生硬灰蓝
-   - 菜单卡透明融入抽屉(去掉独立白卡感), 只保留菜单项自身圆角
+   - 抽屉本体改为页面卡片一致背景 + 圆角, 负 margin 抵消左侧竖边
+   - 菜单卡用 !important 强置透明, 彻底压掉主题 --sidebar-menu-bg 色块
    - 菜单项统一圆角, hover/active 淡光光带 + 微位移
    注: #toggle-menu 移动端才显示、抽屉移动端才打开, 桌面用 aside 卡片,
    故限定在移动端媒体查询内, 不影响桌面端。 */
 @media (max-width: 768px) {
+  /* 抽屉本体: 与卡片一致背景 + 左侧圆角; 负 margin 抵消主题 padding-left:5px,
+     去除左侧漏出的背景竖边 */
   #sidebar #sidebar-menus {
-    background: var(--card-bg);
+    background: var(--card-bg) !important;
     border-radius: 14px 0 0 14px !important;
     box-shadow: 0 0 1px 1px rgba(7, 17, 27, .06);
+    padding-left: 0 !important;
+    margin-left: -5px !important;
   }
 
+  /* 头像与站点数据区: 透明融入抽屉 */
   #sidebar #sidebar-menus > .avatar-img {
     margin: 22px auto 10px !important;
   }
@@ -110,6 +114,7 @@
     background: transparent !important;
   }
 
+  /* 菜单卡: 强置透明融入抽屉, 去掉主题 --sidebar-menu-bg 的独立色块 */
   #sidebar #sidebar-menus .menus_items {
     background: transparent !important;
     border-radius: 0 !important;
@@ -118,19 +123,47 @@
     padding: 4px 0 !important;
   }
 
+  /* 菜单项: 统一圆角, 常规透明, 无常驻色块 */
   #sidebar #sidebar-menus .menus_items .site-page {
     border-radius: 8px !important;
     padding: 9px 14px !important;
     margin: 2px 0 !important;
+    background: transparent !important;
   }
+  /* 仅 hover/active 时给淡光光带 + 微位移; 触屏 (hover:none) 用 :active 反馈 */
   #sidebar #sidebar-menus .menus_items .site-page:hover,
   #sidebar #sidebar-menus .menus_items .site-page.active {
     background: var(--text-bg-hover) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .10) !important;
     transform: translateX(3px);
   }
+  /* 触屏无 hover: 点击瞬间用 :active 给反馈, 松开即消失, 不残留色块 */
+  @media (hover: none) {
+    #sidebar #sidebar-menus .menus_items .site-page:active {
+      background: var(--text-bg-hover) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .10) !important;
+      transform: translateX(3px);
+    }
+  }
   html[data-theme='dark'] #sidebar #sidebar-menus .menus_items .site-page:hover,
   html[data-theme='dark'] #sidebar #sidebar-menus .menus_items .site-page.active {
     box-shadow: 0 2px 8px rgba(0, 0, 0, .35) !important;
+  }
+}
+
+/* ============ 3. 抽屉打开时压暗顶部导航, 消除割裂 ============
+   自定义导航 nav-apple.css 把 #nav z-index 提到 999 (高于抽屉 103 与遮罩
+   102)。导致移动端点三条杠打开抽屉时, 顶部那条亮色毛玻璃导航条一直压
+   在最上层, 头像区被它顶出一块 → 视觉割裂。
+   修复: 抽屉打开时把 #nav 降到遮罩(102)之下、维持抽屉(103)最上,
+   让半透明遮罩盖住导航, 顶部不再露那条亮条。点遮罩即可关闭抽屉。 */
+@media (max-width: 768px) {
+  body:has(#sidebar-menus.open) #nav {
+    z-index: 101 !important;
+    opacity: .85 !important;
+  }
+  body:has(#sidebar-menus.open) #nav .nav-drop-edge,
+  body:has(#sidebar-menus.open) #nav .nav-edge {
+    opacity: 0 !important;
   }
 }
