@@ -1089,8 +1089,6 @@ inject:
     # --- theme 主题切换动画/字体 ---
     - <link rel="stylesheet" href="/custom/theme/theme-reveal.css">
     - <link rel="stylesheet" href="/custom/theme/custom-font.css">
-    # --- cursor 全站自定义光标(系统光标图片方案) ---
-    - <link rel="stylesheet" href="/custom/cursor/site-cursor.css">
   bottom:
     # - <script src="xxxx"></script>
     # --- nav 顶部导航栏 + 检索 ---
