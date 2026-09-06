@@ -422,40 +422,58 @@
   var SEARCH_RX = 140  // 面板外扩椭圆半径 X(水平光效影响范围)
   var SEARCH_RY = 120  // 面板外扩椭圆半径 Y(垂直光效影响范围)
   var lastSearchAlpha = 0  // 上一次 alpha(用于判断趋势, 决定 transition 时长)
+  // 触屏设备检测(无 hover / pointer:coarse). 触屏无鼠标, 光斑跟随逻辑
+  // 没有意义, 改为始终常亮 + 光斑位置由 CSS 固定居中(保证手机端视觉一致,
+  // 同时省去 mousemove 监听和范围判定的开销)
+  var isCoarsePointer = !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches)
   function updateSearchGlow(x, y) {
     lastMouseX = x
     lastMouseY = y
     var r = panel.getBoundingClientRect()
     if (!r.width || !r.height) return
-    // 椭圆影响范围 + 距离衰减(与导航栏 targetAlphaAt 同构):
-    // 指针在面板内 t=0 → 最亮; 在面板外但椭圆内 → 亮度 1-t 渐暗;
-    // 椭圆外 → 0 熄灭。即"光标在外面, 但光效影响范围先触及边缘, 边框就发光"。
-    var dx = 0, dy = 0
-    if (x < r.left) dx = r.left - x
-    else if (x > r.right) dx = x - r.right
-    if (y < r.top) dy = r.top - y
-    else if (y > r.bottom) dy = y - r.bottom
-    var t = Math.sqrt((dx / SEARCH_RX) * (dx / SEARCH_RX) + (dy / SEARCH_RY) * (dy / SEARCH_RY))
-    var alpha = Math.max(0, Math.min(1, 1 - t))
-    // 趋势判断: alpha 下降 = 熄灭中, 切换到 .1s 快过渡(.glow-fading);
-    // 上升或稳定 = 发光/保持, 恢复 .25s 自然过渡
-    if (alpha < lastSearchAlpha - 0.001) {
-      panel.classList.add('glow-fading')
-    } else if (alpha > lastSearchAlpha + 0.001) {
+    var alpha
+    if (isCoarsePointer) {
+      // 触屏设备: 始终常亮, transform 由 CSS 控制(面板中央居中)
+      alpha = 1
       panel.classList.remove('glow-fading')
+    } else {
+      // 椭圆影响范围 + 距离衰减(与导航栏 targetAlphaAt 同构):
+      // 指针在面板内 t=0 → 最亮; 在面板外但椭圆内 → 亮度 1-t 渐暗;
+      // 椭圆外 → 0 熄灭。即"光标在外面, 但光效影响范围先触及边缘, 边框就发光"。
+      var dx = 0, dy = 0
+      if (x < r.left) dx = r.left - x
+      else if (x > r.right) dx = x - r.right
+      if (y < r.top) dy = r.top - y
+      else if (y > r.bottom) dy = y - r.bottom
+      var t = Math.sqrt((dx / SEARCH_RX) * (dx / SEARCH_RX) + (dy / SEARCH_RY) * (dy / SEARCH_RY))
+      alpha = Math.max(0, Math.min(1, 1 - t))
+      // 趋势判断: alpha 下降 = 熄灭中, 切换到 .1s 快过渡(.glow-fading);
+      // 上升或稳定 = 发光/保持, 恢复 .25s 自然过渡
+      if (alpha < lastSearchAlpha - 0.001) {
+        panel.classList.add('glow-fading')
+      } else if (alpha > lastSearchAlpha + 0.001) {
+        panel.classList.remove('glow-fading')
+      }
     }
     lastSearchAlpha = alpha
     if (panelEdge) panelEdge.style.opacity = alpha.toFixed(3)
     if (panelGlow) panelGlow.style.opacity = (alpha * 0.9).toFixed(3)
-    // 光心 clamp 到面板内跟随指针(与 nav-drop 的 updateDropGlow 同构)
-    var gx = (x < r.left ? r.left : (x > r.right ? r.right : x)) - r.left
-    var gy = (y < r.top ? r.top : (y > r.bottom ? r.bottom : y)) - r.top
-    if (panelGlow) panelGlow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
-    if (panelEdgeLight) panelEdgeLight.style.transform = 'translate3d(' + (gx - 340).toFixed(2) + 'px,' + (gy - 120).toFixed(2) + 'px,0)'
+    // 桌面端 JS 写 transform 跟随鼠标; 触屏端不写(由 CSS 固定居中, 避免
+    // 面板展开前尺寸未定时写入错误的 transform)
+    if (!isCoarsePointer) {
+      var gx = (x < r.left ? r.left : (x > r.right ? r.right : x)) - r.left
+      var gy = (y < r.top ? r.top : (y > r.bottom ? r.bottom : y)) - r.top
+      if (panelGlow) panelGlow.style.transform = 'translate3d(' + (gx - 130).toFixed(2) + 'px,' + (gy - 90).toFixed(2) + 'px,0)'
+      if (panelEdgeLight) panelEdgeLight.style.transform = 'translate3d(' + (gx - 340).toFixed(2) + 'px,' + (gy - 120).toFixed(2) + 'px,0)'
+    }
   }
-  document.addEventListener('mousemove', function (e) {
-    updateSearchGlow(e.clientX, e.clientY)
-  })
+  // 桌面端才监听 mousemove 触发光斑跟随; 触屏端由 openBox 调用
+  // updateSearchGlow 初始化为常亮(见 345 行)
+  if (!isCoarsePointer) {
+    document.addEventListener('mousemove', function (e) {
+      updateSearchGlow(e.clientX, e.clientY)
+    })
+  }
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return

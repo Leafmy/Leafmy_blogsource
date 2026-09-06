@@ -522,3 +522,15 @@ html[data-theme='dark'] #nav .nav-search-item a:hover {
     max-width: none;
   }
 }
+/* ---- 触屏设备光效居中(无 hover, 光斑跟随无意义) ----
+   在 (hover: none) + (pointer: coarse) 设备上, 光效不依赖鼠标, JS 只写
+   alpha=1 常亮; 光心位置由 CSS 固定居中(top:50% left:50% + translate
+   -50% -50%), 不受面板展开前尺寸未定的影响 */
+@media (hover: none) and (pointer: coarse) {
+  #nav .nav-search-panel .nav-drop-glow,
+  #nav .nav-search-panel .nav-drop-edge-light {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
