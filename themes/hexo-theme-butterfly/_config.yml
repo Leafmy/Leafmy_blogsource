@@ -1089,6 +1089,7 @@ inject:
     # --- theme 主题切换动画/字体 ---
     - <link rel="stylesheet" href="/custom/theme/theme-reveal.css">
     - <link rel="stylesheet" href="/custom/theme/custom-font.css">
+    - <link rel="stylesheet" href="/custom/theme/read-mode.css">
   bottom:
     # - <script src="xxxx"></script>
     # --- nav 顶部导航栏 + 检索 ---

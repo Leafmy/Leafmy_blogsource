@@ -51,8 +51,8 @@
   cursor: pointer;
   /* 与顶部导航栏统一的 macOS 毛玻璃语言 */
   background: linear-gradient(150deg, rgba(246, 248, 252, .50), rgba(232, 238, 248, .40));
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, .60);   /* 导航同款白边框 */
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .6),
@@ -331,8 +331,8 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   border-radius: 16px;
   overflow: hidden;
   background: linear-gradient(160deg, rgba(250, 252, 255, .82), rgba(230, 236, 248, .76));
-  -webkit-backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
-  backdrop-filter: blur(38px) saturate(180%) brightness(1.02);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, .50);
   /* 投影与顶部导航栏下拉面板(.nav-drop)同款(无内高光);
      发光由 .nav-drop-edge(边缘环) + .nav-drop-glow(指针光斑) 承担 */
@@ -426,8 +426,8 @@ html[data-theme='dark'] #nav .nav-search-marquee {
   scrollbar-color: rgba(120, 170, 255, .45) rgba(120, 170, 255, .08);
   /* 毛玻璃结果层：把背后透上来的指针光斑(.nav-drop-glow)模糊成
      柔和磨砂光晕(而非实心浅蓝色块糊住文字), 文字浮于其上保持清晰 */
-  -webkit-backdrop-filter: blur(14px) saturate(165%);
-  backdrop-filter: blur(14px) saturate(165%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, .14);
   border-radius: 12px;
   /* 上下边缘渐隐遮罩：文字滚向列表边缘时先渐隐模糊过渡，再完全消失，
@@ -449,8 +449,8 @@ html[data-theme='dark'] #nav .nav-search-marquee {
 html[data-theme='dark'] #nav .nav-search-results {
   scrollbar-color: rgba(110, 175, 255, .5) rgba(110, 175, 255, .06);
   /* dark 磨砂玻璃结果层：深色薄雾膜, 光斑模糊成柔光, 文字清晰 */
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   background: rgba(20, 26, 42, .30);
 }
 html[data-theme='dark'] #nav .nav-search-results::-webkit-scrollbar-track {
@@ -513,8 +513,8 @@ html[data-theme='dark'] #nav .nav-search-results::-webkit-scrollbar-thumb {
 html[data-theme='dark'] #nav .nav-search-bar {
   /* 与顶部导航栏 dark 风格统一：同系深色毛玻璃 */
   background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52));
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border-color: rgba(255, 255, 255, .12);   /* 导航同款细白边 */
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 8px rgba(0, 0, 0, .3);
 }

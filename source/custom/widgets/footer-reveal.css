@@ -24,8 +24,8 @@ html.js body {
     rgba(232, 234, 242, .62) 0%,
     rgba(210, 216, 232, .50) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(150%) brightness(.97);
-  backdrop-filter: blur(28px) saturate(150%) brightness(.97);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border-top: 1px solid rgba(255, 255, 255, .45);
   box-shadow:
     0 -14px 40px rgba(40, 54, 88, .12),
@@ -35,8 +35,8 @@ html.js body {
 /* dark：深色磨砂玻璃 */
 [data-theme='dark'] #footer {
   background: linear-gradient(180deg, rgba(34, 38, 53, .62) 0%, rgba(12, 14, 21, .46) 100%) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
-  backdrop-filter: blur(30px) saturate(120%) brightness(1.10);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border-top: 1px solid rgba(255, 255, 255, .10);
   box-shadow:
     0 -16px 44px rgba(0, 0, 0, .45),

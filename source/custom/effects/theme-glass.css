@@ -246,8 +246,8 @@ html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollb
     rgba(255, 255, 255, .04) 50%,
     rgba(255, 255, 255, .08) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   /* 羽化边缘: 去掉硬 1px border, 用多层柔和 box-shadow 形成光晕 */
   border: 0 !important;
   box-shadow:
@@ -290,8 +290,8 @@ html[data-theme='dark'] #archive {
     rgba(16, 20, 34, .12) 52%,
     rgba(24, 30, 46, .16) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 0 !important;
   box-shadow:
     /* 外层冷蓝光晕 */
@@ -340,8 +340,8 @@ html[data-theme='dark'] #archive::before {
       rgba(255, 255, 255, .04) 50%,
       rgba(255, 255, 255, .08) 100%
     ) !important;
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
-    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     border: 0 !important;
     box-shadow:
       0 0 0 1px rgba(180, 200, 235, .20),
@@ -386,8 +386,8 @@ html[data-theme='dark'] #archive::before {
     rgba(120, 138, 190, .12) 45%,
     rgba(140, 158, 210, .16) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(170%) brightness(1.08);
-  backdrop-filter: blur(18px) saturate(170%) brightness(1.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 /* 原 hero ::before 压暗遮罩 → 去掉(玻璃已透光斑, 无需再压暗) */
@@ -404,8 +404,8 @@ html[data-theme='dark'] #page-header.full_page {
     rgba(18, 24, 40, .24) 48%,
     rgba(28, 38, 62, .20) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(150%) brightness(1.12);
-  backdrop-filter: blur(18px) saturate(150%) brightness(1.12);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
@@ -450,8 +450,8 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
   html[data-theme='dark'] #page-header.full_page {
     /* 与桌面 v11 通透玻璃一致(light/dark 各自渐变在上方已定义),
        此处仅降模糊半径 18→12 并保留底部 mask 羽化 */
-    -webkit-backdrop-filter: blur(12px) saturate(150%) brightness(1.05);
-    backdrop-filter: blur(12px) saturate(150%) brightness(1.05);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
   #page-header.full_page:not(.not-top-img)::before,
   html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
@@ -500,8 +500,8 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
     rgba(78, 98, 142, .28) 50%,
     rgba(88, 106, 150, .32) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(160%) brightness(1.04);
-  backdrop-filter: blur(14px) saturate(160%) brightness(1.02);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   /* 底部 260px S 形羽化（与首页 hero 完全相同） */
   -webkit-mask-image: linear-gradient(
     180deg,
@@ -566,8 +566,8 @@ html[data-theme='dark'] #page-header.post-bg::before {
     rgba(12, 16, 28, .34) 48%,
     rgba(22, 30, 48, .30) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
-  backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   -webkit-mask-image: linear-gradient(
     180deg,
     #000 0%,
@@ -624,8 +624,8 @@ html[data-theme='dark'] #page-header.post-bg::after {
   #page-header.post-bg::before,
   html[data-theme='dark'] #page-header.not-home-page::before,
   html[data-theme='dark'] #page-header.post-bg::before {
-    -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(1.05);
-    backdrop-filter: blur(12px) saturate(140%) brightness(1.05);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
   #page-header.not-home-page::after,
   #page-header.post-bg::after,

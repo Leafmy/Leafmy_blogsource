@@ -1,0 +1,31 @@
+/* ============================================================
+   Read mode: 加宽文章 UI + 文字适配 (custom inject)
+   ------------------------------------------------------------
+   主题 readmode.styl 在 body.read-mode 下隐藏侧栏(#aside-content)、
+   并把 #post 居中，但 .layout 仍保持 1200px、#post 仍是 74% 宽，
+   导致隐藏侧栏后右侧大片留白、正文偏窄。
+   本文件在阅读模式下：
+   - .layout 收窄到 1000px(与主题 .hide-aside 同档)
+   - #post 占满 layout 全宽(不再 74%)
+     注意：#post 是 .layout 的 flex 子项，主题用 width:74% 控制宽度，
+     但 flex 下 width 会被 flex-basis:auto 的分辨吞掉(实测 inline
+     width:100% 也无效)，必须改用 flex-basis 才能生效。
+   - 正文放大到 16px、行距 1.9，让文字适配更宽的阅读栏
+   ============================================================ */
+
+/* 阅读模式下布局：去掉侧栏后主区加宽（与 .hide-aside 一致） */
+body.read-mode .layout {
+  max-width: 1000px;
+}
+
+/* 阅读模式下文章容器占满布局全宽：用 flex-basis 覆盖主题 width:74% */
+body.read-mode #post {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+}
+
+/* 文字适配：正文放大 + 行距舒展，匹配更宽的阅读栏 */
+body.read-mode #article-container.post-content {
+  font-size: 16px;
+  line-height: 1.9;
+}
