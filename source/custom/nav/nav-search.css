@@ -66,9 +66,11 @@
   --rail-dir: 1;          /* 1=顺时针, -1=逆时针 */
   --rail-dot: 8px;        /* 移动点直径 */
   --rail-wid: 3px;        /* 流光带线宽 */
+  --rail-lum: 55%;        /* 满圈跑马灯均匀主色亮度 light(浅色底用中亮) */
 }
 html[data-theme='dark'] #nav .nav-search-bar {
   --rail-hue: 228;        /* dark 偏冷紫蓝 */
+  --rail-lum: 70%;        /* 满圈跑马灯均匀主色亮度 dark(深色底用更亮) */
 }
 #nav .nav-search-bar .nav-search-rail {
   position: absolute;
@@ -91,6 +93,20 @@ html[data-theme='dark'] #nav .nav-search-bar {
   /* 起点端/移动端端点柔和: 轻微模糊, 不再有生硬光圈/无端光 */
   filter: blur(.6px) drop-shadow(0 0 2px hsla(var(--rail-hue), var(--rail-sat), 55%, .45));
   will-change: stroke-dashoffset;
+}
+/* 阶段2(整圈跑马灯): 整圈始终完整可见, 靠 hue-rotate 让色相持续旋转 → 色彩
+   沿轮廓"流动", 且亮度恒定、无明暗断层(不会从某处往另一侧消失)。 */
+/* 阶段2(整圈跑马灯): 整圈始终完整可见, 靠 hue-rotate 让色相持续旋转 → 色彩
+   沿轮廓"流动", 且亮度恒定、无明暗断层(不会从某处往另一侧消失)。
+   动画作用于光带(.nav-rail-tail)而非整个 SVG: keyframe 里保留原 filter
+   (blur + drop-shadow 柔化), 在它基础上叠 hue-rotate, 否则动画的 filter
+   会覆盖掉柔化效果使光带变生硬。 */
+#nav .nav-search-rail.nav-rail-flowing .nav-rail-tail {
+  animation: nav-rail-hue 6s linear infinite;
+}
+@keyframes nav-rail-hue {
+  from { filter: blur(.6px) drop-shadow(0 0 2px hsla(var(--rail-hue), var(--rail-sat), 55%, .45)) hue-rotate(0deg); }
+  to   { filter: blur(.6px) drop-shadow(0 0 2px hsla(var(--rail-hue), var(--rail-sat), 55%, .45)) hue-rotate(360deg); }
 }
 #nav .nav-search-rail .nav-rail-head {
   will-change: transform;

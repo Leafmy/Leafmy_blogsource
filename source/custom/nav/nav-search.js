@@ -38,7 +38,9 @@
   var railPathLen = 0         // 路径总长(弧长采样→匀速)
   var railRunning = false     // rAF 是否在跑
   var railRaf = null
-  var railStartTs = 0
+  var railClock = 0           // 累计动画时钟(ms), 而不是绝对时间戳 —— 见 railTick
+  var railPrevTs = null       // 上一帧时间戳, 用于算 dt; 暂停时置 null(恢复不跳变)
+  var railHovered = false     // 鼠标是否悬停在检索栏上(动画运行开关)
 
   // ---------- DOM: 一体胶囊 ----------
   var wrap = document.createElement('div')
@@ -100,24 +102,30 @@
     rail.setAttribute('class', 'nav-search-rail')
     rail.setAttribute('preserveAspectRatio', 'none')
     bar.appendChild(rail)
-    // 胶囊尺寸变化(展开宽度过渡/窗口缩放)时自动重建路径与流光带
+    // 胶囊尺寸变化(展开宽度过渡/窗口缩放)时自动重建路径与流光带。
+    // 不再依赖 railRunning(动画可能因未 hover 而暂停, 但尺寸变了路径必须对),
+    // 只要求在展开态(bar 参与布局且有尺寸)就重建。
     if (typeof ResizeObserver === 'function') {
       rail._ro = new ResizeObserver(function () {
-        if (railRunning) updateRail()
+        if (isOpen) updateRail()
       })
       rail._ro.observe(bar)
     }
 
-    // 渐变定义: 2D 线性彩虹渐变(随移动点旋转 --nav-rail-grad-rot → 色彩流动)
+    // 渐变定义: 2D 线性彩虹渐变(随移动点/flow 旋转 → 色彩流动)
+    // 生长阶段用 #nav-rail-grad; 满圈跑马灯阶段也用同一条渐变 + dashoffset 平移。
+    // 关键: 渐变首尾(0%/100%)都用【不透明实色】且与中间段衔接 —— 这样无论是
+    // 生长段的起点端还是满圈跑马灯的整圈, 都不会出现"从某处开始往另一侧消失"
+    // (之前首尾是 transparent, 导致光带一端透明/暗淡, 看起来像光带在消失)。
     var defs = document.createElementNS(NS, 'defs')
     var gr = document.createElementNS(NS, 'linearGradient')
     gr.setAttribute('id', 'nav-rail-grad')
     // 渐变随用户色相 --rail-hue 偏移: 用 stops 均匀铺一圈色相(0/18/32/50/68/82/100%)
     var stops = [
-      [0, 'hsla(208,100%,62%,0)'], [18, 'hsla(210,100%,64%,.95)'],
+      [0, 'hsla(208,100%,62%,.95)'], [18, 'hsla(210,100%,64%,.95)'],
       [32, 'hsla(252,100%,66%,.95)'], [50, 'hsla(170,100%,58%,.92)'],
       [68, 'hsla(26,100%,60%,.92)'], [82, 'hsla(210,100%,64%,.95)'],
-      [100, 'hsla(208,100%,62%,0)']
+      [100, 'hsla(208,100%,62%,.95)']
     ]
     stops.forEach(function (s) {
       var st = document.createElementNS(NS, 'stop')
@@ -127,6 +135,8 @@
     })
     defs.appendChild(gr)
     rail.appendChild(defs)
+    rail._grad = gr
+    rail._stops = gr.children      // 便于满圈阶段动态改写首尾 stop 颜色/透明
 
     // 驱动闭合路径(先建, 注入 viewBox/d 在 updateRail)
     railPath = document.createElementNS(NS, 'path')
@@ -192,8 +202,26 @@
     var st = getComputedStyle(bar)
     var DUR = (parseFloat(st.getPropertyValue('--rail-duration')) || 3.8) * 1000
     var DIR = (parseFloat(st.getPropertyValue('--rail-dir')) || 1) > 0 ? 1 : -1
-    if (!railStartTs) railStartTs = now
-    var t = (now - railStartTs) / DUR
+
+    // ---- 累计时钟: 用 dt 累加, 而不是直接取 (now - start)。这样 rAF 被后台
+    // 节流/暂停时, 时钟只在动画真正跑动的那些帧上累加; 恢复时不跳变,
+    // 且"起点永远在鼠标停留的那一刻立即出现"(因为时钟从 hover 那刻起算)。
+    // 暂停时 railPrevTs=null → 恢复帧 dt=0(不补跳), 从当前位置继续。
+    if (railPrevTs === null) {
+      railPrevTs = now
+      var dt = 0
+    } else {
+      var dt = now - railPrevTs
+      railPrevTs = now
+    }
+    // dt 限幅: 仅防止浏览器切换到后台标签/系统挂起这类**长暂停**造成的大跳变
+    // (限到 1s)。正常 60fps 帧(16.7ms)与低帧率(如 30fps→33ms)都如实累加,
+    // 保证动画速度始终跟随真实墙钟 —— 不会因 rAF 被轻节流而"变慢/冻结"。
+    // 之前限 25ms 会掐掉 30fps 以上的真实流逝, 导致低帧率下动画近乎停滞。
+    if (!(dt > 0) || dt > 1000) dt = 0
+    railClock += dt
+
+    var t = railClock / DUR
     var full = t >= 1                        // 是否已铺满整圈进入跑马灯态
     var k = full ? 1 : Math.max(t, 0)        // 生长相位 0..1(满圈钳到 1)
     var headPos = DIR > 0 ? k : (1 - k)      // 移动点相位 0..1(1=回起点闭合)
@@ -203,25 +231,25 @@
     var gr = rail.querySelector('#nav-rail-grad')
 
     if (full) {
-      // ── 阶段2: 整圈完整跑马灯, 流光沿轮廓匀速流动(仅 dashoffset 平移) ──
+      // ── 阶段2: 整圈完整跑马灯, 一个高亮流光带沿轮廓连续旋转流动 ──
       railHead.style.display = 'none'        // 移动点(生长端)已闭合, 不再显示
-      var flow = (t - 1) % 1                 // 满圈后 0..1 循环相位(色彩/流光前进)
-      var flowLen = flow * railPathLen
-      // dasharray=[整圈, 整圈] 但通过 offset 平移整条带 → 色彩沿轮廓匀速流转
-      railTail.setAttribute('stroke-dasharray', railPathLen + ' ' + railPathLen)
-      railTail.setAttribute('stroke-dashoffset', -flowLen * DIR)
-      // 渐变也随 flow 旋转, 色彩沿整圈连续流动
-      if (gr && w > 0 && h > 0) {
-        var pf = railPath.getPointAtLength(flow * railPathLen)
-        var pf2 = railPath.getPointAtLength(((flow + 0.5) % 1) * railPathLen)
-        gr.setAttribute('x1', (pf.x / w * 100) + '%')
-        gr.setAttribute('y1', (pf.y / h * 100) + '%')
-        gr.setAttribute('x2', (pf2.x / w * 100) + '%')
-        gr.setAttribute('y2', (pf2.y / h * 100) + '%')
-      }
+      var flow = (t - 1) % 1                 // 满圈后 0..1 循环相位
+      // 用一段占整圈 ~22% 的高亮渐变光带(dash)沿轮廓循环平移 → 跑马灯流动。
+      // dash=0.22L, dashoffset 随 flow 平移 -flowLen*DIR, 制造"光带绕圈跑"。
+      // 短光带沿闭合路径平移不会出现整圈铺满时的那种明暗不均(因为只显示
+      // 一段连续的弧, 线性渐变在该弧上近似均匀); 且首尾同色, 衔接无空洞。
+      // 加 hue-rotate 让色相持续流转, 与阶段1的彩虹层次呼应。
+      rail.classList.add('nav-rail-flowing')
+      railTail.setAttribute('stroke', 'url(#nav-rail-grad)')
+      var bandLen = railPathLen * 0.22       // 高亮光带长度(约占整圈 1/5, 亮而连续)
+      railTail.setAttribute('stroke-dasharray', bandLen + ' ' + (railPathLen - bandLen))
+      railTail.setAttribute('stroke-dashoffset', (-flow * railPathLen) * DIR)
     } else {
       // ── 阶段1: 描边生长(移动点从起点出发, 光带越拉越长) ──
       railHead.style.display = ''
+      rail.classList.remove('nav-rail-flowing')
+      // 生长阶段用回彩色渐变(光带沿轮廓铺开时色彩层次感)
+      railTail.setAttribute('stroke', 'url(#nav-rail-grad)')
       var headLen = headPos * railPathLen
       var p = railPath.getPointAtLength(headLen)
       railHead.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ')')
@@ -238,14 +266,19 @@
     }
     railRaf = requestAnimationFrame(railTick)
   }
+  // 运行开关 = 鼠标是否悬停在检索栏上。悬停 → 立即起画(起点此刻出现);
+  // 移开 → 停画并清空时钟(下次悬停重新从起点开始, 不会残留半截光带)。
   function startRail() {
     if (railRunning) return
     railRunning = true
-    railStartTs = 0
+    railClock = 0
+    railPrevTs = null
     railRaf = requestAnimationFrame(railTick)
   }
   function stopRail() {
     railRunning = false
+    railClock = 0
+    railPrevTs = null
     if (railRaf) { cancelAnimationFrame(railRaf); railRaf = null }
   }
 
@@ -510,10 +543,12 @@
     wrap.classList.add('nav-search-open')
     // 移动端: 先注入展开宽度(汉堡左缘 - 菜单左缘), 再让 width 过渡展开
     syncMobileSearchWidth()
-    // 闭环跑马灯: 建 rail(首帧), 按展开后尺寸重建路径, 并启动流动
+    // 闭环跑马灯: 建 rail(首帧), 按展开后尺寸重建路径
     buildRail()
     updateRail()
-    startRail()
+    // 动画不由"打开检索栏"触发, 而由"鼠标悬停到检索栏"触发(见下方 hover 监听):
+    // 打开时若鼠标已在检索栏上(桌面), 立即起画; 否则停画等待 hover。
+    if (railHovered) startRail(); else stopRail()
     // 打开时若上次有残留值, 同步控件状态
     updateControls(input.value.trim())
     // 有残留值: 重新检索并恢复结果面板(收起时面板被隐藏 + lastQuery 清空,
@@ -554,6 +589,18 @@
     clearBtn.classList.remove('show')
     input.blur()
   }
+
+  // 鼠标悬停到检索栏 = 动画运行开关。悬停(无论展开与否)即从起点开始跑马灯;
+  // 移开即停画并复位, 下次悬停重新从起点开始。这样"起点永远在鼠标停留那一刻
+  // 立即出现", 也不会因 rAF 被后台节流而"等很久才出"。
+  bar.addEventListener('mouseenter', function () {
+    railHovered = true
+    if (rail && isOpen) startRail()
+  })
+  bar.addEventListener('mouseleave', function () {
+    railHovered = false
+    stopRail()
+  })
 
   // 清除按钮: 点它清空输入并复位状态
   clearBtn.addEventListener('click', function (e) {
