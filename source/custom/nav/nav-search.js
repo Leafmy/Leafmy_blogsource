@@ -30,16 +30,6 @@
   var clearBtn = null
   var marqueeEl = null
   var marqueeInnerEl = null
-  // ---- 闭环跑马灯(沿胶囊轮廓闭合流动的光点) ----
-  var rail = null             // 跑马灯 SVG 容器
-  var railPath = null         // 驱动闭合路径
-  var railPathLen = 0         // 路径总长(弧长采样→匀速)
-  var railHead = null         // 头部高亮光点组
-  var railTrail = []          // 拖尾组
-  var railStartSeed = -1      // 起点种子(随机但固定)
-  var railRunning = false     // rAF 是否在跑
-  var railRaf = null
-  var railStartTs = 0
 
   // ---------- DOM: 一体胶囊 ----------
   var wrap = document.createElement('div')
@@ -85,130 +75,6 @@
   caret.className = 'nav-search-caret'
   caret.setAttribute('aria-hidden', 'true')
   bar.appendChild(caret)
-
-  // ========== 闭环跑马灯(沿胶囊轮廓闭合流动) ==========
-  // 需求: 一个高亮光点从某"随机但固定"的起点出发, 沿检索栏轮廓(贝塞尔化
-  // 闭合胶囊路径)流动一整圈回到起点闭合; 光点身后拖一条渐细渐隐的光带实时
-  // 跟随 = "点到达哪里, 跑马灯就出现在哪里"。
-  // 实现: bar 内注入 SVG, 内含贴合轮廓的 <path>(驱动) + 头部组 + 拖尾组;
-  // 每帧用 getPointAtLength(弧长) 采样位置 → 匀速平滑(拐角不变速),
-  // 再用 SVG transform=translate 移动(只走合成器, 零重绘)。
-  function buildRail() {
-    if (rail) return
-    var NS = 'http://www.w3.org/2000/svg'
-    rail = document.createElementNS(NS, 'svg')
-    rail.setAttribute('class', 'nav-search-rail')
-    // viewBox 用实际胶囊尺寸, 由 updateRail 在展开/尺寸变化时重算
-    rail.setAttribute('preserveAspectRatio', 'none')
-    bar.appendChild(rail)
-
-    // 驱动闭合路径(先建, 再注入 viewBox 与 d)
-    railPath = document.createElementNS(NS, 'path')
-    railPath.setAttribute('class', 'nav-rail-path')
-    railPath.setAttribute('fill', 'none')
-    railPath.setAttribute('stroke', 'none')   // 仅作驱动, 不画线(demo 才显示)
-    rail.appendChild(railPath)
-
-    // 头部光点组(光晕 + 实核)
-    var headGroup = document.createElementNS(NS, 'g')
-    headGroup.setAttribute('class', 'nav-rail-head')
-    var headGlow = document.createElementNS(NS, 'circle')
-    headGlow.setAttribute('class', 'nav-rail-head-glow')
-    var headDot = document.createElementNS(NS, 'circle')
-    headDot.setAttribute('class', 'nav-rail-head-dot')
-    headGroup.appendChild(headGlow)
-    headGroup.appendChild(headDot)
-    rail.appendChild(headGroup)
-    railHead = headGroup
-
-    // 拖尾光点组(按序号渐细渐隐, 落后头部滞后)
-    railTrail = []
-    var trailCount = parseFloat(getComputedStyle(bar).getPropertyValue('--rail-trail')) || 18
-    for (var i = 0; i < trailCount; i++) {
-      var tg = document.createElementNS(NS, 'g')
-      tg.setAttribute('class', 'nav-rail-trail')
-      var tDot = document.createElementNS(NS, 'circle')
-      tDot.setAttribute('class', 'nav-rail-trail-dot')
-      tg.appendChild(tDot)
-      rail.appendChild(tg)
-      railTrail.push(tg)
-    }
-    updateRail()      // 首帧尺寸/路径/半径
-  }
-
-  // 依据胶囊当前实际尺寸构建闭合路径并设置光点半径
-  function updateRail() {
-    if (!rail || !bar) return
-    var b = bar.getBoundingClientRect()
-    var w = b.width, h = b.height
-    if (w < 1 || h < 1) return
-    var r = h / 2                        // 胶囊端头半圆半径
-    // 胶囊轮廓: 顶/底线段 + 两端三次贝塞尔半圆, 起点取顶部中点(留作 JS 偏移注入种子)
-    var d =
-      'M ' + (w / 2) + ' 0 ' +
-      'L ' + (w - r) + ' 0 ' +
-      'C ' + w + ' 0 ' + w + ' ' + h + ' ' + (w - r) + ' ' + h +
-      'L ' + r + ' ' + h +
-      'C 0 ' + h + ' 0 0 ' + r + ' 0 ' +
-      'Z'
-    rail.setAttribute('viewBox', '0 0 ' + w + ' ' + h)
-    railPath.setAttribute('d', d)
-    railPathLen = railPath.getTotalLength()
-
-    // 光点半径(px, 相对 bar 高度动态): 头部与拖尾
-    var dotSize = parseFloat(getComputedStyle(bar).getPropertyValue('--rail-dot')) || 6
-    var headR = Math.max(2.2, dotSize / 2)
-    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', headR * 2.4)
-    railHead.querySelector('.nav-rail-head-dot').setAttribute('r', headR)
-    for (var i = 0; i < railTrail.length; i++) {
-      var c = railTrail[i].querySelector('.nav-rail-trail-dot')
-      var tr = (headR * 0.72 * (1 - 0.62 * i / railTrail.length) + 0.5)
-      c.setAttribute('r', tr.toFixed(2))
-      // 透明度随序号渐隐(拖尾越深越淡); 色相偏移注入到 group 的 CSS 变量
-      railTrail[i].style.opacity = (1 - 0.8 * i / railTrail.length).toFixed(3)
-      railTrail[i].style.setProperty('--rail-hue-shift', Math.round(46 * i / railTrail.length) + 'deg')
-    }
-  }
-
-  // rAF: 头部沿闭合路径匀速流动, 拖尾按滞后比例跟随
-  function railTick(now) {
-    if (!railRunning) return
-    var st = getComputedStyle(bar)
-    var DUR = (parseFloat(st.getPropertyValue('--rail-duration')) || 3.6) * 1000
-    var DIR = (parseFloat(st.getPropertyValue('--rail-dir')) || 1) > 0 ? 1 : -1
-    if (!railStartTs) railStartTs = now
-    var t = (now - railStartTs) / DUR
-    var k = t - Math.floor(t)               // 0..1 循环
-    var prog = DIR > 0 ? k : (1 - k)        // 方向
-
-    // 起点偏移(随机但固定): 把整体相位平移 railStartSeed, 光点从随机位置起程
-    var headPos = prog + railStartSeed
-    headPos = headPos - Math.floor(headPos)
-    var p = railPath.getPointAtLength(headPos * railPathLen)
-    railHead.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ')')
-
-    // 拖尾: 落后头部一段滞后比例, 跨起点循环取模
-    for (var i = 0; i < railTrail.length; i++) {
-      var lag = (i + 1) / railTrail.length
-      var tp = headPos - lag * DIR
-      tp = tp - Math.floor(tp)
-      var q = railPath.getPointAtLength(tp * railPathLen)
-      railTrail[i].setAttribute('transform', 'translate(' + q.x + ' ' + q.y + ')')
-    }
-    railRaf = requestAnimationFrame(railTick)
-  }
-  function startRail() {
-    if (railRunning) return
-    // 起点种子: 随机但固定(每次页面加载取一次; 重开搜索栏沿用同一起点)
-    if (railStartSeed < 0) railStartSeed = Math.random()
-    railRunning = true
-    railStartTs = 0
-    railRaf = requestAnimationFrame(railTick)
-  }
-  function stopRail() {
-    railRunning = false
-    if (railRaf) { cancelAnimationFrame(railRaf); railRaf = null }
-  }
 
   wrap.appendChild(bar)
 
@@ -471,15 +337,6 @@
     wrap.classList.add('nav-search-open')
     // 移动端: 先注入展开宽度(汉堡左缘 - 菜单左缘), 再让 width 过渡展开
     syncMobileSearchWidth()
-    // 闭环跑马灯: 建立 rail(首帧), 展开后按新尺寸重建路径, 并启动流动
-    buildRail()
-    updateRail()
-    startRail()
-    // 宽度过渡(.4s)完成后按最终尺寸重建一次路径(展开瞬间量到的是过渡中/收起宽度)
-    clearTimeout(rail.ResizeTimer)
-    rail.ResizeTimer = setTimeout(function () {
-      if (isOpen) updateRail()
-    }, 480)
     // 打开时若上次有残留值, 同步控件状态
     updateControls(input.value.trim())
     // 有残留值: 重新检索并恢复结果面板(收起时面板被隐藏 + lastQuery 清空,
@@ -509,9 +366,6 @@
     isOpen = false
     wrap.classList.remove('nav-search-open')
     wrap.classList.remove('show-panel')
-    // 闭环跑马灯: 收起停止流动(rail 淡出由 CSS opacity 处理; 保留 DOM/路径
-    // 供下次展开复用, 减小重开成本; 起点种子沿用 → 仍在同一起点起程)
-    stopRail()
     // 移动端: 清除内联展开宽度变量 → 宽度过渡回 39px(图标胶囊)
     wrap.style.removeProperty('--nav-search-expand-w')
     lastQuery = ''
@@ -644,7 +498,6 @@
   // 窗口尺寸变化(旋转/分屏)时重算; passive 减少开销
   window.addEventListener('resize', function () {
     syncMobileSearchWidth()
-    if (isOpen) updateRail()   // 检索栏尺寸变化时重建闭合路径
   }, { passive: true })
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
