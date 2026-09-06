@@ -1,0 +1,56 @@
+/* ============================================================
+   黑白模式按钮（迁入导航栏）样式与布局 (custom inject)
+   - 桌面端：放在检索键(.nav-search)左边，靠右紧贴搜索胶囊；
+     搜索胶囊展开变宽时会把它向左推 → 按键随搜索栏一起移动。
+   - 移动端：放在导航栏最左边(order:0 + margin-right:auto)。
+   按钮样式与导航图标(汉堡)一致：透明扁平、hover 淡光、无主题
+   rightside 的实色块背景。
+   依赖 darkmode-move.js 把 #darkmode 移入 #menus。
+   ============================================================ */
+
+#nav #darkmode {
+  order: 9;
+  margin: 0 8px 0 auto;          /* 左 auto 吸收剩余空间靠右; 右侧留 8px 贴搜索 */
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(40, 44, 60, .90);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, transform .2s ease;
+}
+#nav #darkmode:hover {
+  background: rgba(120, 170, 255, .16);
+  color: var(--theme-color, #49b1f5);
+}
+#nav #darkmode:active {
+  transform: scale(.9);
+}
+html[data-theme='dark'] #nav #darkmode {
+  color: rgba(255, 255, 255, .88);
+}
+
+/* 检索胶囊自身靠右的 auto margin 会让 darkmode 与搜索之间被均分空隙,
+   这里去掉它, 改由 darkmode 的 auto 统一推右, 保证两者紧邻。 */
+#nav .nav-search {
+  margin-left: 0;
+}
+
+/* 移动端: darkmode 移到导航栏最左边(其余功能键靠右) */
+@media (max-width: 768px) {
+  #nav #darkmode {
+    order: 0;
+    margin: 0 auto 0 0;         /* 右 auto 把搜索/汉堡推到最右 */
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}

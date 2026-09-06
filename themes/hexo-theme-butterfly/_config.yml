@@ -1076,6 +1076,7 @@ inject:
     # --- nav 顶部导航栏 + 检索 ---
     - <link rel="stylesheet" href="/custom/nav/nav-apple.css">
     - <link rel="stylesheet" href="/custom/nav/nav-search.css">
+    - <link rel="stylesheet" href="/custom/nav/nav-darkmode.css">
     # --- effects 背景/玻璃/光效 ---
     - <link rel="stylesheet" href="/custom/effects/theme-glass.css">
     - <link rel="stylesheet" href="/custom/effects/force-glow.css">
@@ -1093,6 +1094,7 @@ inject:
     # --- nav 顶部导航栏 + 检索 ---
     - <script src="/custom/nav/nav-apple.js"></script>
     - <script src="/custom/nav/nav-search.js"></script>
+    - <script src="/custom/nav/darkmode-move.js"></script>
     # --- effects 背景/玻璃/光效 ---
     - <script src="/custom/effects/glass-bg.js"></script>
     - <script src="/custom/effects/force-glow.js"></script>
