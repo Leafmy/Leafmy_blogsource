@@ -1,17 +1,18 @@
 /* ============================================================
    全站自定义光标 (site-cursor.js)
    ------------------------------------------------------------
-   注入一个参考图同款「箭头光标」SVG 跟随全站鼠标：
+   参考图同款「箭头光标」，跟手 + 不掉帧优先。
    - 亮色: 白描边 + 黑芯
    - 暗色: 亮芯 + 淡描边 + 冷光晕
-   - 内部: 流光溢彩(流形渐变, 仅芯内可见, 交到可交互元素时点亮)
+   - 内部: 流光溢彩(静态渐变 + opacity 淡变, 不用 transform 动画)
    - 无蓝色磨砂底
-   设计(低延迟优先):
-   - Pointer Events 统一鼠标/触屏; 仅精细指针启用
-   - 【跟手】在 pointermove 里直接同步写入坐标(无插值/无 rAF 循环),
-     位置经 CSS 变量 --cur-x/--cur-y 承载, 由 CSS 合成 transform → 瞬时贴合
-   - 流光判定用 pointerover/pointerout, 只在元素边界触发, 不逐像素开销
-   - 按下缩放反馈
+   性能关键:
+   - 【无 SVG filter / 无 clip-path / 无持续 transform 动画】
+     > 滤镜+裁剪+每帧动画是掉帧主因；全部移除。
+   - 光标本体只做 translate3d(走 GPU 合成层), 不触发 reflow/repaint。
+   - 流光用「预渲染渐变层 + opacity 呼吸」, compositor 友好。
+   - 光晕用纯 CSS radial-gradient div, 无 SVG 滤镜。
+   - pointermove 直接 setProperty 写 --cur-x/--cur-y。
    依赖 site-cursor.css。
    ============================================================ */
 (function () {
@@ -21,7 +22,7 @@
   var fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches
   if (!fine || document.getElementById('site-cursor')) return
 
-  /* ---------- 箭头光标 SVG (参考图造型: 尖端圆润的箭头, 尖端在 2,2) ---------- */
+  /* ---------- 箭头光标 SVG: 纯填充路径, 无滤镜无裁剪无动画 ---------- */
   var ARROW_PATH = 'M2 2 L10 21 L13.2 13.8 L21 11 Z'
   var svgNS = 'http://www.w3.org/2000/svg'
   var svg = document.createElementNS(svgNS, 'svg')
@@ -30,15 +31,14 @@
   svg.setAttribute('width', '26')
   svg.setAttribute('height', '26')
 
+  // 静态渐变(流光层, 只做 opacity 淡变, 不做 transform 动画)
   var defs = document.createElementNS(svgNS, 'defs')
-
-  // 流形渐变(流光)
   var grad = document.createElementNS(svgNS, 'linearGradient')
-  grad.setAttribute('id', 'cur-flow-grad')
-  grad.setAttribute('gradientUnits', 'userSpaceOnUse')
-  grad.setAttribute('x1', '2')
-  grad.setAttribute('y1', '2')
-  grad.setAttribute('x2', '21')
+  grad.setAttribute('id', 'cur-flow-grad');
+  grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+  grad.setAttribute('x1', '2');
+  grad.setAttribute('y1', '2');
+  grad.setAttribute('x2', '21');
   grad.setAttribute('y2', '18');
   [
     ['#ff6b9d', 0],
@@ -53,82 +53,52 @@
     grad.appendChild(st)
   })
   defs.appendChild(grad)
-
-  // 裁剪: 只暴露箭头芯内部
-  var clip = document.createElementNS(svgNS, 'clipPath')
-  clip.setAttribute('id', 'cur-core-clip')
-  var clipPath = document.createElementNS(svgNS, 'path')
-  clipPath.setAttribute('d', ARROW_PATH)
-  clip.appendChild(clipPath)
-  defs.appendChild(clip)
-
-  // 柔和发光滤镜
-  var filter = document.createElementNS(svgNS, 'filter')
-  filter.setAttribute('id', 'cur-glow-filter')
-  filter.setAttribute('x', '-60%')
-  filter.setAttribute('y', '-60%')
-  filter.setAttribute('width', '220%')
-  filter.setAttribute('height', '220%')
-  var blur = document.createElementNS(svgNS, 'feGaussianBlur')
-  blur.setAttribute('stdDeviation', '1.4')
-  filter.appendChild(blur)
-  defs.appendChild(filter)
-
   svg.appendChild(defs)
 
-  // 白描边(外)
-  var stroke = document.createElementNS(svgNS, 'path')
-  stroke.setAttribute('class', 'a-stroke')
-  stroke.setAttribute('d', ARROW_PATH)
-  stroke.setAttribute('stroke-linejoin', 'round')
-  svg.appendChild(stroke)
+  // 流光层(静态渐变, 裁剪交给 CSS mask/clip-path? 不 —— 用纯 path fill, 无需裁剪:
+  // 直接把渐变作为箭头路径自身的一部分颜色? 不行, 渐变要盖住黑芯且从边缘透出。
+  // 方案: 两层 path —— 底层=渐变流光(箭头路径), 顶层=半透明芯(透出流光)。
+  // 这样完全不需要 clip-path, 也不会每帧重排。)
+  var flow = document.createElementNS(svgNS, 'path')
+  flow.setAttribute('class', 'a-flow')          // 箭头形状, 填渐变
+  flow.setAttribute('d', ARROW_PATH)
+  flow.setAttribute('stroke-linejoin', 'round')
+  svg.appendChild(flow)
 
-  // 流光层(芯内, 裁剪 + 滤镜, 动画移动)
-  var glowG = document.createElementNS(svgNS, 'g')
-  glowG.setAttribute('class', 'a-glow')
-  glowG.setAttribute('clip-path', 'url(#cur-core-clip)')
-  var glowRect = document.createElementNS(svgNS, 'rect')
-  glowRect.setAttribute('class', 'a-glowrect')
-  glowRect.setAttribute('x', '-1')
-  glowRect.setAttribute('y', '-1')
-  glowRect.setAttribute('width', '26')
-  glowRect.setAttribute('height', '26')
-  glowRect.setAttribute('fill', 'url(#cur-flow-grad)')
-  glowRect.setAttribute('filter', 'url(#cur-glow-filter)')
-  glowG.appendChild(glowRect)
-  svg.appendChild(glowG)
-
-  // 黑/白芯(盖在流光上方, 流光从边缘透出)
+  // 芯(盖在流光上, 用半透明 + color 让流光从边缘透出; 明暗由 CSS 控制)
   var core = document.createElementNS(svgNS, 'path')
   core.setAttribute('class', 'a-core')
   core.setAttribute('d', ARROW_PATH)
   core.setAttribute('stroke-linejoin', 'round')
   svg.appendChild(core)
 
-  // 容器 + 外圈柔光环
+  // 白描边(最外, 参考图同款)
+  var stroke = document.createElementNS(svgNS, 'path')
+  stroke.setAttribute('class', 'a-stroke')
+  stroke.setAttribute('d', ARROW_PATH)
+  stroke.setAttribute('stroke-linejoin', 'round')
+  svg.appendChild(stroke)
+
+  // 容器(只做 translate3d 跟随)
   var cur = document.createElement('div')
   cur.id = 'site-cursor'
   cur.appendChild(svg)
+
+  // 光晕 = 纯 CSS radial-gradient 圆, 无 SVG 滤镜, compositor 友好
   var ring = document.createElement('div')
   ring.id = 'site-cursor-ring'
+
   document.body.appendChild(cur)
   document.body.appendChild(ring)
 
-  /* ---------- 跟手: 直接同步写坐标, 无插值无 rAF ---------- */
+  /* ---------- 跟手: pointermove 直写 CSS 变量, 零插值 ---------- */
   var shown = false
   var root = document.documentElement
   var INTERACTIVE = 'a, button, input, textarea, select, [role="button"], .nav-search, #darkmode'
 
   function move(e) {
-    // 同步写入 CSS 变量, 由 CSS 下一帧合成 translate —— 零追赶延迟
-    if (root.style.setProperty) {
-      root.style.setProperty('--cur-x', e.clientX + 'px')
-      root.style.setProperty('--cur-y', e.clientY + 'px')
-    } else {
-      // 兜底: 直写 inline transform
-      cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'
-      ring.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'
-    }
+    root.style.setProperty('--cur-x', e.clientX + 'px')
+    root.style.setProperty('--cur-y', e.clientY + 'px')
     if (!shown) {
       shown = true
       cur.classList.add('on')
@@ -136,14 +106,12 @@
     }
   }
 
+  // 流光点亮(只在元素边界触发)
   function setGlow(el) {
     var hit = el && el.closest && el.closest(INTERACTIVE)
     cur.classList.toggle('glow', !!hit)
   }
-  // 只在元素边界触发(pointerover/out), 不逐像素
-  document.addEventListener('pointerover', function (e) {
-    setGlow(e.target)
-  })
+  document.addEventListener('pointerover', function (e) { setGlow(e.target) })
   document.addEventListener('pointerout', function (e) {
     var to = e.relatedTarget
     if (!(to && to.closest && to.closest(INTERACTIVE))) setGlow(null)
@@ -164,11 +132,8 @@
     ring.classList.remove('on')
     shown = false
   }
-  function enterIn() {
-    shown = false
-  }
+  function enterIn() { shown = false }
 
-  // 唯一事件入口(pointer 统一鼠标/笔, 触屏因 coarse 已在 CSS 隐藏)
   document.addEventListener('pointermove', move, { passive: true })
   document.addEventListener('mouseleave', leave)
   document.addEventListener('mouseenter', enterIn)

@@ -1,26 +1,30 @@
 /* ============================================================
    全站自定义光标 (site-cursor.css)
    ------------------------------------------------------------
-   参考图同款「箭头光标」：
-   - 亮色模式：白描边 + 黑芯 (参考图即此态)
-   - 暗色模式：亮芯 + 淡描边 + 冷色光晕
-   - 内部：流光溢彩(流形渐变在芯内流动, 交到可交互元素时点亮)
-   - 无蓝色磨砂底(用户明确去掉)
-   依赖 site-cursor.js 注入 #site-cursor(SVG) 与 #site-cursor-ring。
+   参考图同款「箭头光标」：跟手 + 不掉帧优先。
+   - 亮色: 白描边 + 黑芯
+   - 暗色: 亮芯 + 淡描边 + 冷光晕
+   - 内部: 流光溢彩(静态渐变 + opacity 呼吸, 无 transform 动画)
+   - 无蓝色磨砂底
+   性能关键(消除掉帧):
+   - 无 SVG filter / 无 clip-path / 无持续 transform 动画
+   - 光标本体只 translate3d(走 GPU 合成层)
+   - 流光靠预渲染渐变层 + opacity 呼吸(compositor 友好)
+   - 光晕 = 纯 CSS radial-gradient, 无滤镜
    ============================================================ */
 
-/* 全站隐藏系统默认光标(用户要求全站跟随鼠标), 用 * 压过主题对 a/button 的 pointer */
+/* 全站隐藏系统默认光标 */
 * {
   cursor: none !important;
 }
 
-/* ---------- 光标容器 ---------- */
-/* 位置经 CSS 变量承载, transform 由 CSS 合成(translate3d 走 GPU), 无插值延迟。
-   pointermove 直接 setProperty 更新 --cur-x/--cur-y, i.e. 瞬时贴合鼠标。 */
+/* 位置经 CSS 变量承载, transform 由 CSS 合成(translate3d 走 GPU), 无插值延迟 */
 :root {
   --cur-x: 0px;
   --cur-y: 0px;
   --pressed-scale: 1;
+  --flow-opacity: 0;      /* 流光默认灭; 悬停 = 1 */
+  --core-alpha: 0.90;     /* 芯的不透明度, 让流光从边缘透出 */
 }
 #site-cursor {
   position: fixed;
@@ -28,7 +32,7 @@
   left: 0;
   width: 26px;
   height: 26px;
-  margin-left: -2px;   /* 箭头尖端对准坐标点 */
+  margin-left: -2px;      /* 箭头尖端对准坐标点 */
   margin-top: -2px;
   pointer-events: none;
   z-index: 99999;
@@ -41,57 +45,48 @@
 }
 #site-cursor.on  { opacity: 1; }
 #site-cursor.pressed { --pressed-scale: .86; }
+
 #site-cursor .cur-arrow {
   width: 100%;
   height: 100%;
   display: block;
-  filter: drop-shadow(0 0 .5px rgba(70, 84, 116, .30));
 }
 
-/* 白描边(亮色=参考图) */
-#site-cursor .a-stroke {
-  fill: rgba(255, 255, 255, .95);
-  stroke: rgba(120, 132, 158, .55);
-  stroke-width: 1.2;
-  stroke-linejoin: round;
+/* 流光层(箭头形状的静态渐变, 只做 opacity 呼吸, 无 transform 动画) */
+#site-cursor .a-flow {
+  fill: url(#cur-flow-grad);
+  opacity: var(--flow-opacity);
+  transition: opacity .22s ease;      /* compositor 友好 */
 }
-/* 黑芯 */
+#site-cursor.glow .a-flow { --flow-opacity: 1; }
+
+/* 芯(盖在流光影上, 半透明让流光从边缘透出) */
 #site-cursor .a-core {
-  fill: #171a20;
+  fill: #171a20;                      /* 亮色=黑芯 */
+  fill-opacity: var(--core-alpha);
 }
-
-/* 暗色: 亮芯 + 淡描边 + 冷光晕 */
-html[data-theme='dark'] #site-cursor .a-stroke {
-  fill: rgba(255, 255, 255, .94);
-  stroke: rgba(150, 162, 190, .30);
-}
+/* 暗色: 亮芯 */
 html[data-theme='dark'] #site-cursor .a-core {
   fill: #f5f8ff;
 }
-html[data-theme='dark'] #site-cursor .cur-arrow {
-  filter: drop-shadow(0 0 3px rgba(150, 200, 255, .55))
-          drop-shadow(0 0 9px rgba(150, 200, 255, .26));
+
+/* 白描边(亮色=参考图同款) */
+#site-cursor .a-stroke {
+  fill: none;
+  stroke: rgba(255, 255, 255, .95);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+html[data-theme='dark'] #site-cursor .a-stroke {
+  stroke: rgba(255, 254, 254, .55);
 }
 
-/* ---------- 内部流光溢彩(流形渐变, 交到可交互元素时点亮) ---------- */
-#site-cursor .a-glow {
-  opacity: 0;                      /* 默认灭, 悬停可交互元素时由 JS 点亮 */
-  transition: opacity .22s ease;
-  transform-origin: 12px 12px;
-}
-#site-cursor.glow .a-glow {
-  opacity: 1;
-}
-#site-cursor .a-glowrect {
-  animation: cur-flow 3.4s linear infinite;
-}
-@keyframes cur-flow {
-  0%   { transform: translate(-26px, -20px) rotate(0deg); }
-  50%  { transform: translate(26px, 20px) rotate(180deg); }
-  100% { transform: translate(-26px, -20px) rotate(360deg); }
+/* 暗色冷光晕: 用外层 ring 的 radial-gradient 承担, 不带 SVG 滤镜 */
+html[data-theme='dark'] #site-cursor .a-core {
+  filter: none;
 }
 
-/* ---------- 外圈柔光环(参考图柔和光晕感) ---------- */
+/* ---------- 光晕(纯 CSS radial-gradient, 无滤镜) ---------- */
 #site-cursor-ring {
   position: fixed;
   top: 0;
@@ -103,10 +98,8 @@ html[data-theme='dark'] #site-cursor .cur-arrow {
   pointer-events: none;
   z-index: 99998;
   border-radius: 50%;
-  border: 1px solid rgba(120, 140, 175, .32);
-  background: radial-gradient(circle, rgba(130, 160, 210, .10) 0%, rgba(130, 160, 210, 0) 70%);
   opacity: 0;
-  transition: opacity .18s ease;   /* 只过渡 opacity, transform 不过渡以保持跟手 */
+  transition: opacity .18s ease;   /* 只过渡 opacity */
   will-change: transform;
   transform: translate3d(var(--cur-x), var(--cur-y), 0)
              scale(var(--pressed-scale));
@@ -115,12 +108,18 @@ html[data-theme='dark'] #site-cursor .cur-arrow {
 }
 #site-cursor-ring.on     { opacity: 1; }
 #site-cursor-ring.pressed { --pressed-scale: .70; opacity: .5; }
+/* 亮色柔光环 */
+#site-cursor-ring {
+  background: radial-gradient(circle, rgba(130, 160, 210, .10) 0%, rgba(130, 160, 210, 0) 70%);
+  border: 1px solid rgba(120, 140, 175, .32);
+}
+/* 暗色冷光晕 */
 html[data-theme='dark'] #site-cursor-ring {
-  border-color: rgba(160, 185, 255, .30);
   background: radial-gradient(circle, rgba(150, 190, 255, .10) 0%, rgba(150, 190, 255, 0) 70%);
+  border-color: rgba(160, 185, 255, .30);
 }
 
-/* ---------- 触屏/无精细指针: 彻底隐藏, 系统光标不受影响(本就无光标场景) ---------- */
+/* ---------- 触屏/无精细指针: 彻底隐藏, 保留系统行为 ---------- */
 @media (pointer: coarse), (hover: none) {
   #site-cursor, #site-cursor-ring { display: none !important; }
 }
