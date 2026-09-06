@@ -6,10 +6,12 @@
    - 暗色: 亮芯 + 淡描边 + 冷光晕
    - 内部: 流光溢彩(流形渐变, 仅芯内可见, 交到可交互元素时点亮)
    - 无蓝色磨砂底
-   设计:
+   设计(低延迟优先):
    - Pointer Events 统一鼠标/触屏; 仅精细指针启用
-   - rAF 平滑跟随(带速度阻尼, 不跳变)
-   - 按下缩放反馈; 悬停 a/button/input 等点亮流光
+   - 【跟手】在 pointermove 里直接同步写入坐标(无插值/无 rAF 循环),
+     位置经 CSS 变量 --cur-x/--cur-y 承载, 由 CSS 合成 transform → 瞬时贴合
+   - 流光判定用 pointerover/pointerout, 只在元素边界触发, 不逐像素开销
+   - 按下缩放反馈
    依赖 site-cursor.css。
    ============================================================ */
 (function () {
@@ -36,7 +38,7 @@
   grad.setAttribute('gradientUnits', 'userSpaceOnUse')
   grad.setAttribute('x1', '2')
   grad.setAttribute('y1', '2')
-  grad.setAttribute('x2', '21');
+  grad.setAttribute('x2', '21')
   grad.setAttribute('y2', '18');
   [
     ['#ff6b9d', 0],
@@ -112,68 +114,40 @@
   document.body.appendChild(cur)
   document.body.appendChild(ring)
 
-  /* ---------- 跟随状态 ---------- */
-  var tx = innerWidth / 2, ty = innerHeight / 2
-  var cx = tx, cy = ty
+  /* ---------- 跟手: 直接同步写坐标, 无插值无 rAF ---------- */
   var shown = false
-  var rafId = 0
+  var root = document.documentElement
   var INTERACTIVE = 'a, button, input, textarea, select, [role="button"], .nav-search, #darkmode'
 
-  function syncPos(e) {
-    tx = e.clientX
-    ty = e.clientY
-  }
-
   function move(e) {
-    syncPos(e)
-    handleGlow(e)
+    // 同步写入 CSS 变量, 由 CSS 下一帧合成 translate —— 零追赶延迟
+    if (root.style.setProperty) {
+      root.style.setProperty('--cur-x', e.clientX + 'px')
+      root.style.setProperty('--cur-y', e.clientY + 'px')
+    } else {
+      // 兜底: 直写 inline transform
+      cur.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'
+      ring.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)'
+    }
     if (!shown) {
       shown = true
       cur.classList.add('on')
       ring.classList.add('on')
-      cx = tx; cy = ty
-      place(true)
-      return
     }
-    if (!rafId) rafId = requestAnimationFrame(step)
   }
 
-  function handleGlow(e) {
-    var el = e.target
+  function setGlow(el) {
     var hit = el && el.closest && el.closest(INTERACTIVE)
     cur.classList.toggle('glow', !!hit)
-    ring.classList.toggle('on', !!hit)
   }
-
-  function step() {
-    rafId = 0
-    var k = .26
-    cx += (tx - cx) * k
-    cy += (ty - cy) * k
-    if (Math.abs(tx - cx) < .05 && Math.abs(ty - cy) < .05) {
-      place(true)
-      return
-    }
-    place()
-    rafId = requestAnimationFrame(step)
-  }
-
-  function place(immediate) {
-    var x = immediate ? tx : cx
-    var y = immediate ? ty : cy
-    cur.style.transform = 'translate(' + x + 'px,' + y + 'px)'
-    ring.style.transform = 'translate(' + x + 'px,' + y + 'px)'
-  }
-
-  function leave() {
-    cur.classList.remove('on')
-    ring.classList.remove('on')
-    shown = false
-  }
-
-  function enterIn() {
-    shown = false
-  }
+  // 只在元素边界触发(pointerover/out), 不逐像素
+  document.addEventListener('pointerover', function (e) {
+    setGlow(e.target)
+  })
+  document.addEventListener('pointerout', function (e) {
+    var to = e.relatedTarget
+    if (!(to && to.closest && to.closest(INTERACTIVE))) setGlow(null)
+  })
 
   // 按下反馈
   document.addEventListener('mousedown', function () {
@@ -184,6 +158,15 @@
     cur.classList.remove('pressed')
     ring.classList.remove('pressed')
   })
+
+  function leave() {
+    cur.classList.remove('on')
+    ring.classList.remove('on')
+    shown = false
+  }
+  function enterIn() {
+    shown = false
+  }
 
   // 唯一事件入口(pointer 统一鼠标/笔, 触屏因 coarse 已在 CSS 隐藏)
   document.addEventListener('pointermove', move, { passive: true })
