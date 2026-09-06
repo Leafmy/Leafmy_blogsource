@@ -30,6 +30,16 @@
   var clearBtn = null
   var marqueeEl = null
   var marqueeInnerEl = null
+  // ---- 闭环跑马灯(移动点拖流光带沿轮廓流动) ----
+  var rail = null             // 跑马灯 SVG 容器
+  var railPath = null         // 驱动闭合路径
+  var railTail = null         // 流光带(拖尾) stroke
+  var railHead = null         // 移动点组
+  var railPathLen = 0         // 路径总长(弧长采样→匀速)
+  var railRunning = false     // rAF 是否在跑
+  var railRaf = null
+  var railStartTs = 0
+  var railStartSeed = null    // 起点相位(随机但固定: 首次取, 之后恒定)
 
   // ---------- DOM: 一体胶囊 ----------
   var wrap = document.createElement('div')
@@ -75,6 +85,158 @@
   caret.className = 'nav-search-caret'
   caret.setAttribute('aria-hidden', 'true')
   bar.appendChild(caret)
+
+  // ========== 闭环跑马灯(移动点拖流光带沿轮廓闭合流动) ==========
+  // 需求: 一个高亮移动点从起点出发, 拖着"跑马灯"彩色流光带(拖尾)沿检索栏
+  // 轮廓流动一整圈回到起点闭合; 循环播放。起点由 railStartSeed 平移(随机但
+  // 固定: 首次取 Math.random(), 之后恒定)。
+  // 实现: bar 内注入 SVG, 内含贴合轮廓的驱动 <path> + 一条 stroke 流光带
+  // (dasharray 只露出拖尾窗口, stroke 用 2D 彩虹渐变 url() 随时间旋转 →
+  // 色彩流动) + 移动点。每帧 getPointAtLength(弧长) 采样移动点相位, 带窗口
+  // 与之平移; 全部走合成器(transform / dashoffset), 零重绘。
+  function buildRail() {
+    if (rail) return
+    var NS = 'http://www.w3.org/2000/svg'
+    rail = document.createElementNS(NS, 'svg')
+    rail.setAttribute('class', 'nav-search-rail')
+    rail.setAttribute('preserveAspectRatio', 'none')
+    bar.appendChild(rail)
+    // 胶囊尺寸变化(展开宽度过渡/窗口缩放)时自动重建路径与流光带
+    if (typeof ResizeObserver === 'function') {
+      rail._ro = new ResizeObserver(function () {
+        if (railRunning) updateRail()
+      })
+      rail._ro.observe(bar)
+    }
+
+    // 渐变定义: 2D 线性彩虹渐变(随移动点旋转 --nav-rail-grad-rot → 色彩流动)
+    var defs = document.createElementNS(NS, 'defs')
+    var gr = document.createElementNS(NS, 'linearGradient')
+    gr.setAttribute('id', 'nav-rail-grad')
+    // 渐变随用户色相 --rail-hue 偏移: 用 stops 均匀铺一圈色相(0/18/32/50/68/82/100%)
+    var stops = [
+      [0, 'hsla(208,100%,62%,0)'], [18, 'hsla(210,100%,64%,.95)'],
+      [32, 'hsla(252,100%,66%,.95)'], [50, 'hsla(170,100%,58%,.92)'],
+      [68, 'hsla(26,100%,60%,.92)'], [82, 'hsla(210,100%,64%,.95)'],
+      [100, 'hsla(208,100%,62%,0)']
+    ]
+    stops.forEach(function (s) {
+      var st = document.createElementNS(NS, 'stop')
+      st.setAttribute('offset', s[0] + '%')
+      st.setAttribute('stop-color', s[1])
+      gr.appendChild(st)
+    })
+    defs.appendChild(gr)
+    rail.appendChild(defs)
+
+    // 驱动闭合路径(先建, 注入 viewBox/d 在 updateRail)
+    railPath = document.createElementNS(NS, 'path')
+    railPath.setAttribute('class', 'nav-rail-path')
+    railPath.setAttribute('fill', 'none')
+    railPath.setAttribute('stroke', 'none')   // 仅作驱动, 不画线
+    rail.appendChild(railPath)
+
+    // 流光带(拖尾): 与驱动路径同几何, 仅露出拖尾窗口(JS 控制 dasharray)
+    railTail = document.createElementNS(NS, 'path')
+    railTail.setAttribute('class', 'nav-rail-tail')
+    railTail.setAttribute('stroke', 'url(#nav-rail-grad)')
+    rail.appendChild(railTail)
+
+    // 移动点组(光晕 + 实核)
+    var headGroup = document.createElementNS(NS, 'g')
+    headGroup.setAttribute('class', 'nav-rail-head')
+    var headGlow = document.createElementNS(NS, 'circle')
+    headGlow.setAttribute('class', 'nav-rail-head-glow')
+    var headDot = document.createElementNS(NS, 'circle')
+    headDot.setAttribute('class', 'nav-rail-head-dot')
+    headGroup.appendChild(headGlow)
+    headGroup.appendChild(headDot)
+    rail.appendChild(headGroup)
+    railHead = headGroup
+    updateRail()
+    // 渐变旋转: 随移动点相位更新(由 rAF 改为在 railTick 里写 transform)
+    // 用属性平滑(旋转中心=移动点相位对应的轮廓点)
+  }
+
+  // 依据胶囊当前实际尺寸构建闭合路径, 设置光带窗口/线宽/移动点半径
+  function updateRail() {
+    if (!rail || !bar) return
+    var b = bar.getBoundingClientRect()
+    var w = b.width, h = b.height
+    if (w < 1 || h < 1) return
+    var r = h / 2                        // 胶囊端头半圆半径
+    var d =
+      'M ' + (w / 2) + ' 0 ' +
+      'L ' + (w - r) + ' 0 ' +
+      'C ' + w + ' 0 ' + w + ' ' + h + ' ' + (w - r) + ' ' + h +
+      'L ' + r + ' ' + h +
+      'C 0 ' + h + ' 0 0 ' + r + ' 0 ' +
+      'Z'
+    rail.setAttribute('viewBox', '0 0 ' + w + ' ' + h)
+    railPath.setAttribute('d', d)
+    railTail.setAttribute('d', d)
+    railPathLen = railPath.getTotalLength()
+    // 移动点半径与流光带线宽
+    var dotSize = parseFloat(getComputedStyle(bar).getPropertyValue('--rail-dot')) || 8
+    var headR = Math.max(2.4, dotSize / 2)
+    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', headR * 2.3)
+    railHead.querySelector('.nav-rail-head-dot').setAttribute('r', headR)
+  }
+
+  // rAF: 移动点沿闭合路径匀速流动, 流光带窗口随之平移(拖尾跟随)
+  function railTick(now) {
+    if (!railRunning) return
+    var st = getComputedStyle(bar)
+    var DUR = (parseFloat(st.getPropertyValue('--rail-duration')) || 3.8) * 1000
+    var DIR = (parseFloat(st.getPropertyValue('--rail-dir')) || 1) > 0 ? 1 : -1
+    var TAIL = parseFloat(st.getPropertyValue('--rail-tail')) || 0.34
+    if (!railStartTs) railStartTs = now
+    var t = (now - railStartTs) / DUR
+    var k = t - Math.floor(t)               // 0..1 循环
+    var prog = DIR > 0 ? k : (1 - k)        // 方向
+
+    // 移动点相位(起点偏移 railStartSeed → 随机但固定起点)
+    var headPos = prog + railStartSeed * DIR
+    headPos = headPos - Math.floor(headPos)
+    var p = railPath.getPointAtLength(headPos * railPathLen)
+    railHead.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ')')
+    // 移动点光晕半径脉冲(能量点质感)——r 动画走合成器
+    var pulse = 1 + 0.12 * Math.sin(now / 300)
+    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', (pulse * 2.3).toFixed(2))
+
+    // 流光带: dasharray = [带长, 周长-带长], 从移动点落后一段拖尾
+    // dashoffset = -(移动点相位 - 拖尾长度) 平移窗口, 拖尾跟在移动点后
+    var tailLen = TAIL * railPathLen
+    // 移动点相位转到弧长; 带窗口起点 = 移动点相位 - 拖尾长度(落后于移动点)
+    var winStart = headPos - TAIL
+    winStart = winStart - Math.floor(winStart)
+    var dashOff = -(winStart * railPathLen)
+    railTail.setAttribute('stroke-dasharray', tailLen + ' ' + (railPathLen - tailLen))
+    railTail.setAttribute('stroke-dashoffset', dashOff)
+    // 渐变随移动点旋转(色彩流动): 用 x1/y1/x2/y2 沿轮廓点方向
+    var b = bar.getBoundingClientRect()
+    var w = b.width, h = b.height
+    var p2 = railPath.getPointAtLength(((headPos + 0.5) % 1) * railPathLen)
+    var gr = rail.querySelector('#nav-rail-grad')
+    if (gr && w > 0 && h > 0) {
+      gr.setAttribute('x1', (p.x / w * 100) + '%')
+      gr.setAttribute('y1', (p.y / h * 100) + '%')
+      gr.setAttribute('x2', (p2.x / w * 100) + '%')
+      gr.setAttribute('y2', (p2.y / h * 100) + '%')
+    }
+    railRaf = requestAnimationFrame(railTick)
+  }
+  function startRail() {
+    if (railRunning) return
+    if (railStartSeed === null) railStartSeed = Math.random()   // 随机但固定(首次)
+    railRunning = true
+    railStartTs = 0
+    railRaf = requestAnimationFrame(railTick)
+  }
+  function stopRail() {
+    railRunning = false
+    if (railRaf) { cancelAnimationFrame(railRaf); railRaf = null }
+  }
 
   wrap.appendChild(bar)
 
@@ -337,6 +499,10 @@
     wrap.classList.add('nav-search-open')
     // 移动端: 先注入展开宽度(汉堡左缘 - 菜单左缘), 再让 width 过渡展开
     syncMobileSearchWidth()
+    // 闭环跑马灯: 建 rail(首帧), 按展开后尺寸重建路径, 并启动流动
+    buildRail()
+    updateRail()
+    startRail()
     // 打开时若上次有残留值, 同步控件状态
     updateControls(input.value.trim())
     // 有残留值: 重新检索并恢复结果面板(收起时面板被隐藏 + lastQuery 清空,
@@ -366,6 +532,9 @@
     isOpen = false
     wrap.classList.remove('nav-search-open')
     wrap.classList.remove('show-panel')
+    // 闭环跑马灯: 收起停止流动(rail 淡出由 CSS opacity 处理; 保留 DOM/路径
+    // 供下次展开复用, 减小成本; 起点相位沿用 → 仍在同一起点起程)
+    stopRail()
     // 移动端: 清除内联展开宽度变量 → 宽度过渡回 39px(图标胶囊)
     wrap.style.removeProperty('--nav-search-expand-w')
     lastQuery = ''
@@ -496,6 +665,7 @@
     wrap.style.setProperty('--nav-search-expand-w', w + 'px')
   }
   // 窗口尺寸变化(旋转/分屏)时重算; passive 减少开销
+  // (跑马灯路径重建已由 ResizeObserver 自动处理, 这里只同步移动端宽度)
   window.addEventListener('resize', function () {
     syncMobileSearchWidth()
   }, { passive: true })

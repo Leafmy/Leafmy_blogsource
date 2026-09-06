@@ -49,73 +49,60 @@
     border-color .2s ease;
 }
 
-/* ---- 边框流光跑马灯(conic-gradient 旋转), 仅展开态显示 ----
-   用户要求: 检索栏边框加跑马灯, 颜色取大背景的颜色; 默认态不显示。
-   原理: ::before 覆盖整个胶囊, background 用 conic-gradient 取大背景
-   主色渐变并随 --angle 旋转(流光); 用 mask 裁出"外缘 1.5px 环带"
-   (content-box 挖空中心), 只在边框处显色 → 沿胶囊圆角边缘流动的光。
-   @property 注册 --angle 让 conic 渐变角度可动画(Chrome/Edge 支持)。 */
-@property --nav-flow {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
+/* ---- 闭环跑马灯: 移动点拖着彩色流光带沿胶囊轮廓流动 ----
+   形态: 一个高亮移动点从某起点出发, 身后拖着一条"跑马灯"彩色流光带
+   (连续渐变光带, 颜色随移动点流动)沿胶囊闭合轮廓走一圈, 回到起点
+   构成闭环; 循环播放。用户明确: "从一个点出发, 移动点带着跑马灯
+   (作为拖尾)最终到达起始点形成闭环"。
+   实现: 注入 SVG #nav .nav-search-rail — 内含贴合轮廓的驱动 path + 一条
+   stroke 流光带(dasharray/dashoffset 只露出拖尾窗口, stroke 用 2D 彩虹
+   渐变 url(#nav-rail-grad), 渐变随移动点旋转 → 色彩流动) + 移动点(光晕+实核)。
+   railTick 用 getPointAtLength(弧长)采样移动点相位, 光带窗口随之平移,
+   每帧仅改 transform/dashoffset(走合成器)。仅展开态显示。 */
+#nav .nav-search-bar {
+  --rail-hue: 208;        /* 移动点/光带主色相(冷蓝) light */
+  --rail-sat: 100%;
+  --rail-duration: 3.8s;  /* 走完整圈时长(越小越快) */
+  --rail-dir: 1;          /* 1=顺时针, -1=逆时针 */
+  --rail-tail: .34;       /* 流光带占整圈的比例(拖尾长度) */
+  --rail-dot: 8px;        /* 移动点直径 */
+  --rail-wid: 3px;        /* 流光带线宽 */
 }
-@keyframes nav-flow-rotate {
-  to { --nav-flow: 360deg }
+html[data-theme='dark'] #nav .nav-search-bar {
+  --rail-hue: 228;        /* dark 偏冷紫蓝 */
 }
-/* 默认态不显示; 收起时靠 transition 快速淡出 */
-#nav .nav-search-bar::before {
-  content: '';
+#nav .nav-search-bar .nav-search-rail {
   position: absolute;
-  inset: -1px;            /* 盖住 1px 边框区域 */
-  border-radius: 999px;
-  z-index: 1;            /* 盖在 bar 背景之上; 中心由 mask 排除, 不遮挡内容 */
+  inset: 0;
+  z-index: 1;             /* 盖在 bar 背景之上; 内容(DOM 顺序其上)不遮挡 */
   pointer-events: none;
+  overflow: visible;      /* 光晕/流光带允许溢出胶囊圆角边缘 */
   opacity: 0;
-  /* 收起/常态快速熄灭用 transition; 展开的渐显由 .open 的 transition 接管 */
-  transition: opacity .18s ease;
-  /* light: 暗色高饱和彩色(深蓝→紫→青→橙), 在浅色玻璃上对比明显 */
-  background: conic-gradient(
-    from var(--nav-flow),
-    rgba(30, 58, 138, 0) 0%,
-    rgba(37, 99, 235, .95) 18%,
-    rgba(124, 58, 237, .95) 32%,
-    rgba(8, 145, 178, .92) 50%,
-    rgba(234, 88, 12, .92) 68%,
-    rgba(37, 99, 235, .95) 82%,
-    rgba(30, 58, 138, 0) 100%
-  );
-  /* 裁出外缘 1.5px 环带: content-box 显示, padding-box 之外露出 */
-  padding: 1.5px;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  animation: nav-flow-rotate 6s linear infinite;
+  transition: opacity .4s ease .5s;   /* 展开延迟 .5s 再浮现(先展开/再起光) */
 }
-/* 展开: 延迟一拍再渐显(输入框先展开到位, 流光边框缓缓浮现, 层次递进);
-   收起回退默认 transition(delay 0) → 立即熄灭不拖沓 */
-#nav .nav-search-open .nav-search-bar::before {
+#nav .nav-search-open .nav-search-bar .nav-search-rail {
   opacity: 1;
-  transition: opacity .35s ease .5s;
 }
-
-/* dark: 边框流光取深色玻璃主色 */
-html[data-theme='dark'] #nav .nav-search-bar::before {
-  background: conic-gradient(
-    from var(--nav-flow),
-    rgba(90, 135, 240, 0) 0%,
-    rgba(120, 160, 250, .85) 18%,
-    rgba(180, 120, 245, .88) 32%,
-    rgba(60, 200, 180, .80) 50%,
-    rgba(245, 145, 82, .78) 68%,
-    rgba(120, 160, 250, .85) 82%,
-    rgba(90, 135, 240, 0) 100%
-  );
+/* 流光带(拖尾): 沿轮廓连续渐变带, 露出长度由 JS dasharray 控制 */
+#nav .nav-search-rail .nav-rail-tail {
+  fill: none;
+  stroke: url(#nav-rail-grad);
+  stroke-linecap: round;
+  stroke-width: var(--rail-wid);
+  filter: drop-shadow(0 0 3px hsla(var(--rail-hue), var(--rail-sat), 55%, .55));
+  will-change: stroke-dashoffset;
+}
+#nav .nav-search-rail .nav-rail-head {
+  will-change: transform;
+}
+/* 移动点: 外扩柔光晕 + 高亮实核 */
+#nav .nav-search-rail .nav-rail-head .nav-rail-head-glow {
+  fill: hsla(var(--rail-hue), var(--rail-sat), 62%, .5);
+  filter: drop-shadow(0 0 4px hsla(var(--rail-hue), var(--rail-sat), 50%, .55));
+}
+#nav .nav-search-rail .nav-rail-head .nav-rail-head-dot {
+  fill: hsl(var(--rail-hue), var(--rail-sat), 92%);
+  filter: drop-shadow(0 0 3px hsla(var(--rail-hue), var(--rail-sat), 70%, .7));
 }
 #nav .nav-search-bar:hover {
   background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
