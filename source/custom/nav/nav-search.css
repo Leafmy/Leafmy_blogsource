@@ -98,6 +98,11 @@
 }
 #nav .nav-search-open .nav-search-bar::before {
   opacity: 1;
+  /* 打开延迟一拍再亮跑马灯: 输入框展开(width .4s)基本到位后, 流光边框
+     才缓缓浮现, 形成「先展开 → 流光出现」的层次递进。
+     收起不延迟(opacity 回退用默认 transition, delay=0) → 立即灭掉,
+     避免收起时流光还挂着。 */
+  transition: opacity .35s ease .28s;
 }
 
 /* dark: 边框流光取深色玻璃主色 */
