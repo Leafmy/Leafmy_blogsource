@@ -322,20 +322,32 @@ html[data-theme='dark'] #archive::before {
   position: relative;
 }
 
-/* 移动端：开销大，退回主题原始实色卡片 */
+/* 移动端：保留玻璃效果(用户要求与桌面一致), 但降开销:
+   - glass-bg 仍显示(背景光斑层静态无动画, 开销小)
+   - 卡片/hero 保留 backdrop-filter(模糊半径调低 18→12 省 GPU)
+   - 去掉过重投影(移动端 GPU), 羽化光晕保留(柔和融入背景) */
 @media (max-width: 768px) {
   .glass-bg {
-    display: none;
+    display: block;      /* 移动端也显示光斑层(静态, 开销可接受) */
   }
   .recent-post-item,
   .card-widget,
   #post,
   #archive {
-    background: var(--card-bg) !important;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    box-shadow: none !important;
-    border: none !important;
+    background: linear-gradient(
+      155deg,
+      rgba(255, 255, 255, .10) 0%,
+      rgba(255, 255, 255, .04) 50%,
+      rgba(255, 255, 255, .08) 100%
+    ) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(12px) saturate(150%);
+    border: 0 !important;
+    box-shadow:
+      0 0 0 1px rgba(180, 200, 235, .20),
+      0 0 18px rgba(140, 180, 235, .10),
+      0 8px 20px -8px rgba(48, 66, 104, .18),
+      inset 0 1px 0 rgba(255, 255, 255, .40) !important;
   }
   .recent-post-item::before,
   .card-widget::before,
@@ -362,47 +374,42 @@ html[data-theme='dark'] #archive::before {
    同时让白色标题清晰可读。
    [v9] 恢复空间层次(去扁平化)：不再用深蓝紫蒙层把光斑压死，改
    「冷雾蓝灰」低饱和渐变 + 适中 alpha(.32)，配合增强后的 .bg-liquid
-   光斑(.52)，透出明显的磨砂玻璃纵深; 白字对比靠 text-shadow 保证。 */
+   光斑(.52)，透出明显的磨砂玻璃纵深; 白字对比靠 text-shadow 保证。
+   [v11 通透修正] 用户反馈仍像纯色蒙层、光斑透不出。根因: 背景
+   linear-gradient 三层 alpha .28-.32 叠在 blur 上，几乎压死背后光斑。
+   改法: 大幅降蒙层 alpha(.32→.16/.10)，让 blur 模糊后的光斑色块
+   成为主要可见内容; 白字对比仍靠 text-shadow(已带 2px 投影)。 */
 #page-header.full_page {
   background: linear-gradient(
     150deg,
-    rgba(64, 84, 128, .32) 0%,
-    rgba(78, 98, 142, .28) 50%,
-    rgba(88, 106, 150, .32) 100%
+    rgba(96, 120, 176, .20) 0%,
+    rgba(120, 138, 190, .12) 45%,
+    rgba(140, 158, 210, .16) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(160%) brightness(1.04);
-  backdrop-filter: blur(14px) saturate(160%) brightness(1.04);
+  -webkit-backdrop-filter: blur(18px) saturate(170%) brightness(1.08);
+  backdrop-filter: blur(18px) saturate(170%) brightness(1.08);
 }
 
-/* 原有黑色遮罩改为柔和高光渐变，保留玻璃的镜面折射感
-   [v9] 减弱遮罩(.25→.14), 不再压平首屏纵深 */
+/* 原 hero ::before 压暗遮罩 → 去掉(玻璃已透光斑, 无需再压暗) */
 #page-header.full_page:not(.not-top-img)::before {
-  background: linear-gradient(
-    180deg,
-    rgba(20, 30, 60, .14) 0%,
-    rgba(30, 45, 90, .12) 60%,
-    transparent 100%
-  ) !important;
+  display: none !important;
 }
 
-/* ---- dark：深色磨砂玻璃 ---- */
+/* ---- dark：深色磨砂玻璃 ----
+   [v11] 同 light 通透修正: 降蒙层 alpha, 透出深色光斑 */
 html[data-theme='dark'] #page-header.full_page {
   background: linear-gradient(
     150deg,
-    rgba(30, 40, 66, .42) 0%,
-    rgba(12, 16, 28, .44) 48%,
-    rgba(22, 30, 48, .40) 100%
+    rgba(40, 52, 84, .22) 0%,
+    rgba(18, 24, 40, .24) 48%,
+    rgba(28, 38, 62, .20) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
-  backdrop-filter: blur(16px) saturate(140%) brightness(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(150%) brightness(1.12);
+  backdrop-filter: blur(18px) saturate(150%) brightness(1.12);
 }
 
 html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, .05) 0%,
-    transparent 70%
-  ) !important;
+  display: none !important;
 }
 
 /* ---- hero 底部羽化（fade-out），与下方内容区柔和融合 ----
@@ -437,19 +444,18 @@ html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
   mask-size: 100% 100%;
 }
 
-/* 移动端：hero 玻璃开销大，退回主题原始纯色 */
+/* 移动端：hero 玻璃保留(用户要求与桌面一致), 仅降 blur 半径省 GPU */
 @media (max-width: 768px) {
   #page-header.full_page,
   html[data-theme='dark'] #page-header.full_page {
-    background: var(--light-blue) !important;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    -webkit-mask-image: none;
-    mask-image: none;
+    /* 与桌面 v11 通透玻璃一致(light/dark 各自渐变在上方已定义),
+       此处仅降模糊半径 18→12 并保留底部 mask 羽化 */
+    -webkit-backdrop-filter: blur(12px) saturate(150%) brightness(1.05);
+    backdrop-filter: blur(12px) saturate(150%) brightness(1.05);
   }
   #page-header.full_page:not(.not-top-img)::before,
   html[data-theme='dark'] #page-header.full_page:not(.not-top-img)::before {
-    background: var(--mark-bg) !important;
+    display: none !important;
   }
 }
 
@@ -612,27 +618,24 @@ html[data-theme='dark'] #page-header.post-bg::after {
     0 0 2px rgba(0, 0, 0, .35);
 }
 
-/* 移动端：玻璃开销大，退回主题纯色（与首页 hero 一致策略） */
+/* 移动端：附属页 header 玻璃保留(与 hero 一致), 仅降 blur 半径 */
 @media (max-width: 768px) {
-  #page-header.not-home-page,
-  #page-header.post-bg,
-  html[data-theme='dark'] #page-header.not-home-page,
-  html[data-theme='dark'] #page-header.post-bg {
-    background: var(--light-blue) !important;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
   #page-header.not-home-page::before,
   #page-header.post-bg::before,
+  html[data-theme='dark'] #page-header.not-home-page::before,
+  html[data-theme='dark'] #page-header.post-bg::before {
+    -webkit-backdrop-filter: blur(12px) saturate(140%) brightness(1.05);
+    backdrop-filter: blur(12px) saturate(140%) brightness(1.05);
+  }
   #page-header.not-home-page::after,
   #page-header.post-bg::after,
-  html[data-theme='dark'] #page-header.not-home-page::before,
-  html[data-theme='dark'] #page-header.post-bg::before,
   html[data-theme='dark'] #page-header.not-home-page::after,
   html[data-theme='dark'] #page-header.post-bg::after {
-    background: var(--mark-bg) !important;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    background: linear-gradient(
+      180deg,
+      rgba(20, 30, 60, .10) 0%,
+      transparent 60%
+    ) !important;
     -webkit-mask-image: none;
     mask-image: none;
   }
