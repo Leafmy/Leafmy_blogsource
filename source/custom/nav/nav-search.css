@@ -54,7 +54,14 @@
    原理: ::before 覆盖整个胶囊, background 用 conic-gradient 取大背景
    主色渐变并随 --angle 旋转(流光); 用 mask 裁出"外缘 1.5px 环带"
    (content-box 挖空中心), 只在边框处显色 → 沿胶囊圆角边缘流动的光。
-   @property 注册 --angle 让 conic 渐变角度可动画(Chrome/Edge 支持)。 */
+   @property 注册 --angle 让 conic 渐变角度可动画(Chrome/Edge 支持)。
+
+   出现的柔和化(解决"流光出现生硬"):
+   - 旋转动画从"页面加载即后台常转"改为**仅在展开态启动**: 收起时 --nav-flow
+     回到 0deg, 每次展开流光都从顶部起点开始流动 → 有"光从起点流出来"的
+     方向感, 而不是整圈彩弧在任意相位凭空瞬现。
+   - 淡入从 .35s ease(起步冲得快)改为 .6s 缓入缓出(轻微 overshoot 前先慢起),
+     光是一点一点"点亮"而不是"啪"地一圈全亮。 */
 @property --nav-flow {
   syntax: '<angle>';
   inherits: false;
@@ -95,13 +102,15 @@
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
-  animation: nav-flow-rotate 6s linear infinite;
 }
 /* 展开: 延迟一拍再渐显(输入框先展开到位, 流光边框缓缓浮现, 层次递进);
+   流光旋转动画在此才启动 → 每次从顶部起点(0deg)起流, 出现自然不突兀;
    收起回退默认 transition(delay 0) → 立即熄灭不拖沓 */
 #nav .nav-search-open .nav-search-bar::before {
   opacity: 1;
-  transition: opacity .35s ease .5s;
+  /* 慢起缓入, 让光"点亮"而非"瞬现": .6s + 柔缓动, 延迟 .5s 不变 */
+  transition: opacity .6s cubic-bezier(.3, .02, .2, 1) .5s;
+  animation: nav-flow-rotate 7s linear infinite;
 }
 
 /* dark: 边框流光取深色玻璃主色 */
