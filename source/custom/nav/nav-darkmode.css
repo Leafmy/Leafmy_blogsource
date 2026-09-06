@@ -53,6 +53,7 @@ html[data-theme='dark'] #nav #darkmode {
 html[data-theme='dark'] #nav #darkmode:hover {
   background: linear-gradient(150deg, rgba(44, 52, 74, .58), rgba(26, 32, 46, .55));
   border-color: rgba(255, 255, 255, .16);
+  color: var(--theme-color, #49b1f5);   /* 暗色悬浮同样变蓝, 与亮色一致(否则被暗色基础 color 优先级压住) */
 }
 
 /* 检索胶囊自身靠右的 auto margin 会让 darkmode 与搜索之间被均分空隙,

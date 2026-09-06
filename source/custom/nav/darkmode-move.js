@@ -18,13 +18,11 @@
   // 迁入导航栏(视觉顺序由 CSS order 控制, DOM 位置无关紧要)
   menus.appendChild(dm)
 
-  // 图标 + 悬浮提示: 日月随主题切换; title 同步给出"点击后切到哪个模式"的动作提示
+  // 图标: 日月随主题切换
   function setIcon() {
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark'
     var icon = dm.querySelector('i')
     if (icon) icon.className = 'fas ' + (isDark ? 'fa-sun' : 'fa-moon')
-    // 太阳(暗色态) → 提示切回日间; 月亮(亮色态) → 提示切到夜间
-    dm.title = isDark ? '切换到日间模式' : '切换到夜间模式'
   }
   setIcon()
 
