@@ -49,79 +49,73 @@
     border-color .2s ease;
 }
 
-/* ---- 闭环跑马灯: 移动点从固定起点出发, 流光带"描边生长"沿轮廓铺满一圈 ----
-   形态: 一个高亮移动点从固定起点(胶囊顶部中点)出发, 身后拖着一条"跑马灯"
-   彩色流光带, 光带从固定起点开始随移动点前进而逐渐变长(描边生长), 移动点
-   走完一圈回到起点时光带已铺满整圈 → 闭合; 循环播放。用户明确: 起点固定,
-   光带不是被拖着跑, 而是越来越长最终闭合。
-   实现: 注入 SVG #nav .nav-search-rail — 内含贴合轮廓的驱动 path + 一条
-   stroke 流光带(dasharray=已走长, dashoffset=0 锚死起点 → 只生长不平移,
-   stroke 用 2D 彩虹渐变 url(#nav-rail-grad), 渐变随移动点流动) + 移动点。
-   railTick 用 getPointAtLength(弧长)采样移动点相位, 每帧仅改
-   dasharray/transform/r(走合成器)。仅展开态显示。 */
-#nav .nav-search-bar {
-  --rail-hue: 208;        /* 移动点/光带主色相(冷蓝) light */
-  --rail-sat: 100%;
-  --rail-duration: 3.8s;  /* 走完整圈时长(越小越快) */
-  --rail-dir: 1;          /* 1=顺时针, -1=逆时针 */
-  --rail-dot: 8px;        /* 移动点直径 */
-  --rail-wid: 3px;        /* 流光带线宽 */
-  --rail-lum: 55%;        /* 满圈跑马灯均匀主色亮度 light(浅色底用中亮) */
+/* ---- 边框流光跑马灯(conic-gradient 旋转), 仅展开态显示 ----
+   用户要求: 检索栏边框加跑马灯, 颜色取大背景的颜色; 默认态不显示。
+   原理: ::before 覆盖整个胶囊, background 用 conic-gradient 取大背景
+   主色渐变并随 --angle 旋转(流光); 用 mask 裁出"外缘 1.5px 环带"
+   (content-box 挖空中心), 只在边框处显色 → 沿胶囊圆角边缘流动的光。
+   @property 注册 --angle 让 conic 渐变角度可动画(Chrome/Edge 支持)。 */
+@property --nav-flow {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }
-html[data-theme='dark'] #nav .nav-search-bar {
-  --rail-hue: 228;        /* dark 偏冷紫蓝 */
-  --rail-lum: 70%;        /* 满圈跑马灯均匀主色亮度 dark(深色底用更亮) */
+@keyframes nav-flow-rotate {
+  to { --nav-flow: 360deg }
 }
-#nav .nav-search-bar .nav-search-rail {
+/* 默认态不显示; 收起时靠 transition 快速淡出 */
+#nav .nav-search-bar::before {
+  content: '';
   position: absolute;
-  inset: 0;
-  z-index: 1;             /* 盖在 bar 背景之上; 内容(DOM 顺序其上)不遮挡 */
+  inset: -1px;            /* 盖住 1px 边框区域 */
+  border-radius: 999px;
+  z-index: 1;            /* 盖在 bar 背景之上; 中心由 mask 排除, 不遮挡内容 */
   pointer-events: none;
-  overflow: visible;      /* 光晕/流光带允许溢出胶囊圆角边缘 */
   opacity: 0;
-  transition: opacity .4s ease .5s;   /* 展开延迟 .5s 再浮现(先展开/再起光) */
+  /* 收起/常态快速熄灭用 transition; 展开的渐显由 .open 的 transition 接管 */
+  transition: opacity .18s ease;
+  /* light: 暗色高饱和彩色(深蓝→紫→青→橙), 在浅色玻璃上对比明显 */
+  background: conic-gradient(
+    from var(--nav-flow),
+    rgba(30, 58, 138, 0) 0%,
+    rgba(37, 99, 235, .95) 18%,
+    rgba(124, 58, 237, .95) 32%,
+    rgba(8, 145, 178, .92) 50%,
+    rgba(234, 88, 12, .92) 68%,
+    rgba(37, 99, 235, .95) 82%,
+    rgba(30, 58, 138, 0) 100%
+  );
+  /* 裁出外缘 1.5px 环带: content-box 显示, padding-box 之外露出 */
+  padding: 1.5px;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: nav-flow-rotate 6s linear infinite;
 }
-#nav .nav-search-open .nav-search-bar .nav-search-rail {
+/* 展开: 延迟一拍再渐显(输入框先展开到位, 流光边框缓缓浮现, 层次递进);
+   收起回退默认 transition(delay 0) → 立即熄灭不拖沓 */
+#nav .nav-search-open .nav-search-bar::before {
   opacity: 1;
+  transition: opacity .35s ease .5s;
 }
-/* 流光带(拖尾): 沿轮廓连续渐变带, 露出长度由 JS dasharray 控制 */
-#nav .nav-search-rail .nav-rail-tail {
-  fill: none;
-  stroke: url(#nav-rail-grad);
-  stroke-linecap: round;
-  stroke-width: var(--rail-wid);
-  /* 起点端/移动端端点柔和: 轻微模糊, 不再有生硬光圈/无端光 */
-  filter: blur(.6px) drop-shadow(0 0 2px hsla(var(--rail-hue), var(--rail-sat), 55%, .45));
-  will-change: stroke-dashoffset;
-}
-/* 阶段2(整圈跑马灯): 整圈始终完整可见, 靠 hue-rotate 让色相持续旋转 → 色彩
-   沿轮廓"流动", 且亮度恒定、无明暗断层(不会从某处往另一侧消失)。 */
-/* 阶段2(整圈跑马灯): 整圈始终完整可见, 靠 hue-rotate 让色相持续旋转 → 色彩
-   沿轮廓"流动", 且亮度恒定、无明暗断层(不会从某处往另一侧消失)。
-   动画作用于光带(.nav-rail-tail)而非整个 SVG: keyframe 里保留原 filter
-   (blur + drop-shadow 柔化), 在它基础上叠 hue-rotate, 否则动画的 filter
-   会覆盖掉柔化效果使光带变生硬。 */
-#nav .nav-search-rail.nav-rail-flowing .nav-rail-tail {
-  animation: nav-rail-hue 6s linear infinite;
-}
-@keyframes nav-rail-hue {
-  from { filter: blur(.6px) drop-shadow(0 0 2px hsla(var(--rail-hue), var(--rail-sat), 55%, .45)) hue-rotate(0deg); }
-  to   { filter: blur(.6px) drop-shadow(0 0 2px hsla(var(--rail-hue), var(--rail-sat), 55%, .45)) hue-rotate(360deg); }
-}
-#nav .nav-search-rail .nav-rail-head {
-  will-change: transform;
-  /* 动点 = 光带前沿的一团柔光, 不是清晰硬圆点: 大模糊 + 轻微降饱和, 彻底去掉"无端光"感 */
-  filter: blur(3.5px) saturate(1.05);
-  opacity: .92;
-}
-/* 柔光主体: 大而淡的光晕, 取代原来清晰的实心亮圆 */
-#nav .nav-search-rail .nav-rail-head .nav-rail-head-glow {
-  fill: hsla(var(--rail-hue), var(--rail-sat), 62%, .42);
-}
-/* 动点芯: 更淡更模糊, 与光带尖端融为一体的柔光, 不再单独成像 */
-#nav .nav-search-rail .nav-rail-head .nav-rail-head-dot {
-  fill: hsla(var(--rail-hue), var(--rail-sat), 78%, .55);
-  filter: blur(1px);
+
+/* dark: 边框流光取深色玻璃主色 */
+html[data-theme='dark'] #nav .nav-search-bar::before {
+  background: conic-gradient(
+    from var(--nav-flow),
+    rgba(90, 135, 240, 0) 0%,
+    rgba(120, 160, 250, .85) 18%,
+    rgba(180, 120, 245, .88) 32%,
+    rgba(60, 200, 180, .80) 50%,
+    rgba(245, 145, 82, .78) 68%,
+    rgba(120, 160, 250, .85) 82%,
+    rgba(90, 135, 240, 0) 100%
+  );
 }
 #nav .nav-search-bar:hover {
   background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
