@@ -175,10 +175,10 @@
     railPath.setAttribute('d', d)
     railTail.setAttribute('d', d)
     railPathLen = railPath.getTotalLength()
-    // 移动点半径与流光带线宽
+    // 移动点半径与流光带线宽(glow 仅作贴合光带端点的柔和亮芯, 不再大范围外扩)
     var dotSize = parseFloat(getComputedStyle(bar).getPropertyValue('--rail-dot')) || 8
     var headR = Math.max(2.4, dotSize / 2)
-    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', headR * 2.3)
+    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', headR * 1.6)
     railHead.querySelector('.nav-rail-head-dot').setAttribute('r', headR)
   }
 
@@ -198,9 +198,8 @@
     var headLen = headPos * railPathLen
     var p = railPath.getPointAtLength(headLen)
     railHead.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ')')
-    // 移动点光晕半径脉冲(能量点质感)——r 动画走合成器
-    var pulse = 1 + 0.12 * Math.sin(now / 300)
-    railHead.querySelector('.nav-rail-head-glow').setAttribute('r', (pulse * 2.3).toFixed(2))
+    // 移动点为光带端点: 不再做大光晕脉冲, 仅保留贴合光带的柔和亮芯
+    // (大光斑已由 CSS blur 柔化承担, 此处不撑大 glow)
 
     // 流光带"描边生长": 固定从 d 起点(顶部中点)开始, 长度 = 移动点已走距离。
     // dasharray=[已走长, 剩余长], dashoffset=0(锚死在起点不动) → 光带不跟着

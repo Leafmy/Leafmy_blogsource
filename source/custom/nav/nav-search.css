@@ -88,20 +88,24 @@ html[data-theme='dark'] #nav .nav-search-bar {
   stroke: url(#nav-rail-grad);
   stroke-linecap: round;
   stroke-width: var(--rail-wid);
-  filter: drop-shadow(0 0 3px hsla(var(--rail-hue), var(--rail-sat), 55%, .55));
+  /* 起点端/移动端端点柔和: 轻微模糊, 不再有生硬光圈/无端光 */
+  filter: blur(.6px) drop-shadow(0 0 2px hsla(var(--rail-hue), var(--rail-sat), 55%, .45));
   will-change: stroke-dashoffset;
 }
 #nav .nav-search-rail .nav-rail-head {
   will-change: transform;
+  /* 移动点端点柔化(去掉突兀大亮斑): 轻微模糊 + 缩小, 让光带端点柔和过渡 */
+  filter: blur(1.5px) saturate(1.1);
 }
-/* 移动点: 外扩柔光晕 + 高亮实核 */
+/* 移动点: 去掉外扩大光晕, 只保留贴合光带端点的柔和亮芯 */
 #nav .nav-search-rail .nav-rail-head .nav-rail-head-glow {
-  fill: hsla(var(--rail-hue), var(--rail-sat), 62%, .5);
-  filter: drop-shadow(0 0 4px hsla(var(--rail-hue), var(--rail-sat), 50%, .55));
+  fill: hsla(var(--rail-hue), var(--rail-sat), 70%, .35);
+  /* 保留轻微柔光, 但无生硬 drop-shadow 大光斑 */
 }
 #nav .nav-search-rail .nav-rail-head .nav-rail-head-dot {
-  fill: hsl(var(--rail-hue), var(--rail-sat), 92%);
-  filter: drop-shadow(0 0 3px hsla(var(--rail-hue), var(--rail-sat), 70%, .7));
+  fill: hsl(var(--rail-hue), var(--rail-sat), 88%);
+  /* 光带端点更亮但不突兀; 光晕已由模糊承担, 去掉厚重 drop-shadow */
+  filter: blur(.3px);
 }
 #nav .nav-search-bar:hover {
   background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
