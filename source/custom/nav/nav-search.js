@@ -182,8 +182,11 @@
     railHead.querySelector('.nav-rail-head-dot').setAttribute('r', headR * 0.85)
   }
 
-  // rAF: 移动点从固定起点出发沿闭合路径前进, 流光带"描边生长"逐渐变长,
-  // 移动点回到起点时光带铺满整圈闭合。起点=d 起点(顶部中点, 固定不随机)。
+  // rAF: 两个阶段
+  //  阶段1(生长, t<1): 移动点从固定起点沿闭合路径前进, 流光带描边生长,
+  //    回到起点(铺满整圈)完成一次闭环。
+  //  阶段2(跑马灯, t>=1): 保持整圈完整彩色流光带, 沿轮廓持续匀速流动
+  //    (同原来 conic 跑马灯), 不再重新生长; 移动点隐去。
   function railTick(now) {
     if (!railRunning) return
     var st = getComputedStyle(bar)
@@ -191,32 +194,47 @@
     var DIR = (parseFloat(st.getPropertyValue('--rail-dir')) || 1) > 0 ? 1 : -1
     if (!railStartTs) railStartTs = now
     var t = (now - railStartTs) / DUR
-    var k = t - Math.floor(t)               // 0..1 循环
-    var headPos = DIR > 0 ? k : (1 - k)     // 移动点相位 0..1(0=起点)
+    var full = t >= 1                        // 是否已铺满整圈进入跑马灯态
+    var k = full ? 1 : Math.max(t, 0)        // 生长相位 0..1(满圈钳到 1)
+    var headPos = DIR > 0 ? k : (1 - k)      // 移动点相位 0..1(1=回起点闭合)
 
-    // 移动点位置 = 已走弧长
-    var headLen = headPos * railPathLen
-    var p = railPath.getPointAtLength(headLen)
-    railHead.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ')')
-    // 移动点为光带端点: 不再做大光晕脉冲, 仅保留贴合光带的柔和亮芯
-    // (大光斑已由 CSS blur 柔化承担, 此处不撑大 glow)
-
-    // 流光带"描边生长": 固定从 d 起点(顶部中点)开始, 长度 = 移动点已走距离。
-    // dasharray=[已走长, 剩余长], dashoffset=0(锚死在起点不动) → 光带不跟着
-    // 移动点平移, 而是随移动点前进不断变长, 到达起点时铺满整圈闭合。
-    var drawnLen = Math.min(headLen, railPathLen)
-    railTail.setAttribute('stroke-dasharray', drawnLen + ' ' + (railPathLen))
-    railTail.setAttribute('stroke-dashoffset', 0)
-    // 渐变随移动点位置流动(色彩沿光带分布): 指向移动点与对侧
     var b = bar.getBoundingClientRect()
     var w = b.width, h = b.height
-    var p2 = railPath.getPointAtLength(((headPos + 0.5) % 1) * railPathLen)
     var gr = rail.querySelector('#nav-rail-grad')
-    if (gr && w > 0 && h > 0) {
-      gr.setAttribute('x1', (p.x / w * 100) + '%')
-      gr.setAttribute('y1', (p.y / h * 100) + '%')
-      gr.setAttribute('x2', (p2.x / w * 100) + '%')
-      gr.setAttribute('y2', (p2.y / h * 100) + '%')
+
+    if (full) {
+      // ── 阶段2: 整圈完整跑马灯, 流光沿轮廓匀速流动(仅 dashoffset 平移) ──
+      railHead.style.display = 'none'        // 移动点(生长端)已闭合, 不再显示
+      var flow = (t - 1) % 1                 // 满圈后 0..1 循环相位(色彩/流光前进)
+      var flowLen = flow * railPathLen
+      // dasharray=[整圈, 整圈] 但通过 offset 平移整条带 → 色彩沿轮廓匀速流转
+      railTail.setAttribute('stroke-dasharray', railPathLen + ' ' + railPathLen)
+      railTail.setAttribute('stroke-dashoffset', -flowLen * DIR)
+      // 渐变也随 flow 旋转, 色彩沿整圈连续流动
+      if (gr && w > 0 && h > 0) {
+        var pf = railPath.getPointAtLength(flow * railPathLen)
+        var pf2 = railPath.getPointAtLength(((flow + 0.5) % 1) * railPathLen)
+        gr.setAttribute('x1', (pf.x / w * 100) + '%')
+        gr.setAttribute('y1', (pf.y / h * 100) + '%')
+        gr.setAttribute('x2', (pf2.x / w * 100) + '%')
+        gr.setAttribute('y2', (pf2.y / h * 100) + '%')
+      }
+    } else {
+      // ── 阶段1: 描边生长(移动点从起点出发, 光带越拉越长) ──
+      railHead.style.display = ''
+      var headLen = headPos * railPathLen
+      var p = railPath.getPointAtLength(headLen)
+      railHead.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ')')
+      var drawnLen = Math.min(headLen, railPathLen)
+      railTail.setAttribute('stroke-dasharray', drawnLen + ' ' + (railPathLen))
+      railTail.setAttribute('stroke-dashoffset', 0)
+      if (gr && w > 0 && h > 0) {
+        var p2 = railPath.getPointAtLength(((headPos + 0.5) % 1) * railPathLen)
+        gr.setAttribute('x1', (p.x / w * 100) + '%')
+        gr.setAttribute('y1', (p.y / h * 100) + '%')
+        gr.setAttribute('x2', (p2.x / w * 100) + '%')
+        gr.setAttribute('y2', (p2.y / h * 100) + '%')
+      }
     }
     railRaf = requestAnimationFrame(railTick)
   }
