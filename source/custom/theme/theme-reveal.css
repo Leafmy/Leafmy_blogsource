@@ -19,7 +19,7 @@
 /* 新主题内容从网页中心圆形长出（真实页面内容扩散） */
 ::view-transition-new(root) {
   clip-path: circle(0% at 50% 50%);
-  animation: center-content-reveal 0.45s cubic-bezier(0.45, 0, 0.25, 1) both;
+  animation: center-content-reveal 0.62s cubic-bezier(0.45, 0, 0.25, 1) both;
 }
 
 @keyframes center-content-reveal {
@@ -44,44 +44,4 @@
 .glass-bg.vt-pause .bg-liquid::after {
   animation: none;
   will-change: auto;
-}
-
-/* ============================================================
-   切换动画期间降开销（掉帧优化）
-   -----------------------------------------------
-   切换 data-theme 的瞬间，16 张卡片 + 全屏 hero 的 backdrop-filter
-   会全部重新模糊采样（背后 .bg-liquid 光斑已换），这是切换掉帧主因。
-   圆形 reveal 动画期间（theme-reveal.js 给 html 加 .switching）：
-   - 关闭卡片/hero 的 backdrop-filter，免去同步重光栅；
-   - 改用接近最终玻璃观感的近似实色背景，动画中新主题卡片稳定不穿帮。
-   动画结束移除 .switching，恢复玻璃（重光栅延后到动画结束后，
-   对体感影响最小）。
-   ============================================================ */
-html.switching .recent-post-item,
-html.switching .card-widget,
-html.switching #post,
-html.switching #archive {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  background: linear-gradient(155deg, rgba(250, 252, 255, .96), rgba(240, 245, 252, .94)) !important;
-  /* 主题卡片默认 transition:all .3s, 会让 backdrop-filter 从 18px 逐帧
-     插值到 none(每帧重新模糊采样 = 掉帧主因), 切换期必须瞬时切换 */
-  transition: none !important;
-}
-html.switching #page-header.full_page {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  background: linear-gradient(150deg, rgba(140, 158, 196, .92), rgba(170, 184, 214, .90)) !important;
-  transition: none !important;
-}
-html[data-theme='dark'].switching .recent-post-item,
-html[data-theme='dark'].switching .card-widget,
-html[data-theme='dark'].switching #post,
-html[data-theme='dark'].switching #archive {
-  background: linear-gradient(160deg, rgba(26, 30, 46, .96), rgba(18, 22, 36, .95)) !important;
-  transition: none !important;
-}
-html[data-theme='dark'].switching #page-header.full_page {
-  background: linear-gradient(150deg, rgba(34, 40, 62, .94), rgba(20, 26, 44, .94)) !important;
-  transition: none !important;
 }
