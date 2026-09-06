@@ -184,25 +184,32 @@
   }
 }
 
-/* ============ 3. 抽屉打开/收起全程压住顶部导航, 消除割裂 ============
+/* ============ 3. 抽屉打开/收起全程隐藏顶部导航, 消除割裂 ============
    自定义导航 nav-apple.css 把 #nav z-index 提到 999 (高于抽屉 103 与遮罩
    102)。移动端点三条杠打开抽屉时, 顶部那条亮色毛玻璃导航条会一直压在
    最上层, 头像区被它顶出一块 → 视觉割裂。
-   必须压住 #nav 的两个时段:
+   抽屉需要盖住 #nav 的两个时段:
    - 抽屉打开(保持 .open): #sidebar-menus.open 存在期间, :has() 命中;
    - 抽屉收起(正在滑出): 主题 JS 关闭时【立即移除 .open】, 抽屉还要过渡
      .5s 才完全离屏。若 #nav 此刻立刻回到 999, 就会浮到还没收起的抽屉
-     之上(导航条横压在侧边栏上 = 用户反馈的"导航栏遮罩到侧边栏")。
-     由 sidebar-mask.js 在抽屉滑出期间给 body 标 .sb-closing、
-     过渡结束再移除 → 收起全程 #nav 保持低位。
-   压到 101: 低于遮罩(102)与抽屉(103), 磨砂遮罩盖住导航条,
-   顶部不再露亮条。点遮罩即可关闭抽屉(主题默认行为)。 */
+     之上。由 sidebar-mask.js 在 .open 被移除的【同一时刻】(MutationObserver)
+     给 body 标 .sb-closing, 过渡结束再移除 → 收起全程 #nav 保持隐藏。
+   实现: 直接隐藏(opacity:0 + visibility:hidden)而非压 z-index + 半透明:
+   - 若只压 z + 保留 .85 透明度, 收起时 .open 移除 → :has() 失效的瞬间
+     #nav 会先浮回 999、再被 .sb-closing 压回, z 弹跳 + opacity 来回过渡
+     → 顶部区域"抽搐闪烁一下";
+   - 隐藏则无论层叠怎么弹, #nav 都不可见, 无闪烁; 抽屉完全滑出后
+     #nav 以自身 opacity .3s 过渡平滑淡入。
+   点遮罩即可关闭抽屉(主题默认行为)。 */
 @media (max-width: 768px) {
   body:has(#sidebar-menus.open) #nav,
   body.sb-closing #nav {
     z-index: 101 !important;
-    opacity: .85 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
+  /* 光效层同步熄灭(与 #nav 一起隐藏, 避免残余辉光) */
   body:has(#sidebar-menus.open) #nav .nav-drop-edge,
   body:has(#sidebar-menus.open) #nav .nav-edge,
   body.sb-closing #nav .nav-drop-edge,
@@ -222,17 +229,19 @@
    样式写在 #menu-mask 本体(仅抽屉打开时 display:block, 主题 JS 控制),
    不依赖 .open —— 否则滑出动画中途(无 .open 但遮罩仍在淡出)会瞬间
    跳回主题默认的全黑。
+   模糊半径 14px: 与卡片/抽屉玻璃同档(theme-glass 卡片主力 12~18px),
+   全屏遮罩用 24px 会糊成一片, 降到此档保留轮廓又足够雾面。
    注: 全屏 backdrop-filter 在低端移动设备有合成开销, 若真机卡顿可
    下调 blur 半径或改回纯色遮罩。 */
 @media (max-width: 768px) {
   #menu-mask {
     background: rgba(243, 247, 252, .34) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
-    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
   }
   html[data-theme='dark'] #menu-mask {
     background: rgba(8, 12, 22, .42) !important;
-    -webkit-backdrop-filter: blur(24px) saturate(150%);
-    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
   }
 }
