@@ -335,6 +335,8 @@
   function openBox(doFocus) {
     isOpen = true
     wrap.classList.add('nav-search-open')
+    // 移动端: 先注入展开宽度(汉堡左缘 - 菜单左缘), 再让 width 过渡展开
+    syncMobileSearchWidth()
     // 打开时若上次有残留值, 同步控件状态
     updateControls(input.value.trim())
     // 有残留值: 重新检索并恢复结果面板(收起时面板被隐藏 + lastQuery 清空,
@@ -364,6 +366,8 @@
     isOpen = false
     wrap.classList.remove('nav-search-open')
     wrap.classList.remove('show-panel')
+    // 移动端: 清除内联展开宽度变量 → 宽度过渡回 39px(图标胶囊)
+    wrap.style.removeProperty('--nav-search-expand-w')
     lastQuery = ''
     // 收起时隐藏清除按钮: 输入值仍在(供下次展开恢复), 但收起态的小胶囊
     // 只显示图标, 叉不应浮在上面
@@ -468,12 +472,33 @@
     }
   }
   // 桌面端才监听 mousemove 触发光斑跟随; 触屏端由 openBox 调用
-  // updateSearchGlow 初始化为常亮(见 345 行)
+  // updateSearchGlow 初始化为常亮(见 openBox)
   if (!isCoarsePointer) {
     document.addEventListener('mousemove', function (e) {
       updateSearchGlow(e.clientX, e.clientY)
     })
   }
+
+  // ---------- 移动端胶囊宽度适配 ----------
+  // 展开宽度 = 汉堡按钮左缘 - #menus 左缘(- 4px 与汉堡留隙)。
+  // 收起态 CSS 固定 39px(图标胶囊)。宽由 CSS 变量注入, width 过渡带动画。
+  // 仅在窄屏(≤768)生效; 桌面/平板不需要(桌面胶囊宽度是内容自适应)。
+  function syncMobileSearchWidth() {
+    if (window.innerWidth > 768) return
+    var menusEl = menus
+    if (!menusEl) return
+    var toggle = menus.querySelector('#toggle-menu')
+    if (!toggle) return
+    var m = menusEl.getBoundingClientRect()
+    var t = toggle.getBoundingClientRect()
+    // 汉堡左缘相对 #menus 左缘的可用宽度(胶囊展开后右缘贴汉堡左、留 6px)
+    var w = Math.max(60, Math.round(t.left - m.left - 6))
+    wrap.style.setProperty('--nav-search-expand-w', w + 'px')
+  }
+  // 窗口尺寸变化(旋转/分屏)时重算; passive 减少开销
+  window.addEventListener('resize', function () {
+    syncMobileSearchWidth()
+  }, { passive: true })
   // 点外部空白收起
   document.addEventListener('pointerdown', function (e) {
     if (!isOpen) return

@@ -512,14 +512,55 @@ html[data-theme='dark'] #nav .nav-search-item a:hover {
 
 /* ---- 移动端 ---- */
 @media (max-width: 768px) {
-  #nav .nav-search-bar { height: 34px; padding: 0 8px 0 10px }
-  #nav .nav-search-open .nav-search-input { width: min(56vw, 210px) }
+  /* 导航栏最右功能组: 汉堡(#toggle-menu, order 3)最右, 搜索胶囊(order 2)贴其左。
+     胶囊宽度过渡: 收起 39px(仅图标), 展开 = --nav-search-expand-w(JS 量算
+     汉堡左缘 - 菜单左缘, 注入 CSS 变量)。右缘固定贴汉堡左侧, 左缘向左生长
+     → "输入框从右向左展开, 占据导航栏剩余空间"。width px→px 过渡可靠。 */
+  #nav .nav-search {
+    flex: 0 0 auto;
+    width: 39px;
+    transition: width .4s cubic-bezier(.3, 1.25, .3, 1), flex-grow .4s cubic-bezier(.3, 1.25, .3, 1);
+  }
+  #nav .nav-search.nav-search-open {
+    flex-grow: 1;                     /* 吸收 justify-end 的尾差, 左缘贴齐 */
+    width: var(--nav-search-expand-w, 260px);
+  }
+  /* 胶囊本体: 撑满容器 */
+  #nav .nav-search-bar {
+    height: 34px;
+    padding: 0 8px 0 10px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  /* 输入框: 收起 width:0 消除固有宽度贡献; 展开 flex-basis 0 撑满图标左侧 */
+  #nav .nav-search-input {
+    flex: 1 1 0%;
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+    padding: 0;
+    transition: opacity .28s ease .06s;
+  }
+  #nav .nav-search-open .nav-search-input {
+    flex: 1 1 0%;
+    width: auto;
+    padding: 0 30px 0 10px;
+    opacity: 1;
+    pointer-events: auto;
+  }
   #nav .nav-search-panel {
     position: fixed;
     top: 62px;
     right: 12px;
     width: calc(100vw - 24px);
     max-width: none;
+  }
+  /* 移动端跑马灯提示与清除按钮留位(图标右侧固定, 无需变) */
+  #nav .nav-search-marquee {
+    left: 26px;
+    right: 40px;
   }
 }
 /* ---- 触屏设备光效居中(无 hover, 光斑跟随无意义) ----

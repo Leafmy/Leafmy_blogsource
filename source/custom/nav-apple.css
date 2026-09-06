@@ -592,6 +592,29 @@ html[data-theme='dark'] #nav .nav-drop {
     padding: 0 16px !important;
     border-radius: 12px !important;
   }
+  /* 移动端导航栏只保留功能按钮(搜索 + 汉堡):
+     隐藏站名标题与文章/归档菜单项(用户要求), 避免窄屏拥挤错位。
+     用 #nav #menus .menus_items 高特异性压掉桌面 #nav #menus .menus_items
+     的 display:flex !important(同 !important 比特异性, 桌面规则高 0,3,0) */
+  #nav #blog-info,
+  #nav #menus .menus_items {
+    display: none !important;
+  }
+  /* 功能按钮靠右排布: #menus 内容整体右对齐 */
+  #nav #menus {
+    justify-content: flex-end !important;
+  }
+  /* 汉堡按钮提到最右端(order 最大); flex-shrink:0 防止被展开的搜索胶囊挤压 */
+  #nav #menus #toggle-menu {
+    order: 3 !important;
+    margin-left: 6px !important;
+    flex: 0 0 auto !important;
+  }
+  /* 搜索胶囊在汉堡左侧相邻(order 次之), 移除 auto 推挤 */
+  #nav #menus .nav-search {
+    order: 2 !important;
+    margin-left: 0 !important;
+  }
   #nav .nav-drop {
     left: 0 !important;
     right: 0 !important;
