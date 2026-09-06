@@ -1073,27 +1073,35 @@ css_prefix: true
 inject:
   head:
     # - <link rel="stylesheet" href="/xxx.css">
-    - <link rel="stylesheet" href="/custom/theme-reveal.css">
-    - <link rel="stylesheet" href="/custom/theme-glass.css">
-    - <link rel="stylesheet" href="/custom/nav-apple.css">
-    - <link rel="stylesheet" href="/custom/footer-reveal.css">
-    - <link rel="stylesheet" href="/custom/announce-hover.css">
-    - <link rel="stylesheet" href="/custom/visit-card.css">
-    - <link rel="stylesheet" href="/custom/light-text-contrast.css">
-    - <link rel="stylesheet" href="/custom/nav-search.css">
-    - <link rel="stylesheet" href="/custom/force-glow.css">
-    - <link rel="stylesheet" href="/custom/custom-font.css">
+    # --- nav 顶部导航栏 + 检索 ---
+    - <link rel="stylesheet" href="/custom/nav/nav-apple.css">
+    - <link rel="stylesheet" href="/custom/nav/nav-search.css">
+    # --- effects 背景/玻璃/光效 ---
+    - <link rel="stylesheet" href="/custom/effects/theme-glass.css">
+    - <link rel="stylesheet" href="/custom/effects/force-glow.css">
+    # --- widgets 卡片/挂件/页脚 ---
+    - <link rel="stylesheet" href="/custom/widgets/announce-hover.css">
+    - <link rel="stylesheet" href="/custom/widgets/visit-card.css">
+    - <link rel="stylesheet" href="/custom/widgets/footer-reveal.css">
+    - <link rel="stylesheet" href="/custom/widgets/light-text-contrast.css">
+    # --- theme 主题切换动画/字体 ---
+    - <link rel="stylesheet" href="/custom/theme/theme-reveal.css">
+    - <link rel="stylesheet" href="/custom/theme/custom-font.css">
   bottom:
     # - <script src="xxxx"></script>
-    - <script src="/custom/nav-apple.js"></script>
-    - <script src="/custom/glass-bg.js"></script>
-    - <script src="/custom/theme-reveal.js"></script>
-    - <script src="/custom/footer-reveal.js"></script>
-    - <script src="/custom/announce-hover.js"></script>
-    - <script src="/custom/visit-card.js"></script>
-    - <script src="/custom/nav-search.js"></script>
-    - <script src="/custom/force-glow.js"></script>
-    - <script src="/custom/tab-visibility.js"></script>
+    # --- nav 顶部导航栏 + 检索 ---
+    - <script src="/custom/nav/nav-apple.js"></script>
+    - <script src="/custom/nav/nav-search.js"></script>
+    # --- effects 背景/玻璃/光效 ---
+    - <script src="/custom/effects/glass-bg.js"></script>
+    - <script src="/custom/effects/force-glow.js"></script>
+    - <script src="/custom/effects/tab-visibility.js"></script>
+    # --- widgets 卡片/挂件/页脚 ---
+    - <script src="/custom/widgets/announce-hover.js"></script>
+    - <script src="/custom/widgets/visit-card.js"></script>
+    - <script src="/custom/widgets/footer-reveal.js"></script>
+    # --- theme 主题切换动画 ---
+    - <script src="/custom/theme/theme-reveal.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
@@ -1136,7 +1144,7 @@ CDN:
     # fancybox_css:
     # fireworks:
     # fontawesome: /custom/fontawesome/all.min.css
-    fontawesome: /custom/fontawesome/all.min.css
+    fontawesome: /custom/assets/fontawesome/all.min.css
     # gitalk:
     # gitalk_css:
     # giscus:

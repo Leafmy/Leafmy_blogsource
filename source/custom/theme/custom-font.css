@@ -14,7 +14,7 @@
    避免整页等待字体下载导致白屏/卡顿。 */
 @font-face {
   font-family: 'PingFangMedium';
-  src: url('/custom/fonts/PingFang-Medium.woff2') format('woff2');
+  src: url('/custom/assets/fonts/PingFang-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
