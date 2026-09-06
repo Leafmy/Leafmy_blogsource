@@ -199,7 +199,7 @@
      #nav 会先浮回 999、再被 .sb-closing 压回, z 弹跳 + opacity 来回过渡
      → 顶部区域"抽搐闪烁一下";
    - 隐藏则无论层叠怎么弹, #nav 都不可见, 无闪烁; 抽屉完全滑出后
-     #nav 以自身 opacity .3s 过渡平滑淡入。
+     #nav 以自身 opacity 过渡平滑淡入(移动端收紧到 .12s, 见下)。
    点遮罩即可关闭抽屉(主题默认行为)。 */
 @media (max-width: 768px) {
   body:has(#sidebar-menus.open) #nav,
@@ -215,6 +215,24 @@
   body.sb-closing #nav .nav-drop-edge,
   body.sb-closing #nav .nav-edge {
     opacity: 0 !important;
+  }
+  /* 抽屉开合全程锁定背景滚动: 背后页面不可被滑动。主题 open() 只做了
+     滚动条消失的 padding 补偿(overflowPaddingR), 没有锁滚动; 抽屉展开
+     后手指在遮罩/背景上滑动仍会滚走页面 → 这里 overflow:hidden 锁住。
+     .open 移除瞬间由 .sb-closing 接续锁到抽屉完全滑出(与导航隐藏同一
+     状态类), 滑出途中背景同样不可滚。抽屉自身 fixed + overflow-y:
+     scroll 不受影响, 内部菜单仍可正常滚动。 */
+  html:has(#sidebar-menus.open),
+  html.sb-closing,
+  body:has(#sidebar-menus.open),
+  body.sb-closing {
+    overflow: hidden !important;
+  }
+  /* 收尾导航淡入提速: nav-apple.css 给 #nav 的透明度过渡是 .3s,
+     抽屉滑出(0.5s)后再淡入 .3s 显得"导航出现慢"; 移动端收紧到 .12s,
+     收起后导航更快回到眼前(打开抽屉时的淡出同样更干脆)。 */
+  #nav {
+    transition: opacity .12s ease !important;
   }
 }
 
