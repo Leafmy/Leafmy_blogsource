@@ -21,9 +21,10 @@
   /* 桌面端显式宽度 + 过冲缓动 = "回收惯性"手感(与手机端同款结构)。
      若把过冲放在输入框 width 上, 收到 0 时会被钳制无法下冲 → 惯性消失;
      故把过冲放在容器 width 上(可下冲到 43px 以下再回弹), 胶囊体 100% 填充。
-     过冲量收敛到 ~0.6%(y1=1.15), 避免"抖动太夸张"。 */
+     过冲量取 ~1.3%(y1=1.20): 1.15(0.6%,2px)时"不会弹"、1.25(2%,6px)时
+     "抖动太夸张", 取中间值使边框明显回弹又不夸张。 */
   width: 43px;
-  transition: width .4s cubic-bezier(.3, 1.15, .3, 1);
+  transition: width .4s cubic-bezier(.3, 1.20, .3, 1);
 }
 #nav .nav-search.nav-search-open {
   /* 展开态总宽: 输入 290 + 图标 19 + 左右 padding 22 + 边框 2 = 333 */
@@ -160,7 +161,7 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
 /* 输入框: 常态宽0不可见; 展开后从图标左侧向左滑出 */
 #nav .nav-search-input {
   order: 1;                     /* 放图标左侧 */
-  flex: 0 0 0%;                 /* 收起态: 零宽 */
+  flex: 1 1 0%;                 /* 恒 grow 填满图标左侧空间(收起时无剩余空间=0) */
   width: 0;
   min-width: 0;
   height: 34px;
@@ -177,13 +178,14 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
   /* [美化] 隐藏原生光标: 由 .nav-search-caret 自定义光标接管 */
   caret-color: transparent;
   /* 宽度不再自行过渡: 由 .nav-search 容器 width 过渡统一驱动(过冲惯性),
-     输入框用 flex-grow 填满图标左侧空间 */
+     输入框用 flex-grow 填满图标左侧空间。
+     关键: flex-grow 必须恒为 1(不能在收起态改成 0), 否则收起瞬间 flex-grow
+     从 1 跳回 0, 输入框宽度瞬缩, 图标向左猛跳约 250px(抽搐)。 */
   transition:
     opacity .28s ease .06s,
     padding .28s ease .06s;
 }
 #nav .nav-search-open .nav-search-input {
-  flex: 1 1 0%;                 /* 展开态: 填满图标左侧的胶囊内容区(~290px) */
   width: auto;
   padding: 0 30px 0 10px;   /* 右 padding 30px 给绝对定位的清除按钮留位, 避免文字穿到×下 */
   opacity: 1;
@@ -547,7 +549,7 @@ html[data-theme='dark'] #nav .nav-search-item a:hover {
   #nav .nav-search {
     flex: 0 0 auto;
     width: 39px;
-    transition: width .4s cubic-bezier(.3, 1.15, .3, 1);
+    transition: width .4s cubic-bezier(.3, 1.20, .3, 1);
   }
   #nav .nav-search.nav-search-open {
     /* 不用 flex-grow:1 —— 否则会把 darkmode 切换键右侧的空隙也吸走,
