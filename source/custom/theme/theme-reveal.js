@@ -64,19 +64,29 @@
       const bg = document.querySelector('.glass-bg')
       if (bg) bg.classList.add('vt-pause')
 
-      const vt = document.startViewTransition(() => performSwitch(mode))
+      // 掉帧优化：动画期间给 html 加 .switching，临时关掉卡片/hero 的
+      // backdrop-filter（切主题时 16 卡片 + hero 同帧重新模糊采样是掉帧主因），
+      // 并用近似实色背景替代；动画结束(done)后移除恢复玻璃。
+      const vt = document.startViewTransition(() => {
+        root.classList.add('switching')
+        performSwitch(mode)
+      })
 
-      // 切换结束后恢复背景层动画
-      const done = () => { if (bg) bg.classList.remove('vt-pause') }
+      // 切换结束后恢复背景层动画 + 玻璃 backdrop-filter
+      const done = () => {
+        if (bg) bg.classList.remove('vt-pause')
+        root.classList.remove('switching')
+      }
       if (vt && typeof vt.finished === 'object' && vt.finished && vt.finished.then) {
         vt.finished.then(done, done)
       } else {
-        // 兜底：给足动画时长后恢复（0.62s 动画 + 余量）
-        setTimeout(done, 900)
+        // 兜底：给足动画时长后恢复（0.45s 动画 + 余量）
+        setTimeout(done, 700)
       }
     } catch (err) {
       const bg = document.querySelector('.glass-bg')
       if (bg) bg.classList.remove('vt-pause')
+      root.classList.remove('switching')
       performSwitch(mode)
     }
   }, true)
