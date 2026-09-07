@@ -206,6 +206,34 @@ html[data-theme='dark']::-webkit-scrollbar-thumb:hover {
 }
 
 /* ---- 代码块 / 表格滚动条：由主题的灰色 --hlscrollbar-bg 统一为玻璃蓝 ---- */
+
+/* ============================================================
+   快速滚动性能降级
+   ------------------------------------------------------------
+   当 body 带 .fast-scrolling 类时(由 scroll-perf.js 检测),
+   临时降低所有玻璃卡片的 backdrop-filter 模糊半径, 大幅减轻
+   GPU 合成压力。滚动停止后移除该类, 恢复完整效果。
+   选 4px 而非 0: 保留一丝模糊让视觉过渡不突兀。
+   ============================================================ */
+body.fast-scrolling .recent-post-item,
+body.fast-scrolling .card-widget,
+body.fast-scrolling #post,
+body.fast-scrolling #archive,
+body.fast-scrolling #page-header.full_page,
+body.fast-scrolling #page-header.not-home-page::before,
+body.fast-scrolling #page-header.post-bg::before,
+body.fast-scrolling #footer {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+  /* 降级时关闭投影动画, 省合成层 */
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .12) !important;
+  transition: none !important;
+}
+
+/* 快速滚动时暂停 force-glow 光效(rAF 循环) */
+body.fast-scrolling .force-glow {
+  display: none !important;
+}
 figure.highlight table::-webkit-scrollbar-thumb,
 .container figure.highlight.default pre::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, rgba(130, 185, 255, .55), rgba(100, 160, 255, .45));
@@ -226,6 +254,49 @@ html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollb
 }
 
 /* ================= 玻璃面板 ================= */
+
+/* ---- 卡片性能优化 ----
+   强制 GPU 加速 + 阴影预渲染：
+   - will-change + translateZ(0) 强制 GPU 合成层，让 backdrop-filter 走 GPU
+   - ::after 伪元素预渲染外阴影，消除快速滚动时的阴影延迟 */
+.recent-post-item,
+.card-widget,
+#post,
+#archive {
+  will-change: transform;
+  transform: translateZ(0);
+  contain: layout;
+  position: relative;
+}
+/* 阴影预渲染: ::after 承载外层光晕和落地投影，始终在 DOM 中 */
+.recent-post-item::after,
+.card-widget::after,
+#post::after,
+#archive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px rgba(180, 200, 235, .22),
+    0 0 24px rgba(140, 180, 235, .14),
+    0 0 48px rgba(140, 180, 235, .10),
+    0 24px 48px -12px rgba(48, 66, 104, .28),
+    0 8px 24px -8px rgba(48, 66, 104, .16);
+}
+html[data-theme='dark'] .recent-post-item::after,
+html[data-theme='dark'] .card-widget::after,
+html[data-theme='dark'] #post::after,
+html[data-theme='dark'] #archive::after {
+  box-shadow:
+    0 0 0 1px rgba(150, 180, 240, .16),
+    0 0 24px rgba(110, 150, 220, .14),
+    0 0 48px rgba(110, 150, 220, .10),
+    0 24px 48px -12px rgba(0, 0, 0, .50),
+    0 8px 24px -8px rgba(0, 0, 0, .32);
+}
 
 /* ---- light：真实磨砂玻璃卡片 ----
    用户反馈旧版是"假玻璃"：卡片自身带半透明白色渐变(蒙层)，盖在
@@ -248,17 +319,9 @@ html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollb
   ) !important;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  /* 羽化边缘: 去掉硬 1px border, 用多层柔和 box-shadow 形成光晕 */
   border: 0 !important;
+  /* box-shadow 只保留 inset 高光, 外阴影由 ::after 伪元素预渲染 */
   box-shadow:
-    /* 外层光晕(冷雾蓝, 柔和扩散) - 形成卡片外缘的"光圈" */
-    0 0 0 1px rgba(180, 200, 235, .22),
-    0 0 24px rgba(140, 180, 235, .14),
-    0 0 48px rgba(140, 180, 235, .10),
-    /* 落地投影(深色柔和) - 与背景层次分明 */
-    0 24px 48px -12px rgba(48, 66, 104, .28),
-    0 8px 24px -8px rgba(48, 66, 104, .16),
-    /* 内层顶部高光(模拟玻璃厚度与镜面) */
     inset 0 1px 0 rgba(255, 255, 255, .48),
     inset 0 -1px 0 rgba(255, 255, 255, .22) !important;
 }
@@ -293,16 +356,8 @@ html[data-theme='dark'] #archive {
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 0 !important;
-  box-shadow:
-    /* 外层冷蓝光晕 */
-    0 0 0 1px rgba(150, 180, 240, .16),
-    0 0 24px rgba(110, 150, 220, .14),
-    0 0 48px rgba(110, 150, 220, .10),
-    /* 落地投影(深色) */
-    0 24px 48px -12px rgba(0, 0, 0, .50),
-    0 8px 24px -8px rgba(0, 0, 0, .32),
-    /* 内层顶部高光 */
-    inset 0 1px 0 rgba(255, 255, 255, .18) !important;
+  /* box-shadow 只保留 inset 高光, 外阴影由 ::after 伪元素预渲染 */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important;
 }
 
 /* dark 顶部高光也已去除 */
@@ -322,13 +377,10 @@ html[data-theme='dark'] #archive::before {
   position: relative;
 }
 
-/* 移动端：保留玻璃效果(用户要求与桌面一致), 但降开销:
-   - glass-bg 仍显示(背景光斑层静态无动画, 开销小)
-   - 卡片/hero 保留 backdrop-filter(模糊半径调低 18→12 省 GPU)
-   - 去掉过重投影(移动端 GPU), 羽化光晕保留(柔和融入背景) */
+/* 移动端：GPU 加速已启用, 恢复完整效果 */
 @media (max-width: 768px) {
   .glass-bg {
-    display: block;      /* 移动端也显示光斑层(静态, 开销可接受) */
+    display: block;
   }
   .recent-post-item,
   .card-widget,
@@ -639,4 +691,141 @@ html[data-theme='dark'] #page-header.post-bg::after {
     -webkit-mask-image: none;
     mask-image: none;
   }
+}
+
+/* ============================================================
+   文章底部 前一篇/后一篇 + 相关推荐 磨砂玻璃化
+   ------------------------------------------------------------
+   #pagination.pagination-post 的 .pagination-related(上一篇/下一篇)
+   与 .relatedPosts-list 的 .pagination-related(相关推荐) 共用主题
+   黑底( $dark-black )白字样式。这里改为玻璃面板：
+   - light(白模式) = 白色毛玻璃(半透明白膜, 透出背后光斑模糊)
+   - dark (黑模式) = 黑色磨砂玻璃(半透明深色膜)
+   站点文章均无封面, .cover 只是默认色块 → 玻璃化时隐藏, 让模糊
+   光斑成为主要视觉。文字在 light 反转为深色保证对比(主题默认白字
+   在白色玻璃上不可读)。
+   ============================================================ */
+
+/* prev/next 两块从贴合的整块改为两块独立玻璃卡(间隙 + 圆角) */
+#pagination.pagination-post {
+  overflow: visible;
+  gap: 10px;
+}
+#pagination.pagination-post a.pagination-related,
+.relatedPosts-list a.pagination-related {
+  border-radius: 10px;
+}
+
+/* 封面色块隐藏(无封面帖子的 .cover 仅是 var(--default-bg-color) 色块) */
+#pagination.pagination-post a.pagination-related .cover,
+.relatedPosts-list a.pagination-related .cover {
+  display: none;
+}
+
+/* ---- light：白色毛玻璃 ---- */
+#pagination.pagination-post a.pagination-related,
+.relatedPosts-list a.pagination-related {
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, .52) 0%,
+    rgba(255, 255, 255, .20) 55%,
+    rgba(255, 255, 255, .38) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .32),
+    inset 0 1px 0 rgba(255, 255, 255, .72),
+    inset 0 -1px 0 rgba(255, 255, 255, .22),
+    0 10px 28px -14px rgba(48, 66, 104, .32);
+}
+
+/* light 文字反转为深色(默认 .info 白字在白色玻璃上看不见) */
+#pagination.pagination-post a.pagination-related .info,
+.relatedPosts-list a.pagination-related .info {
+  color: #242c3f;
+}
+#pagination.pagination-post a.pagination-related .info-1 .info-item-1,
+.relatedPosts-list a.pagination-related .info-1 .info-item-1 {
+  color: #6a7488;
+}
+#pagination.pagination-post a.pagination-related .info-1 .info-item-2,
+#pagination.pagination-post a.pagination-related .info-2 .info-item-1,
+.relatedPosts-list a.pagination-related .info-1 .info-item-2,
+.relatedPosts-list a.pagination-related .info-2 .info-item-1 {
+  color: #1f2739;
+}
+/* hover 时玻璃提亮 + 轻微上浮, 替代封面缩放反馈 */
+#pagination.pagination-post a.pagination-related:hover,
+.relatedPosts-list a.pagination-related:hover {
+  background: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, .62) 0%,
+    rgba(255, 255, 255, .30) 55%,
+    rgba(255, 255, 255, .46) 100%
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .42),
+    inset 0 1px 0 rgba(255, 255, 255, .85),
+    inset 0 -1px 0 rgba(255, 255, 255, .30),
+    0 14px 32px -12px rgba(48, 66, 104, .42);
+  transform: translateY(-2px);
+}
+
+/* ---- dark：黑色磨砂玻璃 ----
+   文字需显式覆盖(light 的文字规则未限定主题, 会串到 dark) */
+html[data-theme='dark'] #pagination.pagination-post a.pagination-related,
+html[data-theme='dark'] .relatedPosts-list a.pagination-related {
+  background: linear-gradient(
+    160deg,
+    rgba(34, 42, 68, .36) 0%,
+    rgba(10, 14, 26, .34) 55%,
+    rgba(22, 28, 48, .38) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 0 1px rgba(150, 180, 240, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .16),
+    inset 0 -1px 0 rgba(255, 255, 255, .04),
+    0 12px 30px -16px rgba(0, 0, 0, .60) !important;
+}
+/* dark 文字: 深色玻璃上恢复白字/浅灰标签 */
+html[data-theme='dark'] #pagination.pagination-post a.pagination-related .info,
+html[data-theme='dark'] .relatedPosts-list a.pagination-related .info {
+  color: #eef1f8;
+}
+html[data-theme='dark'] #pagination.pagination-post a.pagination-related .info-1 .info-item-1,
+html[data-theme='dark'] .relatedPosts-list a.pagination-related .info-1 .info-item-1 {
+  color: #9aa4bf;
+}
+html[data-theme='dark'] #pagination.pagination-post a.pagination-related .info-1 .info-item-2,
+html[data-theme='dark'] #pagination.pagination-post a.pagination-related .info-2 .info-item-1,
+html[data-theme='dark'] .relatedPosts-list a.pagination-related .info-1 .info-item-2,
+html[data-theme='dark'] .relatedPosts-list a.pagination-related .info-2 .info-item-1 {
+  color: #eef1f8;
+}
+html[data-theme='dark'] #pagination.pagination-post a.pagination-related:hover,
+html[data-theme='dark'] .relatedPosts-list a.pagination-related:hover {
+  background: linear-gradient(
+    160deg,
+    rgba(46, 56, 90, .44) 0%,
+    rgba(16, 22, 40, .42) 55%,
+    rgba(30, 38, 64, .46) 100%
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(170, 195, 250, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -1px 0 rgba(255, 255, 255, .06),
+    0 16px 36px -14px rgba(0, 0, 0, .70) !important;
+  transform: translateY(-2px);
+}
+
+/* 快速滚动性能降级: 这几个卡也参与 4px 低保真模糊 */
+body.fast-scrolling #pagination.pagination-post a.pagination-related,
+body.fast-scrolling .relatedPosts-list a.pagination-related {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
