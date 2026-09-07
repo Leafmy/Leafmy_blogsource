@@ -132,17 +132,6 @@
   // 当前生效的明文 key（运行时从 localStorage 解析得到）
   var deepseekKey = decodeKey(localStorage.getItem(KEY_STORE))
 
-  // ==================== 目标语言检测 ====================
-  function isMainlyChinese(text) {
-    var clean = text.replace(/[\s\d.,;:?\-()[\]{}]/g, '')
-    if (clean.length === 0) return true
-    var chinese = 0
-    for (var i = 0; i < clean.length; i++) {
-      if (/[\u4e00-\u9fff]/.test(clean[i])) chinese++
-    }
-    return chinese / clean.length > 0.3
-  }
-
   // ==================== 设置弹窗 ====================
   var modal = null
   function ensureModal() {
@@ -353,8 +342,14 @@
 
   // ==================== 运行时 DeepSeek 翻译 ====================
   var DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
-  var DEEPSEEK_MODEL = 'deepseek-v4-pro'
-  var CONCURRENCY = 3 // 并发请求数，避免触发速率限制
+  // 翻译任务用轻量 flash 即可，成本更低、速度更快
+  var DEEPSEEK_MODEL = 'deepseek-v4-flash'
+  // 全篇一次打包请求：段间用分隔符拼接，模型按相同分隔符逐段返回。
+  // 只发一次 system prompt → 极省 token。
+  var SEG_DELIM = '\n<<<SEG___>>\n'
+  // 单请求可承载的最大文本长度（字符）。超长文章拆成多个批次请求，
+  // 每个批次仍是一次请求一次 system prompt。
+  var MAX_BATCH_CHARS = 8000
 
   // 提取文本段（跳过 code/pre/script/style/svg/math），返回 {original, placeholder}
   function extractTextSegments(html) {
@@ -379,12 +374,19 @@
     return segments
   }
 
-  // 调用 DeepSeek 翻译单段
-  function deepseekTranslate(text, targetLang) {
+  // 调用 DeepSeek 翻译一个批次（含多段，用 SEG_DELIM 分隔）
+  // 返回逐段译文数组（长度与输入段数一致），失败段为 null
+  function deepseekTranslateBatch(texts, targetLang) {
     var langName = targetLang === 'zh' ? 'Simplified Chinese' : 'English'
     var system =
-      'You are a professional translator. Translate the user text into ' + langName +
-      '. Output ONLY the translation. Keep numbers, units, variable names and code identifiers unchanged. Do not add explanations, quotes or notes.'
+      'You are a professional translator. Translate each text segment into ' + langName +
+      '. Output THE SAME number of results, each on its own line, in the same order. ' +
+      'Keep numbers, units, variable names and code identifiers unchanged. ' +
+      'Do not add explanations, quotes or notes. ' +
+      'Separate your results by the delimiter "' + SEG_DELIM + '".'
+
+    var joined = texts.join(SEG_DELIM)
+
     return fetch(DEEPSEEK_URL, {
       method: 'POST',
       headers: {
@@ -395,11 +397,12 @@
         model: DEEPSEEK_MODEL,
         messages: [
           { role: 'system', content: system },
-          { role: 'user', content: text }
+          { role: 'user', content: joined }
         ],
         temperature: 0.2,
         stream: false,
-        max_tokens: 2000
+        // 按目标语言估算最大长度；给足余量避免截断
+        max_tokens: Math.max(1024, Math.ceil(joined.length * 1.6))
       })
     }).then(function (res) {
       if (!res.ok) {
@@ -411,38 +414,26 @@
     }).then(function (data) {
       var choice = data && data.choices && data.choices[0]
       var content = choice && choice.message ? choice.message.content : ''
-      return (content || '').trim()
+      return splitResults(content, texts.length)
     })
   }
 
-  // 并发池：限制同时发起的请求数
-  function pMap(items, worker, concurrency) {
-    return new Promise(function (resolve) {
-      var results = new Array(items.length)
-      var idx = 0
-      var done = 0
-      var active = 0
-      function finish(i, r) {
-        results[i] = r
-        active--
-        done++
-        if (done === items.length) resolve(results)
-        else pump()
-      }
-      function pump() {
-        while (active < concurrency && idx < items.length) {
-          ;(function (i) {
-            active++
-            Promise.resolve(worker(items[i], i)).then(function (r) {
-              finish(i, r)
-            }, function () {
-              finish(i, null)
-            })
-          })(idx++)
-        }
-      }
-      pump()
+  // 把模型返回的连续文本按分隔符拆成逐段结果，与输入段数对齐
+  function splitResults(content, expected) {
+    if (!content) return new Array(expected).fill(null)
+    var parts = content.split(SEG_DELIM)
+    // 去掉首尾空行，且只保留 expected 段
+    var results = parts.map(function (p) { return p.trim() }).filter(function (p, i) {
+      return p.length > 0
     })
+    // 若模型返回段数比预期多或少，做对齐处理
+    if (results.length >= expected) {
+      return results.slice(0, expected)
+    }
+    // 段数不足：填充 null，避免错位
+    var out = new Array(expected).fill(null)
+    for (var i = 0; i < results.length; i++) out[i] = results[i]
+    return out
   }
 
   function runApiTranslate() {
@@ -451,24 +442,94 @@
     // 缓存原 HTML，供回退
     if (!postContent.dataset.original) postContent.dataset.original = postContent.innerHTML
 
-    // 目标语言：文章主要中文则译英，否则译中
-    var targetLang = isMainlyChinese(postContent.textContent) ? 'zh' : 'en'
+    // 默认英译中（用户偏好）；固定目标语言，不做语言检测
+    var targetLang = 'zh'
 
     if (segments.length === 0) return Promise.resolve({})
 
-    return pMap(segments, function (seg) {
-      return deepseekTranslate(seg.original, targetLang).catch(function () {
-        return seg.original // 单段失败保留原文
+    // 把段落按字符量分桶，每桶一次请求（一次 system prompt），极省 token
+    var batches = bucketSegments(segments, MAX_BATCH_CHARS)
+    var allTexts = segments.map(function (s) { return s.original })
+    var results = new Array(segments.length).fill(null)
+
+    if (batches.length === 0) return Promise.resolve({})
+
+    // 并行处理各桶，提升翻译速度（限制并发，避免触发限流）
+    var BATCH_CONCURRENCY = 2
+    var idx = 0
+
+    var runBatch = function (indices) {
+      var texts = indices.map(function (i) { return allTexts[i] })
+      return deepseekTranslateBatch(texts, targetLang).then(function (trans) {
+        for (var k = 0; k < indices.length; k++) {
+          // 单段失败保留原文
+          results[indices[k]] = (trans[k] && trans[k].length > 0) ? trans[k] : allTexts[indices[k]]
+        }
+      }).catch(function () {
+        // 桶级失败：该桶内所有段保留原文
+        indices.forEach(function (i) { results[i] = allTexts[i] })
       })
-    }, CONCURRENCY).then(function (translations) {
+    }
+
+    // 简单的并行池
+    function pool() {
+      var arr = []
+      var active = 0
+      var taskIndex = 0
+      return {
+        run: function () {
+          var resolveAll
+          var done = new Promise(function (r) { resolveAll = r })
+          var finished = 0
+          var total = batches.length
+          function pump() {
+            while (active < BATCH_CONCURRENCY && taskIndex < total) {
+              (function (indices) {
+                active++
+                runBatch(indices).then(function () {
+                  active--
+                  finished++
+                  if (finished === total) resolveAll()
+                  else pump()
+                })
+              })(batches[taskIndex++])
+            }
+            if (total === 0) resolveAll()
+          }
+          pump()
+          return done
+        }
+      }
+    }
+
+    return pool().run().then(function () {
       var map = {}
       for (var j = 0; j < segments.length; j++) {
-        if (translations[j] && translations[j].length > 0) {
-          map[segments[j].original] = translations[j]
+        if (results[j] && results[j].length > 0) {
+          map[segments[j].original] = results[j]
         }
       }
       return map
     })
+  }
+
+  // 按最大字符量把段落索引分桶（保持原顺序）
+  function bucketSegments(segments, maxChars) {
+    var batches = []
+    var cur = []
+    var curLen = 0
+    for (var i = 0; i < segments.length; i++) {
+      var len = segments[i].original.length
+      if (cur.length > 0 && curLen + len > maxChars) {
+        batches.push(cur)
+        cur = []
+        curLen = 0
+      }
+      cur.push(i)
+      curLen += len
+    }
+    if (cur.length > 0) batches.push(cur)
+    return batches
   }
 
   function showFatal(msg) {
