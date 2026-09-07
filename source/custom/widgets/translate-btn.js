@@ -231,18 +231,22 @@
   settingsBtn.addEventListener('click', openModal)
 
   // ==================== 缓存读写 + 健康校验 ====================
-  // 健康校验：一首 segments 里的"译文"是否真的不同于原文。
-  // 若大多数 key===value（原文照抄），说明该缓存是假翻译/失败结果，判定无效。
+  // 数据形态统一为：translationData.segments = [{ original, translated }]
+  // 健康校验：译文是否真的有效（非空、非原文照抄、无占位符残留）
   function isHealthySegments(segments) {
-    if (!segments) return false
-    var keys = Object.keys(segments)
-    if (keys.length === 0) return false
-    var unchanged = 0
-    for (var i = 0; i < keys.length; i++) {
-      if (segments[keys[i]] === keys[i]) unchanged++
+    if (!segments || !segments.length) return false
+    var bad = 0
+    for (var i = 0; i < segments.length; i++) {
+      var s = segments[i]
+      var val = s && s.translated
+      var orig = s && s.original
+      // 无效：缺字段、译文非字符串为空、译文含占位符、或译文等于原文(照抄)
+      if (!s || typeof val !== 'string' || !val || val.indexOf('%%SEG') !== -1 || val === orig) {
+        bad++
+      }
     }
-    // 超过 60% 段原文照抄 → 视为无效
-    return unchanged / keys.length < 0.6
+    // 超过 50% 段无效 → 判定整体无效
+    return bad / segments.length < 0.5
   }
 
   // 读取缓存，带健康校验；无效则清除并返回 null
@@ -282,6 +286,10 @@
       translateText.textContent = '显示原文'
       btn.classList.add('expanded')
       isTranslated = true
+      // 命中缓存且未替换过：立即把正文翻成中文，刷新后直接是中文，无需再调 AI
+      if (!postContent.classList.contains('translated-content')) {
+        applyTranslation()
+      }
       return
     }
 
@@ -294,10 +302,13 @@
       .then(function (data) {
         if (data.segments && isHealthySegments(data.segments)) {
           translationData = data
-          localStorage.setItem(cacheKey, JSON.stringify(data))
+          localStorage.setItem(cacheKey, JSON.stringify({ segments: data.segments }))
           translateText.textContent = '显示原文'
           btn.classList.add('expanded')
           isTranslated = true
+          if (!postContent.classList.contains('translated-content')) {
+            applyTranslation()
+          }
         }
       })
       .catch(function () {
@@ -333,9 +344,9 @@
 
     // 运行时翻译：先 loading，再调 API
     btn.classList.add('loading')
-    runApiTranslate().then(function (segments) {
+    runApiTranslate().then(function (segResults) {
       btn.classList.remove('loading')
-      if (!segments || Object.keys(segments).length === 0) {
+      if (!segResults || !segResults.length) {
         translateText.style.opacity = '0'
         setTimeout(function () {
           translateText.textContent = '翻译'
@@ -343,9 +354,9 @@
         }, 100)
         return
       }
-      translationData = { segments: segments }
+      translationData = { segments: segResults }
       // 仅当翻译结果健康(非原文照抄)时写缓存，避免缓存坏数据
-      writeTranslationCache(segments)
+      writeTranslationCache(segResults)
       runTranslateAnimation(function () { applyTranslation() })
     }).catch(function (err) {
       btn.classList.remove('loading')
@@ -392,7 +403,10 @@
   // 每个批次仍是一次请求一次 system prompt。
   var MAX_BATCH_CHARS = 8000
 
-  // 提取文本段（跳过 code/pre/script/style/svg/math），返回 {original, placeholder}
+  // 提取文本段（跳过 code/pre/script/style/svg/math）。
+  // 只收集段列表，不对 HTML 做任何就地替换 —— 避免"短段(如 'In')是长段子串"
+  // 时替换污染原文，导致后续长段匹配失败、残留脏文本。
+  // 返回 segments: [{ original, placeholder }]，placeholder 仅作去重/顺序标识。
   function extractTextSegments(html) {
     var segments = []
     var skip = false
@@ -406,13 +420,17 @@
       if (part.match(/^<[^>]+>$/)) continue
       var trimmed = part.trim()
       if (trimmed.length > 1 && !/^[\s\d.,;:?\-()]+$/.test(trimmed)) {
-        // 去重：若相同原文已存在则复用
-        var existing = segments.filter(function (s) { return s.original === trimmed })[0]
-        if (existing) continue
-        segments.push({ original: trimmed, placeholder: '%%SEG_' + segments.length + '%%' })
+        // 去重：相同原文只保留一个段（后续翻译结果可复用）
+        var existingIndex = -1
+        for (var q = 0; q < segments.length; q++) {
+          if (segments[q].original === trimmed) { existingIndex = q; break }
+        }
+        if (existingIndex < 0) {
+          segments.push({ original: trimmed, placeholder: '%%SEG_' + segments.length + '%%' })
+        }
       }
     }
-    return segments
+    return { segments: segments }
   }
 
   // 调用 DeepSeek 翻译一个批次（含多段，用 SEG_DELIM 分隔）
@@ -479,20 +497,21 @@
 
   function runApiTranslate() {
     var html = postContent.dataset.original || postContent.innerHTML
-    var segments = extractTextSegments(html)
-    // 缓存原 HTML，供回退
+    var extracted = extractTextSegments(html)
+    var segments = extracted.segments
+    // 缓存原 HTML，供回退 + 作为翻译替换的未污染底稿
     if (!postContent.dataset.original) postContent.dataset.original = postContent.innerHTML
 
     // 翻译方向固定英译中（见 deepseekTranslateBatch 的 system prompt）
 
-    if (segments.length === 0) return Promise.resolve({})
+    if (segments.length === 0) return Promise.resolve([])
 
     // 把段落按字符量分桶，每桶一次请求（一次 system prompt），极省 token
     var batches = bucketSegments(segments, MAX_BATCH_CHARS)
     var allTexts = segments.map(function (s) { return s.original })
     var results = new Array(segments.length).fill(null)
 
-    if (batches.length === 0) return Promise.resolve({})
+    if (batches.length === 0) return Promise.resolve([])
 
     // 并行处理各桶，提升翻译速度（限制并发，避免触发限流）
     var BATCH_CONCURRENCY = 2
@@ -543,13 +562,14 @@
     }
 
     return pool().run().then(function () {
-      var map = {}
+      // 返回 [{ original, translated }]，去重段复用已翻译结果
+      var segResults = []
       for (var j = 0; j < segments.length; j++) {
-        if (results[j] && results[j].length > 0) {
-          map[segments[j].original] = results[j]
-        }
+        var orig = segments[j].original
+        var tr = results[j] && results[j].length > 0 ? results[j] : orig
+        segResults.push({ original: orig, translated: tr })
       }
-      return map
+      return segResults
     })
   }
 
@@ -582,6 +602,11 @@
   }
 
   // ==================== 应用翻译到页面（保留 HTML 结构）====================
+  // 采用"提取不污染 + 回填从长到短"：
+  //  - 底稿用 dataset.original（未做任何就地替换的原始 HTML）
+  //  - 遍历 segments（数组 [{original, translated}]），按 original 长度从长到短，
+  //    把原文全局替换为译文。短段(如 'In')是长段子串时，因"从长到短"先替换长段，
+  //    再替换短段时短段原文已随长段消失，不会污染。
   function applyTranslation() {
     if (!translationData || !translationData.segments) return
 
@@ -589,19 +614,23 @@
       postContent.dataset.original = postContent.innerHTML
     }
 
-    // 优先使用 translatedHTML（完整翻译后的 HTML）
+    var segments = translationData.segments
+
+    // 优先使用 translatedHTML（完整翻译后的 HTML，构建时 DeepL 产物）
     if (translationData.translatedHTML) {
       postContent.innerHTML = translationData.translatedHTML
     } else {
-      // 回退：按段落替换
-      var segments = translationData.segments
-      var keys = Object.keys(segments).sort(function (a, b) { return b.length - a.length })
+      // 运行时翻译：基于未污染的 original HTML，从长到短做原文→译文全局替换。
+      // segments 为 [{original, translated}] 数组。
       var html = postContent.dataset.original
-      keys.forEach(function (original) {
-        var translated = segments[original]
-        var escaped = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        var regex = new RegExp('(?<=>)' + escaped + '(?=<)', 'g')
-        html = html.replace(regex, translated)
+      // 按 original 长度从长到短排序，避免短段早于长段替换造成子串污染
+      var sorted = segments.slice().sort(function (a, b) { return b.original.length - a.original.length })
+      sorted.forEach(function (s) {
+        if (!s.original || !s.translated) return
+        if (s.translated === s.original) return // 代码/未变段跳过
+        var escaped = s.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        var regex = new RegExp(escaped, 'g')
+        html = html.replace(regex, function () { return s.translated })
       })
       postContent.innerHTML = html
     }
