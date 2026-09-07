@@ -103,8 +103,12 @@
 
   // 存储 key 的 localStorage 键
   var KEY_STORE = 'deepseek_translate_key'
-  // 翻译缓存键
-  var cacheKey = 'translate_' + slug
+  // 翻译缓存键：带版本号，避免旧版(方向错误/原文照抄)缓存被复用
+  var CACHE_VERSION = 'v2'
+  var cacheKey = 'translate_' + CACHE_VERSION + '_' + slug
+  // 旧版缓存键（无版本），供迁移清理
+  var oldCacheKeys = ['translate_' + slug]
+  oldCacheKeys.forEach(function (k) { localStorage.removeItem(k) })
 
   // ==================== 创建按钮组 ====================
   var btnWrap = document.createElement('span')
@@ -226,23 +230,59 @@
 
   settingsBtn.addEventListener('click', openModal)
 
+  // ==================== 缓存读写 + 健康校验 ====================
+  // 健康校验：一首 segments 里的"译文"是否真的不同于原文。
+  // 若大多数 key===value（原文照抄），说明该缓存是假翻译/失败结果，判定无效。
+  function isHealthySegments(segments) {
+    if (!segments) return false
+    var keys = Object.keys(segments)
+    if (keys.length === 0) return false
+    var unchanged = 0
+    for (var i = 0; i < keys.length; i++) {
+      if (segments[keys[i]] === keys[i]) unchanged++
+    }
+    // 超过 60% 段原文照抄 → 视为无效
+    return unchanged / keys.length < 0.6
+  }
+
+  // 读取缓存，带健康校验；无效则清除并返回 null
+  function readTranslationCache() {
+    var cached = localStorage.getItem(cacheKey)
+    if (!cached) return null
+    try {
+      var data = JSON.parse(cached)
+      if (data.segments && isHealthySegments(data.segments)) {
+        return data
+      }
+      // 无效缓存，清除
+      localStorage.removeItem(cacheKey)
+      return null
+    } catch (e) {
+      localStorage.removeItem(cacheKey)
+      return null
+    }
+  }
+
+  // 写入缓存，带健康校验；无效结果不写（避免缓存坏数据）
+  function writeTranslationCache(segments) {
+    if (!segments || !isHealthySegments(segments)) {
+      // 无效结果不缓存
+      return false
+    }
+    localStorage.setItem(cacheKey, JSON.stringify({ segments: segments }))
+    return true
+  }
+
   // ==================== 预加载翻译数据（兼容构建时 JSON）====================
   function preloadTranslation() {
-    // 先检查 localStorage 缓存
-    var cached = localStorage.getItem(cacheKey)
+    // 先检查 localStorage 缓存（带健康校验）
+    var cached = readTranslationCache()
     if (cached) {
-      try {
-        var data = JSON.parse(cached)
-        if (data.segments && Object.keys(data.segments).length > 0) {
-          translationData = data
-          translateText.textContent = '显示原文'
-          btn.classList.add('expanded')
-          isTranslated = true
-          return
-        }
-      } catch (e) {
-        localStorage.removeItem(cacheKey)
-      }
+      translationData = cached
+      translateText.textContent = '显示原文'
+      btn.classList.add('expanded')
+      isTranslated = true
+      return
     }
 
     // 从服务器加载预翻译的 JSON
@@ -252,7 +292,7 @@
         return res.json()
       })
       .then(function (data) {
-        if (data.segments && Object.keys(data.segments).length > 0) {
+        if (data.segments && isHealthySegments(data.segments)) {
           translationData = data
           localStorage.setItem(cacheKey, JSON.stringify(data))
           translateText.textContent = '显示原文'
@@ -304,7 +344,8 @@
         return
       }
       translationData = { segments: segments }
-      localStorage.setItem(cacheKey, JSON.stringify(translationData))
+      // 仅当翻译结果健康(非原文照抄)时写缓存，避免缓存坏数据
+      writeTranslationCache(segments)
       runTranslateAnimation(function () { applyTranslation() })
     }).catch(function (err) {
       btn.classList.remove('loading')
@@ -376,11 +417,11 @@
 
   // 调用 DeepSeek 翻译一个批次（含多段，用 SEG_DELIM 分隔）
   // 返回逐段译文数组（长度与输入段数一致），失败段为 null
-  function deepseekTranslateBatch(texts, targetLang) {
-    var langName = targetLang === 'zh' ? 'Simplified Chinese' : 'English'
+  function deepseekTranslateBatch(texts) {
+    // 用户明确要【英译中】: 原文为英文, 输出简体中文。方向写死避免歧义。
     var system =
-      'You are a professional translator. Translate each text segment into ' + langName +
-      '. Output THE SAME number of results, each on its own line, in the same order. ' +
+      'The user text is in English. Translate each text segment into Simplified Chinese (简体中文). ' +
+      'Output THE SAME number of results, each on its own line, in the same order. ' +
       'Keep numbers, units, variable names and code identifiers unchanged. ' +
       'Do not add explanations, quotes or notes. ' +
       'Separate your results by the delimiter "' + SEG_DELIM + '".'
@@ -442,8 +483,7 @@
     // 缓存原 HTML，供回退
     if (!postContent.dataset.original) postContent.dataset.original = postContent.innerHTML
 
-    // 默认英译中（用户偏好）；固定目标语言，不做语言检测
-    var targetLang = 'zh'
+    // 翻译方向固定英译中（见 deepseekTranslateBatch 的 system prompt）
 
     if (segments.length === 0) return Promise.resolve({})
 
@@ -460,7 +500,7 @@
 
     var runBatch = function (indices) {
       var texts = indices.map(function (i) { return allTexts[i] })
-      return deepseekTranslateBatch(texts, targetLang).then(function (trans) {
+      return deepseekTranslateBatch(texts).then(function (trans) {
         for (var k = 0; k < indices.length; k++) {
           // 单段失败保留原文
           results[indices[k]] = (trans[k] && trans[k].length > 0) ? trans[k] : allTexts[indices[k]]
