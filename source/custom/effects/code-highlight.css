@@ -1,0 +1,274 @@
+/* ============================================================
+   Code blocks: 背景美化 + 语言标识规范 + 语法高亮配色
+   (custom inject, 需站点 _config.yml highlight.hljs: true)
+   ------------------------------------------------------------
+   问题与对策:
+   1) 原代码块无任何语法配色 — hexo hljs:false 不输出 token,
+      且主题编译 css 没有任何 .hljs-* 颜色规则。现服务端输出
+      hljs token 类, 由本文件按语义补全配色(light/dark 两套)。
+   2) 语言标识原被 text-transform:uppercase 全大写 + 1.15em
+      加粗、且位于折叠图标之后。改为左下角小胶囊徽章, 保留
+      书写原样(c#/cs/python), 操作图标(折叠/复制)归位右侧。
+   3) 背景美化: 白模式 = 冷白面板 + 发丝描边; 黑模式 = 深海军
+      蓝磨砂面板 + 冷蓝辉光, 与全站玻璃风格呼应。
+   注: 无 backdrop-filter(代码块数量多, 避免滚动掉帧)。
+   ============================================================ */
+
+/* ---------- 面板基础: 圆角 + 裁切 + 描边 ---------- */
+.container figure.highlight {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px !important;
+  background: #f6f9fd !important;
+  color: #33405a;
+  box-shadow: 0 0 0 1px rgba(105, 135, 185, .16);
+}
+
+.container figure.highlight ::selection {
+  background: rgba(110, 160, 255, .30);
+}
+
+html[data-theme='dark'] .container figure.highlight {
+  background: linear-gradient(180deg, #161d31 0%, #111627 100%) !important;
+  color: #ccd5e8;
+  box-shadow:
+    0 0 0 1px rgba(150, 180, 240, .14),
+    0 12px 30px -20px rgba(0, 0, 0, .55);
+}
+
+/* mac 红绿灯当前未启用(macStyle:false), 直接隐藏防占位 */
+.container figure.highlight .highlight-tools .macStyle {
+  display: none !important;
+}
+
+/* ---------- 工具条 ---------- */
+.container figure.highlight .highlight-tools {
+  height: 34px;
+  min-height: 34px;
+  padding: 0 10px 0 4px;
+  background: #edf2f9 !important;
+  color: #6b7a96;
+  border-bottom: 1px solid rgba(105, 135, 185, .14);
+}
+
+html[data-theme='dark'] .container figure.highlight .highlight-tools {
+  background: linear-gradient(180deg, #1c2439 0%, #182034 100%) !important;
+  color: #94a6c8;
+  border-bottom: 1px solid rgba(150, 180, 240, .10);
+}
+
+.container figure.highlight .highlight-tools i {
+  color: inherit;
+}
+
+/* ---------- 语言标识: 左上角小胶囊(保留书写原样, 不再全大写) ---------- */
+.container figure.highlight .highlight-tools .code-lang {
+  order: -2;                 /* 排到最左, 成为真正"左上角"标识 */
+  flex: 0 1 auto;
+  margin: 3px 0 3px 6px;
+  padding: 1px 10px 2px;
+  border-radius: 999px;
+  background: rgba(120, 155, 220, .14);
+  text-transform: none;      /* 保持 c# / cs / python 原始书写 */
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: .03em;
+  color: #4c6ea8;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.container figure.highlight .highlight-tools .code-lang:empty {
+  display: none;
+}
+
+html[data-theme='dark'] .container figure.highlight .highlight-tools .code-lang {
+  background: rgba(140, 170, 235, .14);
+  color: #9db8e8;
+}
+
+/* 折叠/复制图标靠右(语言徽章占据左边自动留白) */
+.container figure.highlight .highlight-tools .code-lang {
+  margin-right: auto;
+}
+
+/* 右侧图标增大点击区并统一样式 */
+.container figure.highlight .highlight-tools .expand,
+.container figure.highlight .highlight-tools .copy-button {
+  width: 26px;
+  height: 26px;
+  margin: 2px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: background .2s, color .2s;
+}
+
+.container figure.highlight .highlight-tools .expand:hover,
+.container figure.highlight .highlight-tools .copy-button:hover {
+  background: rgba(110, 155, 255, .14);
+  color: #49b1f5;
+}
+
+/* ---------- 行号区 ---------- */
+.container figure.highlight .gutter pre {
+  background: #eef3fa !important;
+  color: #98a6bd !important;
+  padding-right: 14px;
+  padding-left: 12px;
+}
+
+html[data-theme='dark'] .container figure.highlight .gutter pre {
+  background: #0e1422 !important;
+  color: #5e6d8d !important;
+}
+
+.container figure.highlight .code pre {
+  padding-right: 18px;
+  padding-left: 18px;
+}
+
+/* 行 hover 反馈(可见当前行) */
+.container figure.highlight table tbody tr:hover .code pre,
+.container figure.highlight table tbody tr:hover .gutter pre {
+  background-color: rgba(110, 155, 255, .05);
+}
+
+html[data-theme='dark'] .container figure.highlight table tbody tr:hover .code pre,
+html[data-theme='dark'] .container figure.highlight table tbody tr:hover .gutter pre {
+  background-color: rgba(130, 170, 255, .045);
+}
+
+/* ============================================================
+   语法高亮配色 (hljs token, 语义规范)
+   light(白面板) / dark(深海军蓝面板) 两套
+   ============================================================ */
+
+/* ---- light ---- */
+.container figure.highlight .hljs-comment,
+.container figure.highlight .hljs-quote {
+  color: #8a94a8;
+  font-style: italic;
+}
+.container figure.highlight .hljs-keyword,
+.container figure.highlight .hljs-selector-tag,
+.container figure.highlight .hljs-doctag,
+.container figure.highlight .hljs-meta .hljs-keyword {
+  color: #6f42c1;
+}
+.container figure.highlight .hljs-literal {
+  color: #b52bd0;
+}
+.container figure.highlight .hljs-built_in {
+  color: #e36209;
+}
+.container figure.highlight .hljs-type {
+  color: #0550ae;
+}
+.container figure.highlight .hljs-string,
+.container figure.highlight .hljs-regexp,
+.container figure.highlight .hljs-template-string,
+.container figure.highlight .hljs-addition {
+  color: #0a7d52;
+}
+.container figure.highlight .hljs-number,
+.container figure.highlight .hljs-symbol,
+.container figure.highlight .hljs-bullet {
+  color: #c2410c;
+}
+.container figure.highlight .hljs-title,
+.container figure.highlight .hljs-title.function_,
+.container figure.highlight .hljs-title.class_,
+.container figure.highlight .hljs-section,
+.container figure.highlight .hljs-selector-id,
+.container figure.highlight .hljs-selector-class,
+.container figure.highlight .hljs-tag,
+.container figure.highlight .hljs-name {
+  color: #0550ae;
+}
+.container figure.highlight .hljs-variable,
+.container figure.highlight .hljs-template-variable {
+  color: #0f766e;
+}
+.container figure.highlight .hljs-attribute,
+.container figure.highlight .hljs-meta {
+  color: #9a6700;
+}
+.container figure.highlight .hljs-deletion {
+  color: #b42318;
+}
+.container figure.highlight .hljs-params {
+  color: inherit;
+}
+.container figure.highlight .hljs-emphasis {
+  font-style: italic;
+}
+.container figure.highlight .hljs-strong {
+  font-weight: 600;
+}
+
+/* ---- dark ---- */
+html[data-theme='dark'] .container figure.highlight .hljs-comment,
+html[data-theme='dark'] .container figure.highlight .hljs-quote {
+  color: #7a86a1;
+  font-style: italic;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-keyword,
+html[data-theme='dark'] .container figure.highlight .hljs-selector-tag,
+html[data-theme='dark'] .container figure.highlight .hljs-doctag,
+html[data-theme='dark'] .container figure.highlight .hljs-meta .hljs-keyword,
+html[data-theme='dark'] .container figure.highlight .hljs-literal {
+  color: #bb9af7;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-built_in {
+  color: #e0af68;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-type {
+  color: #2ac3de;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-string,
+html[data-theme='dark'] .container figure.highlight .hljs-regexp,
+html[data-theme='dark'] .container figure.highlight .hljs-template-string,
+html[data-theme='dark'] .container figure.highlight .hljs-addition {
+  color: #9ece6a;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-number,
+html[data-theme='dark'] .container figure.highlight .hljs-symbol,
+html[data-theme='dark'] .container figure.highlight .hljs-bullet {
+  color: #ff9e64;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-title,
+html[data-theme='dark'] .container figure.highlight .hljs-title.function_,
+html[data-theme='dark'] .container figure.highlight .hljs-title.class_,
+html[data-theme='dark'] .container figure.highlight .hljs-section,
+html[data-theme='dark'] .container figure.highlight .hljs-selector-id,
+html[data-theme='dark'] .container figure.highlight .hljs-selector-class,
+html[data-theme='dark'] .container figure.highlight .hljs-tag,
+html[data-theme='dark'] .container figure.highlight .hljs-name {
+  color: #7aa2f7;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-variable,
+html[data-theme='dark'] .container figure.highlight .hljs-template-variable {
+  color: #7dcfff;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-attribute,
+html[data-theme='dark'] .container figure.highlight .hljs-meta {
+  color: #e0af68;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-deletion {
+  color: #f7768e;
+}
+html[data-theme='dark'] .container figure.highlight .hljs-params {
+  color: inherit;
+}
+
+/* 移动端: 圆角略收 */
+@media (max-width: 768px) {
+  .container figure.highlight {
+    border-radius: 8px !important;
+  }
+}

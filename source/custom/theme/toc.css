@@ -1,0 +1,39 @@
+/* ============================================================
+   TOC 目录修正 (custom inject)
+   ------------------------------------------------------------
+   1) 吸顶避让浮动导航: 导航 fixed 于视口顶部 12px、高 54px
+      (底边 66px), 主题默认 .sticky_layout top:20px 会被其遮住
+      目录上半部分 → 吸顶位下调到 78px(66 + 12 间距)。
+   2) 右上角数字样式: 原滚动百分比(斜体 140%)已改为显示当前
+      章节层级编号(1 / 1.1 / 1.1.1, main.js 维护), 此处给出
+      配套观感: 等宽小数字、正常字重、主题蓝, 空内容时隐藏。
+   ============================================================ */
+
+/* 桌面端吸顶位: 避让浮动导航底边 66px */
+@media (min-width: 901px) {
+  #aside-content .sticky_layout {
+    top: 78px !important;
+  }
+}
+
+/* 右上角章节号 */
+#card-toc .item-headline .toc-percentage {
+  float: right;
+  margin-top: -11px;
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  color: #6e84ab;
+  user-select: none;
+}
+
+html[data-theme='dark'] #card-toc .item-headline .toc-percentage {
+  color: #8fa4cf;
+}
+
+/* 无激活章节时(页首/未滚动)隐藏占位 */
+#card-toc .item-headline .toc-percentage:empty {
+  display: none;
+}

@@ -53,7 +53,8 @@ highlight:
   auto_detect: false
   tab_replace: ''
   wrap: true
-  hljs: false
+  # 开启服务端 token 高亮(生成 .hljs-* 类); 此前 false 导致代码块无任何语法配色
+  hljs: true
 prismjs:
   preprocess: true
   line_number: true

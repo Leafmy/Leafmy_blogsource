@@ -604,7 +604,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const observerOptions = {
       root: null,
-      rootMargin: '-60px 0px -80% 0px',
+      // [性能] 扩大检测区域: 原 -80% 只留顶部 20% 视口, 快速滚动时
+      // 标题容易被跳过。改为 -60% 留顶部 40%, 兼顾准确性和快速滚动。
+      rootMargin: '-60px 0px -60% 0px',
       threshold: 0
     }
 
@@ -614,16 +616,27 @@ document.addEventListener('DOMContentLoaded', () => {
           updateTocUI(entry.target.id)
         }
       })
+      // IO 异步触发可能晚于滚动事件: 此处再同步一次右上角章节号,
+      // 避免"滚到中途但编号未刷新"的时序窗口
+      setTocNumber()
     }, observerOptions)
 
     $articleList.forEach(ele => observer.observe(ele))
 
+    // 右上角数字: 显示当前激活章节的层级编号(1 / 1.1 / 1.1.1),
+    // 由 IO 已更新的 .toc-link.active 内 .toc-number 得出; 无激活章节留空。
+    // (原实现显示滚动百分比)
+    const setTocNumber = () => {
+      if (!isToc || !GLOBAL_CONFIG.percent.toc) return
+      const $activeTocLink = $cardToc.querySelector('.toc-link.active')
+      const $activeTocNumber = $activeTocLink && $activeTocLink.querySelector('.toc-number')
+      $tocPercentage.textContent = $activeTocNumber
+        ? $activeTocNumber.textContent.replace(/\.+$/g, '')
+        : ''
+    }
+
     const scrollHandler = btf.rafThrottle(() => {
       const currentTop = window.scrollY || document.documentElement.scrollTop
-
-      if (isToc && GLOBAL_CONFIG.percent.toc) {
-        $tocPercentage.textContent = btf.getScrollPercent(currentTop, $article)
-      }
 
       if (currentTop === 0) {
         updateTocUI('')
@@ -631,6 +644,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const lastHeader = $articleList[$articleList.length - 1]
         updateTocUI(lastHeader.id)
       }
+
+      setTocNumber()
     })
 
     btf.addEventListenerPjax(window, 'scroll', scrollHandler, { passive: true })

@@ -1079,6 +1079,7 @@ inject:
     - <link rel="stylesheet" href="/custom/nav/nav-darkmode.css">
     # --- effects 背景/玻璃/光效 ---
     - <link rel="stylesheet" href="/custom/effects/theme-glass.css">
+    - <link rel="stylesheet" href="/custom/effects/code-highlight.css">
     - <link rel="stylesheet" href="/custom/effects/force-glow.css">
     # --- widgets 卡片/挂件/页脚 ---
     - <link rel="stylesheet" href="/custom/widgets/announce-hover.css">
@@ -1090,6 +1091,11 @@ inject:
     - <link rel="stylesheet" href="/custom/theme/theme-reveal.css">
     - <link rel="stylesheet" href="/custom/theme/custom-font.css">
     - <link rel="stylesheet" href="/custom/theme/read-mode.css">
+    - <link rel="stylesheet" href="/custom/theme/toc.css">
+    # --- cursor 自定义光标 ---
+    - <link rel="stylesheet" href="/custom/cursor/site-cursor.css">
+    # --- widgets 翻译按钮 ---
+    - <link rel="stylesheet" href="/custom/widgets/translate-btn.css">
   bottom:
     # - <script src="xxxx"></script>
     # --- nav 顶部导航栏 + 检索 ---
@@ -1100,6 +1106,7 @@ inject:
     - <script src="/custom/effects/glass-bg.js"></script>
     - <script src="/custom/effects/force-glow.js"></script>
     - <script src="/custom/effects/tab-visibility.js"></script>
+    - <script src="/custom/effects/scroll-perf.js"></script>
     # --- widgets 卡片/挂件/页脚 ---
     - <script src="/custom/widgets/announce-hover.js"></script>
     - <script src="/custom/widgets/visit-card.js"></script>
@@ -1107,6 +1114,10 @@ inject:
     - <script src="/custom/widgets/sidebar-mask.js"></script>
     # --- theme 主题切换动画 ---
     - <script src="/custom/theme/theme-reveal.js"></script>
+    # --- cursor 自定义光标 ---
+    - <script src="/custom/cursor/site-cursor.js"></script>
+    # --- widgets 翻译按钮 ---
+    - <script src="/custom/widgets/translate-btn.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
