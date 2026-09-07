@@ -63,10 +63,12 @@ prismjs:
   line_number: true
   tab_replace: ''
 
-# --- Hexo Shiki Plugin (hexo-shiki-plugin-butterfly) 配置 ---
+ # --- Hexo Shiki Plugin (hexo-shiki-plugin-butterfly) 配置 ---
 shiki:
-  # theme: github-light 精确 GitHub 风格 (浅色); 若需深色可改 github-dark
-  theme: github-light
+  # 用 css-variables 主题让 Shiki 输出 var(--shiki-token-*) 变量,
+  # 再由 code-highlight.css 按 data-theme 明/暗分别填 GitHub Light / GitHub Dark 色值。
+  # 这样同一份代码块 html 能随主题切换: 浅色=github-light 白卡, 深色=github-dark 黑卡。
+  theme: css-variables
   line_number: true          # 显示行号
   beautify: true             # 启用代码块工具条(复制/语言/折叠), 依赖 font-awesome (Butterfly 已内置)
   colorized_brackets: true   # 嵌套括号着色 (@shikijs/colorized-brackets)

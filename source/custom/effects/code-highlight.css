@@ -1,20 +1,80 @@
 /* ============================================================
-   Code blocks: 首页卡片玻璃风 + Fira Code + Shiki(GitHub Light)
+   Code blocks: 首页卡片玻璃风 + Fira Code + Shiki 明暗自适应
    (custom inject, 由 hexo-shiki-plugin-butterfly 提供语法配色)
    ------------------------------------------------------------
-   背景说明:
-   - 语法配色由 Shiki 插件输出(内联 span color, github-light 主题),
-     本文件不再声明任何 .hljs-* 规则。
-   - 原「深海军蓝渐变黑底」已废弃, 不再作用于 .shiki;
-     代码块背景由本站玻璃拟态接管, 明暗均保持浅色半透明玻璃,
-     以承载 github-light 的深色文字, 彻底去掉黑底。
+   明暗主题:
+   - Shiki 采用 css-variables 主题, 输出 var(--shiki-token-*) / 
+     var(--shiki-color-*) 变量, 而非写死色值。
+   - 本文件在 :root(浅色) 与 html[data-theme='dark'] 下分别定义
+     GitHub Light / GitHub Dark 官方色值, 实现「明暗自适应」:
+       * 浅色 = GitHub Light 白卡
+       * 深色 = GitHub Dark 黑卡  (用户要求: 黑色模式代码栏应为黑底)
+   - 覆盖 <pre> 上的 background-color: var(--shiki-color-background),
+     改为透明, 让 figure 的卡片底透出。
    保留项:
    1) 代码字体: 自托管 Fira Code (Regular 主用 / Bold 备).
-   2) 面板: 首页卡片同款磨砂玻璃(半透明渐变 + backdrop-filter blur),
-      明暗两套均为浅色玻璃, 不再出现纯黑/深蓝底.
-   3) 语言标识: 左上角胶囊徽章, cs/csharp/c# 归一显示 "C#" (见 JS 注入).
-   4) 工具条: 融入玻璃, 复制/折叠按钮保留 Shiki 插件(beautify)实现.
+   2) 面板: 首页卡片同款玻璃卡(浅色白玻璃 / 深色深黑玻璃).
+   3) 语言标识: 左上角胶囊徽章, cs/csharp/c# 归一显示 "C#" (JS 注入).
+   4) 工具条: 融入卡片, 复制/折叠按钮保留 Shiki 插件(beautify)实现.
    ============================================================ */
+
+/* ============================================================
+   Shiki 语义色变量 — 浅色(GitHub Light) / 深色(GitHub Dark)
+   色值取自官方 github-light.json / github-dark.json
+   同时重定义插件的 --hl-* (来自 one-dark-pro 注入), 跟随明暗,
+   这样 gutter/滚动条/工具条背景统一, 不再被写死的深色干扰。
+   ============================================================ */
+/* 浅色集: 用 :root, html:not([data-theme='dark']) 提高特异性,
+   胜过插件 themes.js 运行时注入的 :root{--hl-*...}(one-dark-pro),
+   否则 gutter/工具条/滚动条会被 #282c34 等深色覆盖。 */
+:root,
+html:not([data-theme='dark']) {
+  /* Shiki token 色 (浅色 = GitHub Light) */
+  --shiki-color-background: #ffffff;
+  --shiki-color-text: #24292e;
+  --shiki-token-constant: #005cc5;
+  --shiki-token-string: #032f62;
+  --shiki-token-comment: #6a737d;
+  --shiki-token-keyword: #d73a49;
+  --shiki-token-parameter: #24292e;
+  --shiki-token-function: #6f42c1;
+  --shiki-token-string-expression: #032f62;
+  --shiki-token-punctuation: #24292e;
+  --shiki-token-link: #032f62;
+  /* 插件 --hl-* (浅色) */
+  --hl-color: #24292e;
+  --hl-bg: rgba(255, 255, 255, .74);
+  --hltools-bg: rgba(255, 255, 255, .56);
+  --hltools-color: #57606a;
+  --hlnumber-bg: rgba(120, 155, 210, .10);
+  --hlnumber-color: #6a7686;
+  --hlscrollbar-bg: rgba(120, 155, 210, .25);
+  --hlexpand-bg: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.9));
+}
+
+/* 深色 = GitHub Dark 黑卡 */
+html[data-theme='dark'] {
+  --shiki-color-background: #24292e;
+  --shiki-color-text: #e1e4e8;
+  --shiki-token-constant: #79b8ff;
+  --shiki-token-string: #9ecbff;
+  --shiki-token-comment: #6a737d;
+  --shiki-token-keyword: #f97583;
+  --shiki-token-parameter: #e1e4e8;
+  --shiki-token-function: #b392f0;
+  --shiki-token-string-expression: #9ecbff;
+  --shiki-token-punctuation: #e1e4e8;
+  --shiki-token-link: #9ecbff;
+  /* 插件 --hl-* (深色) */
+  --hl-color: #e1e4e8;
+  --hl-bg: rgba(36, 41, 46, .94);
+  --hltools-bg: rgba(53, 60, 68, .80);
+  --hltools-color: #adbac7;
+  --hlnumber-bg: rgba(255, 255, 255, .04);
+  --hlnumber-color: #5b6472;
+  --hlscrollbar-bg: rgba(255, 255, 255, .14);
+  --hlexpand-bg: linear-gradient(180deg, rgba(36,41,46,.1), rgba(36,41,46,.9));
+}
 
 /* ---------- Fira Code 字体注册 (OFL-1.1) ---------- */
 @font-face {
@@ -42,8 +102,14 @@ figure.shiki .codeblock code {
   font-weight: 400;
 }
 
-/* ---------- 面板: 首页卡片同款磨砂玻璃 ---------- */
-/* 覆盖 Shiki 插件的 solid 背景(--hl-bg), 改用玻璃拟态 */
+/* ---------- 覆盖 Shiki <pre>/<code> 的 solid 背景 ---------- */
+figure.shiki .code pre,
+figure.shiki .code pre.shiki,
+figure.shiki .code pre code {
+  background: none !important;
+}
+
+/* ---------- 面板: 首页卡片同款玻璃卡 ---------- */
 figure.shiki {
   margin: 0 0 24px !important;
   position: relative;
@@ -52,37 +118,36 @@ figure.shiki {
   /* light: 白玻璃(浅底承载 github-light 深色文字) */
   background: linear-gradient(
     155deg,
-    rgba(255, 255, 255, .62) 0%,
-    rgba(255, 255, 255, .40) 55%,
-    rgba(255, 255, 255, .52) 100%
+    rgba(255, 255, 255, .74) 0%,
+    rgba(255, 255, 255, .52) 55%,
+    rgba(255, 255, 255, .64) 100%
   ) !important;
-  /* 覆盖插件 --hl-color 的浅灰, 用 GitHub 深色正文同款, 保证玻璃浅底上可读 */
-  color: #24292f;
+  color: var(--shiki-color-text);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, .34),
-    inset 0 1px 0 rgba(255, 255, 255, .58),
+    0 0 0 1px rgba(255, 255, 255, .38),
+    inset 0 1px 0 rgba(255, 255, 255, .60),
     inset 0 -1px 0 rgba(255, 255, 255, .18),
-    0 12px 28px -18px rgba(48, 66, 104, .35);
+    0 12px 28px -18px rgba(48, 66, 104, .30);
 }
 
-/* dark: 仍为浅色玻璃(并非黑底) —— 代码块保持浅色以适配 github-light 文字 */
+/* dark: 深黑玻璃(GitHub Dark 黑卡) —— 用户要求深色模式代码栏为黑底 */
 html[data-theme='dark'] figure.shiki {
   background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, .30) 0%,
-    rgba(244, 248, 252, .34) 55%,
-    rgba(255, 255, 255, .30) 100%
+    160deg,
+    rgba(36, 41, 46, .94) 0%,
+    rgba(30, 34, 40, .90) 55%,
+    rgba(24, 28, 33, .92) 100%
   ) !important;
-  color: #24292f;
+  color: var(--shiki-color-text);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, .16),
-    inset 0 1px 0 rgba(255, 255, 255, .22),
-    inset 0 -1px 0 rgba(255, 255, 255, .05),
-    0 16px 34px -22px rgba(0, 0, 0, .55);
+    0 0 0 1px rgba(255, 255, 255, .10),
+    inset 0 1px 0 rgba(255, 255, 255, .08),
+    inset 0 -1px 0 rgba(255, 255, 255, .02),
+    0 16px 34px -20px rgba(0, 0, 0, .80);
 }
 
 figure.shiki ::selection {
@@ -93,22 +158,22 @@ html[data-theme='dark'] figure.shiki ::selection {
   background: rgba(130, 175, 255, .30);
 }
 
-/* ---------- 工具条(融入玻璃) ---------- */
+/* ---------- 工具条(融入卡片) ---------- */
 figure.shiki .shiki-tools {
   position: relative;
   min-height: 34px;
   height: 34px;
   padding: 0 10px 0 10px !important;
   /* light 工具条=白玻璃上叠一层极浅冷雾 */
-  background: linear-gradient(180deg, rgba(255, 255, 255, .50), rgba(255, 255, 255, .26)) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .56), rgba(255, 255, 255, .30)) !important;
   color: #57606a;
-  border-bottom: 1px solid rgba(120, 150, 200, .16);
+  border-bottom: 1px solid rgba(120, 150, 200, .18);
 }
 
 html[data-theme='dark'] figure.shiki .shiki-tools {
-  background: linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(244, 248, 252, .16)) !important;
-  color: #57606a;
-  border-bottom: 1px solid rgba(150, 180, 240, .12);
+  background: linear-gradient(180deg, rgba(53, 60, 68, .80), rgba(40, 45, 52, .70)) !important;
+  color: #adbac7;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
 }
 
 /* 遮蔽 Shiki 插件的 Mac 三色圆点(macStyle 未启用) */
@@ -141,7 +206,7 @@ figure.shiki .shiki-tools .code-lang:empty {
 }
 
 html[data-theme='dark'] figure.shiki .shiki-tools .code-lang {
-  background: rgba(121, 192, 255, .14);
+  background: rgba(121, 192, 255, .16);
   color: #79c0ff;
 }
 
@@ -173,10 +238,11 @@ figure.shiki .shiki-tools .copy-button:hover {
 
 html[data-theme='dark'] figure.shiki .shiki-tools .expand:hover,
 html[data-theme='dark'] figure.shiki .shiki-tools .copy-button:hover {
+  background: rgba(130, 170, 255, .14);
   color: #79c0ff;
 }
 
-/* ---------- 行号区(半透明, 区分于玻璃面板) ---------- */
+/* ---------- 行号区(区分于卡片底) ---------- */
 figure.shiki .gutter pre {
   background: rgba(120, 155, 210, .10) !important;
   color: #6a7686 !important;
@@ -186,22 +252,12 @@ figure.shiki .gutter pre {
 }
 
 html[data-theme='dark'] figure.shiki .gutter pre {
-  background: rgba(120, 160, 255, .08) !important;
-  color: #64748b !important;
+  background: rgba(255, 255, 255, .04) !important;
+  color: #5b6472 !important;
 }
 
 figure.shiki .code pre {
   padding: 8px 18px !important;
-  background: none !important;
-}
-
-/* 代码区背景置透明, 由 figure 玻璃底透出 */
-figure.shiki .code pre.shiki {
-  background: none !important;
-}
-
-figure.shiki .code pre code {
-  background: none !important;
 }
 
 /* 行 hover 反馈 */
@@ -210,7 +266,7 @@ figure.shiki .codeblock div:hover .code pre {
 }
 
 html[data-theme='dark'] figure.shiki .codeblock div:hover .code pre {
-  background-color: rgba(130, 170, 255, .05) !important;
+  background-color: rgba(130, 170, 255, .04) !important;
 }
 
 /* 快速滚动降级: 4px 低保真模糊 */
