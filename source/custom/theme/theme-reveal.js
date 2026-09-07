@@ -1,19 +1,20 @@
 /* ============================================================
-   Theme switch: 明显圆形展开 (custom inject, v11)
-   = 机制 = 纯 GPU 合成圆形波纹, 无全页快照, 效果明显可见
-   ------------------------------------------------------------
-   用户要求"明显的圆形展开动画"。实测 startViewTransition 在
-   6353px 长文页即使优化后仍掉帧(maxGap 115ms, over50 1帧)——
-   因为它对【整个 root】光栅化两帧快照。
+   Theme switch: content reveal (custom inject, v12)
+   = 机制 = v1：View Transitions，真实页面内容圆形 reveal
+   = 位置 = 网页中心（百分比硬编码，无坐标传递，绝不偏移）
 
-   v11 方案(两全其美):
-   - 不用 startViewTransition(免全页快照/免掉帧);
-   - 点击切主题: 立即 activateDarkMode/LightMode(瞬时切 data-theme);
-   - 在【空固定合成层】上做 transform:scale() 圆形波纹——但这次
-     用【目标主题的实色】(light 冷雾灰蓝 / dark 深黑) 做不透明圆形,
-     从点击中心 0→覆盖全屏(scale ~6), 让用户清楚看到"新主题色
-     圆形漾开盖满屏幕"。scale 走 GPU 合成器, 层内只有纯色圆无
-     内容 → 明显可见 + 无快照 + 不掉帧。
+   用户要求："就要原来的那个，但 GPU 强制渲染"。
+   即恢复真正的「新主题内容从网页中心圆形漾开」动画
+   （View Transitions 原生 clip-path: circle() 内容扩散），
+   而非盖一片实色圆的假动画。
+
+   关键：圆心固定为 50% 50%，百分比写死在 CSS 里，不依赖 JS
+   传像素坐标 —— 彻底规避 root 快照坐标系偏移问题。
+
+   GPU 强制渲染：切换期间暂停 .bg-liquid 独立动画（vt-pause），
+   关掉卡片/hero 的实时 backdrop-filter（switching），并给
+   html 加 .vt-gpu 把关键元素推到独立合成层 → 让 VT 的两帧快照
+   与 clip-path 圆形扩散尽量走 GPU 合成管线，把长文页掉帧压下去。
    ============================================================ */
 (function () {
   'use strict'
@@ -23,7 +24,7 @@
   const root = document.documentElement
   const isDarkMode = () => root.getAttribute('data-theme') === 'dark'
 
-  /* 执行切换：与主题原生 darkmode handler 行为一致(仅切 data-theme) */
+  /* 执行切换：与主题原生 darkmode handler 行为一致 */
   const performSwitch = (mode) => {
     if (mode === 'dark') {
       if (window.btf.activateDarkMode) window.btf.activateDarkMode()
@@ -48,28 +49,6 @@
     }
   }
 
-  /* 明显圆形波纹: 空固定层 + 目标主题实色圆形 scale 扩散, 无快照 */
-  const roundReveal = (x, y, mode) => {
-    const overlay = document.createElement('div')
-    overlay.className = 'theme-round-reveal'
-    // 目标主题确定圆形遮罩底色(light 冷雾灰蓝 / dark 深黑) —— 明显可见
-    overlay.dataset.theme = mode
-    overlay.setAttribute('aria-hidden', 'true')
-    overlay.style.setProperty('--reveal-x', (x || innerWidth / 2) + 'px')
-    overlay.style.setProperty('--reveal-y', (y || innerHeight / 2) + 'px')
-    document.body.appendChild(overlay)
-
-    // 动画(.68s)结束后移除遮罩 —— 用 animationend 精确清理, 无残留
-    const remove = () => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay) }
-    overlay.addEventListener('animationend', remove, { once: true })
-    // 兜底: 750ms 仍未触发 animationend(如隐藏标签页)则强制移除
-    const s = setTimeout(() => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay) }, 760)
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => { overlay.classList.add('on') })
-    })
-  }
-
   document.addEventListener('click', (e) => {
     const target = e.target
     const btn = target && target.closest ? target.closest('#darkmode') : null
@@ -82,18 +61,43 @@
     const reduced = window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    const rect = btn.getBoundingClientRect()
-    const cx = rect.left + rect.width / 2
-    const cy = rect.top + rect.height / 2
-
-    if (reduced) {
+    if (reduced || typeof document.startViewTransition !== 'function') {
       performSwitch(mode)
       return
     }
 
-    // 明显圆形波纹(GPU 合成, 无快照) + 即时切换主题
-    // 遮罩由 animationend 自动清理(见 roundReveal)
-    roundReveal(cx, cy, mode)
-    performSwitch(mode)
+    try {
+      // GPU 强制：切换期间暂停背景液体层独立动画 + 移除 will-change，
+      // 让它被并入 root 一起被圆形 clip-path 裁切（避免被 VT 拆成独立组）。
+      const bg = document.querySelector('.glass-bg')
+      if (bg) bg.classList.add('vt-pause')
+
+      // GPU 强制：动画期间给 html 加 .switching（关实时 backdrop-filter，
+      // 减少 VT 快照光栅化重活）+ .vt-gpu（关键元素推独立合成层，走 GPU 管线）。
+      const vt = document.startViewTransition(() => {
+        root.classList.add('switching')
+        root.classList.add('vt-gpu')
+        performSwitch(mode)
+      })
+
+      // 切换结束后恢复背景层动画 + 玻璃 + 释放合成层
+      const done = () => {
+        if (bg) bg.classList.remove('vt-pause')
+        root.classList.remove('switching')
+        root.classList.remove('vt-gpu')
+      }
+      if (vt && typeof vt.finished === 'object' && vt.finished && vt.finished.then) {
+        vt.finished.then(done, done)
+      } else {
+        // 兜底：给足动画时长后恢复（0.45s 动画 + 余量）
+        setTimeout(done, 700)
+      }
+    } catch (err) {
+      const bg = document.querySelector('.glass-bg')
+      if (bg) bg.classList.remove('vt-pause')
+      root.classList.remove('switching')
+      root.classList.remove('vt-gpu')
+      performSwitch(mode)
+    }
   }, true)
 })()
