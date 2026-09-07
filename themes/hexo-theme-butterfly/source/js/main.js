@@ -233,6 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         langName = item.getAttribute('class').split(' ')[1]
         if (langName === 'plain' || langName === undefined) langName = 'Code'
+        // 语言标识统一: C# 家族(cs / csharp / c#)一律显示 "C#", 不混用
+        if (langName === 'cs' || langName === 'csharp' || langName === 'c#') langName = 'C#'
       }
       createEle(`<div class="code-lang">${langName}</div>`, item)
     })

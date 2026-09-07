@@ -27,7 +27,7 @@ The ModNPC.SpawnChance hook returns a float. Google that if you don't understand
 ## ModNPC.SpawnChance
 This is the main focus of this guide. All naturally spawning non-boss, non-townNPC ModNPC classes should override this hook:
 
-```c#
+```cs
 public override float SpawnChance(NPCSpawnInfo spawnInfo)
 {
 	// Code goes here
@@ -37,7 +37,7 @@ public override float SpawnChance(NPCSpawnInfo spawnInfo)
 ## ModNPC.CanTownNPCSpawn
 Only for townNPC ModNPC. Note that this class returns a bool not a float. Use this to let your townNPC spawn after certain conditions, such as defeating bosses, have been met.
 
-```c#
+```cs
 public override bool CanTownNPCSpawn(int numTownNPCs)
 {
 	// Code goes here
@@ -63,7 +63,7 @@ Don't mix these two up. `=` assigns a value to a variable and `==` compares two 
 ### Ternary
 A more compact version of an if-else conditional is a ternary. Read up on it [here](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/conditional-operator). Basically it changes: 
 
-```c#
+```cs
 if (condition)
 {
 	return .1f;
@@ -94,10 +94,10 @@ When worlds are generated, a few values are saved with the world to specify vari
 ![](https://i.imgur.com/9rIgSMt.png)
 
 On the right side of the image we see the Zones that are predefined for us, and on the left we see the math that drives those zones. For example, the following are equivalent:    
-```c#
+```cs
 if(spawnInfo.Player.ZoneRockLayerHeight)
 ```   
-```c#
+```cs
 if(spawnInfo.SpawnTileY <= Main.maxTilesY - 200 && spawnInfo.SpawnTileY > Main.rockLayer)
 ```
 
@@ -126,11 +126,11 @@ In addition to NPCSpawnInfo, we can also use other fields in our SpawnChance log
 
 # SpawnCondition
 `SpawnCondition` is a class that contains a set of ready-to-use fields that mimic the logic of various Vanilla NPC spawn conditions. See [Documentation](https://docs.tmodloader.net/docs/stable/class_spawn_condition.html) for available `SpawnCondition`s. Using `SpawnCondition` fields can simplify you `SpawnChance` logic. For example, a daytime slime can easily be implemented like this:
-```c#
+```cs
 return SpawnCondition.OverworldDaySlime.Chance * 0.1f;
 ```
 as opposed to
-```c#
+```cs
 return Main.dayTime && spawnInfo.SpawnTileY <= Main.worldSurface ? 0.1f : 0f;
 ```
 # Examples
