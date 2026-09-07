@@ -115,16 +115,17 @@ figure.shiki {
   position: relative;
   overflow: hidden;
   border-radius: 10px !important;
-  /* light: 白玻璃(浅底承载 github-light 深色文字) */
+  /* light: 白玻璃(浅底承载 github-light 深色文字)
+     v12 性能: 背景 alpha 已很高(.74/.52/.64), 本就几乎不透,
+     故去掉 backdrop-filter(实时模糊重算是滚动卡顿源之一) →
+     玻璃感由静态渐变+高光+阴影承担, 可预渲染。 */
   background: linear-gradient(
     155deg,
-    rgba(255, 255, 255, .74) 0%,
-    rgba(255, 255, 255, .52) 55%,
-    rgba(255, 255, 255, .64) 100%
+    rgba(255, 255, 255, .78) 0%,
+    rgba(255, 255, 255, .60) 55%,
+    rgba(255, 255, 255, .70) 100%
   ) !important;
   color: var(--shiki-color-text);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, .38),
     inset 0 1px 0 rgba(255, 255, 255, .60),
@@ -132,17 +133,16 @@ figure.shiki {
     0 12px 28px -18px rgba(48, 66, 104, .30);
 }
 
-/* dark: 深黑玻璃(GitHub Dark 黑卡) —— 用户要求深色模式代码栏为黑底 */
+/* dark: 深黑玻璃(GitHub Dark 黑卡) —— 用户要求深色模式代码栏为黑底
+   v12 性能: 同理去 backdrop-filter, 深色 alpha 已 .94/.90/.92 近实 */
 html[data-theme='dark'] figure.shiki {
   background: linear-gradient(
     160deg,
-    rgba(36, 41, 46, .94) 0%,
-    rgba(30, 34, 40, .90) 55%,
-    rgba(24, 28, 33, .92) 100%
+    rgba(36, 41, 46, .96) 0%,
+    rgba(30, 34, 40, .93) 55%,
+    rgba(24, 28, 33, .94) 100%
   ) !important;
   color: var(--shiki-color-text);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, .10),
     inset 0 1px 0 rgba(255, 255, 255, .08),
@@ -269,12 +269,7 @@ html[data-theme='dark'] figure.shiki .codeblock div:hover .code pre {
   background-color: rgba(130, 170, 255, .04) !important;
 }
 
-/* 快速滚动降级: 4px 低保真模糊 */
-body.fast-scrolling figure.shiki {
-  -webkit-backdrop-filter: blur(4px) !important;
-  backdrop-filter: blur(4px) !important;
-  box-shadow: none !important;
-}
+/* 快速滚动降级: 已去 backdrop-filter, 代码块为静态预渲染, 无需降级 */
 
 /* 移动端: 圆角略收 */
 @media (max-width: 768px) {

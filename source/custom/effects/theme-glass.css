@@ -215,10 +215,12 @@ html[data-theme='dark']::-webkit-scrollbar-thumb:hover {
    GPU 合成压力。滚动停止后移除该类, 恢复完整效果。
    选 4px 而非 0: 保留一丝模糊让视觉过渡不突兀。
    ============================================================ */
-body.fast-scrolling .recent-post-item,
-body.fast-scrolling .card-widget,
-body.fast-scrolling #post,
-body.fast-scrolling #archive,
+/* ---- 快速滚动性能降级 ----
+   v12 修正：只对【全屏 hero】降级 backdrop(它占满视口, 滚动时模糊重算最贵)。
+   卡片/文章(#post/#archive)不再参与降级切换 —— 因为滚动时把它们的
+   backdrop-filter 从 12px→4px→12px 来回切换, 会让大量卡片同时触发
+   backdrop 重采样(卡顿主因)。改为保持稳定, 靠 content-visibility
+   预渲染让它们滚动时零重绘。 */
 body.fast-scrolling #page-header.full_page,
 body.fast-scrolling #page-header.not-home-page::before,
 body.fast-scrolling #page-header.post-bg::before,
@@ -255,18 +257,28 @@ html[data-theme='dark'] .container figure.highlight.default pre::-webkit-scrollb
 
 /* ================= 玻璃面板 ================= */
 
-/* ---- 卡片性能优化 ----
-   强制 GPU 加速 + 阴影预渲染：
-   - will-change + translateZ(0) 强制 GPU 合成层，让 backdrop-filter 走 GPU
-   - ::after 伪元素预渲染外阴影，消除快速滚动时的阴影延迟 */
+/* ---- 卡片性能优化(预渲染优先) ----
+   v12 重构：去掉 will-change/translateZ 强合成层滥用。
+   巨型容器(#post 高达数十 px)强制成独立合成层 + backdrop-filter,
+   滚动时浏览器要持续维护这个大层且反复采样 → 卡顿主因。
+   改为：
+   - content-visibility:auto 让长文/屏外卡片跳过布局与绘制(文章预渲染),
+     进入视口才渲染, 滚动时 GPU 只合成已缓存层
+   - 不再强制合成层, 改由浏览器按需层化; 阴影仍走 ::after 预渲染 */
 .recent-post-item,
 .card-widget,
 #post,
 #archive {
-  will-change: transform;
-  transform: translateZ(0);
-  contain: layout;
   position: relative;
+}
+/* 文章/归档长文预渲染: 屏外段落不布局不绘制, 滚入视口才渲染 */
+#post,
+#archive {
+  content-visibility: auto;
+  /* 用 auto + 合理估高占位滚动条, 实际高度由浏览器测量后回填
+     (内容渲染后再校准, 避免滚动条大幅跳动) */
+  contain-intrinsic-size: auto 3200px;
+  contain: layout style;
 }
 /* 阴影预渲染: ::after 承载外层光晕和落地投影，始终在 DOM 中 */
 .recent-post-item::after,
@@ -308,9 +320,7 @@ html[data-theme='dark'] #archive::after {
      "光晕边缘"(0 0 16-48px 渐变透明度的冷雾蓝/白色), 让卡片从
      透明渐变到不透明柔和过渡, 与背景自然融合 */
 .recent-post-item,
-.card-widget,
-#post,
-#archive {
+.card-widget {
   background: linear-gradient(
     155deg,
     rgba(255, 255, 255, .10) 0%,
@@ -321,6 +331,27 @@ html[data-theme='dark'] #archive::after {
   backdrop-filter: blur(12px);
   border: 0 !important;
   /* box-shadow 只保留 inset 高光, 外阴影由 ::after 伪元素预渲染 */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .48),
+    inset 0 -1px 0 rgba(255, 255, 255, .22) !important;
+}
+
+/* 文章/归档长文容器：静态预渲染磨砂(替代实时 backdrop)
+   v12 性能：#post 高数千px, 滚动时其 backdrop-filter 每帧重采样
+   背后光斑(全文最长最贵)。去除 blur, 用「已模糊光斑平均色」的
+   静态多层渐变模拟磨砂 → 可一次性预渲染, 滚动零重绘。 */
+#post,
+#archive {
+  background:
+    radial-gradient(1200px 900px at 20% 6%, rgba(140, 175, 235, .10), transparent 70%),
+    radial-gradient(1000px 800px at 88% 96%, rgba(120, 165, 220, .08), transparent 70%),
+    linear-gradient(
+      155deg,
+      rgba(255, 255, 255, .16) 0%,
+      rgba(255, 255, 255, .07) 50%,
+      rgba(255, 255, 255, .13) 100%
+    ) !important;
+  border: 0 !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .48),
     inset 0 -1px 0 rgba(255, 255, 255, .22) !important;
@@ -344,9 +375,7 @@ html[data-theme='dark'] #archive::after {
 /* ---- dark：真实磨砂玻璃 ----
    [v10 羽化边缘] 同 light: 替代硬 1px border, 用多层冷光晕 box-shadow 形成柔边 */
 html[data-theme='dark'] .recent-post-item,
-html[data-theme='dark'] .card-widget,
-html[data-theme='dark'] #post,
-html[data-theme='dark'] #archive {
+html[data-theme='dark'] .card-widget {
   background: linear-gradient(
     160deg,
     rgba(30, 36, 54, .16) 0%,
@@ -357,6 +386,22 @@ html[data-theme='dark'] #archive {
   backdrop-filter: blur(12px);
   border: 0 !important;
   /* box-shadow 只保留 inset 高光, 外阴影由 ::after 伪元素预渲染 */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important;
+}
+
+/* dark 文章/归档长文容器：静态预渲染磨砂(去实时 backdrop) */
+html[data-theme='dark'] #post,
+html[data-theme='dark'] #archive {
+  background:
+    radial-gradient(1200px 900px at 20% 6%, rgba(90, 135, 240, .10), transparent 70%),
+    radial-gradient(1000px 800px at 88% 96%, rgba(50, 90, 180, .08), transparent 70%),
+    linear-gradient(
+      160deg,
+      rgba(30, 36, 54, .20) 0%,
+      rgba(14, 18, 32, .16) 52%,
+      rgba(24, 30, 46, .20) 100%
+    ) !important;
+  border: 0 !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important;
 }
 
@@ -383,9 +428,7 @@ html[data-theme='dark'] #archive::before {
     display: block;
   }
   .recent-post-item,
-  .card-widget,
-  #post,
-  #archive {
+  .card-widget {
     background: linear-gradient(
       155deg,
       rgba(255, 255, 255, .10) 0%,
@@ -400,6 +443,35 @@ html[data-theme='dark'] #archive::before {
       0 0 18px rgba(140, 180, 235, .10),
       0 8px 20px -8px rgba(48, 66, 104, .18),
       inset 0 1px 0 rgba(255, 255, 255, .40) !important;
+  }
+  /* 文章/归档长文容器：移动端同样静态预渲染(去 backdrop) */
+  #post,
+  #archive {
+    background:
+      radial-gradient(1000px 760px at 20% 6%, rgba(140, 175, 235, .12), transparent 70%),
+      linear-gradient(
+        155deg,
+        rgba(255, 255, 255, .14) 0%,
+        rgba(255, 255, 255, .07) 50%,
+        rgba(255, 255, 255, .12) 100%
+      ) !important;
+    border: 0 !important;
+    box-shadow:
+      0 0 0 1px rgba(180, 200, 235, .18),
+      inset 0 1px 0 rgba(255, 255, 255, .40) !important;
+  }
+  html[data-theme='dark'] #post,
+  html[data-theme='dark'] #archive {
+    background:
+      radial-gradient(1000px 760px at 20% 6%, rgba(90, 135, 240, .12), transparent 70%),
+      linear-gradient(
+        160deg,
+        rgba(30, 36, 54, .20) 0%,
+        rgba(14, 18, 32, .18) 52%,
+        rgba(24, 30, 46, .20) 100%
+      ) !important;
+    border: 0 !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18) !important;
   }
   .recent-post-item::before,
   .card-widget::before,
@@ -821,11 +893,5 @@ html[data-theme='dark'] .relatedPosts-list a.pagination-related:hover {
   transform: translateY(-2px);
 }
 
-/* 快速滚动性能降级: 这几个卡也参与 4px 低保真模糊 */
-body.fast-scrolling #pagination.pagination-post a.pagination-related,
-body.fast-scrolling .relatedPosts-list a.pagination-related {
-  -webkit-backdrop-filter: blur(4px) !important;
-  backdrop-filter: blur(4px) !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
+/* 快速滚动性能降级: 前/后篇+相关推荐卡不再参与 backdrop 切换(同卡片,
+   滚动时来回切 12px→4px 会触发重采样卡顿)。保持稳定玻璃即可。 */
