@@ -1,17 +1,19 @@
 /* ============================================================
-   Code blocks: 首页卡片玻璃风 + Fira Code + GitHub 语法配色
-   (custom inject, 需站点 _config.yml highlight.hljs: true)
+   Code blocks: 首页卡片玻璃风 + Fira Code + Shiki(GitHub Light)
+   (custom inject, 由 hexo-shiki-plugin-butterfly 提供语法配色)
    ------------------------------------------------------------
-   1) 代码字体: 自托管 Fira Code (OFL), Regular 主用 / Bold 备
-      <strong>/强调; 仅作用于代码块内容, 不污染全站文本。
-   2) 面板: 去除纯色底, 改为首页卡片同款磨砂玻璃
-      (半透明渐变 + backdrop-filter blur, 透出下方光斑),
-      light=白玻璃 / dark=深海军蓝玻璃。
-   3) 语言标识: 统一映射显示 "C#" (cs/csharp/c# 归一, main.js),
-      左上角胶囊徽章, 不再全大写。
-   4) 高亮配色: 严格遵循 GitHub Primer 官方语法色板
-      (light/dark 两套, 与 GitHub markdown 渲染一致)。
-   注: 代码块多, 已接入 .fast-scrolling 4px 模糊降级防滚动掉帧。
+   背景说明:
+   - 语法配色由 Shiki 插件输出(内联 span color, github-light 主题),
+     本文件不再声明任何 .hljs-* 规则。
+   - 原「深海军蓝渐变黑底」已废弃, 不再作用于 .shiki;
+     代码块背景由本站玻璃拟态接管, 明暗均保持浅色半透明玻璃,
+     以承载 github-light 的深色文字, 彻底去掉黑底。
+   保留项:
+   1) 代码字体: 自托管 Fira Code (Regular 主用 / Bold 备).
+   2) 面板: 首页卡片同款磨砂玻璃(半透明渐变 + backdrop-filter blur),
+      明暗两套均为浅色玻璃, 不再出现纯黑/深蓝底.
+   3) 语言标识: 左上角胶囊徽章, cs/csharp/c# 归一显示 "C#" (见 JS 注入).
+   4) 工具条: 融入玻璃, 复制/折叠按钮保留 Shiki 插件(beautify)实现.
    ============================================================ */
 
 /* ---------- Fira Code 字体注册 (OFL-1.1) ---------- */
@@ -31,99 +33,102 @@
   font-display: swap;
 }
 
-/* 代码块内容统一 Fira Code Regular(覆盖主题 $code-font-family !important) */
-.container figure.highlight pre,
-.container figure.highlight code,
-.container figure.highlight .highlight-tools .code-lang {
+/* 代码块内容统一 Fira Code Regular(覆盖主题/插件默认等宽字体) */
+figure.shiki .shiki-tools,
+figure.shiki .codeblock pre,
+figure.shiki .codeblock code {
   font-family: 'Fira Code', ui-monospace, SFMono-Regular, 'Cascadia Code',
     Consolas, 'Courier New', monospace !important;
   font-weight: 400;
 }
 
 /* ---------- 面板: 首页卡片同款磨砂玻璃 ---------- */
-.container figure.highlight {
+/* 覆盖 Shiki 插件的 solid 背景(--hl-bg), 改用玻璃拟态 */
+figure.shiki {
+  margin: 0 0 24px !important;
   position: relative;
   overflow: hidden;
   border-radius: 10px !important;
-  /* light: 白玻璃(冷雾底上透出光斑) */
+  /* light: 白玻璃(浅底承载 github-light 深色文字) */
   background: linear-gradient(
     155deg,
-    rgba(255, 255, 255, .58) 0%,
-    rgba(255, 255, 255, .30) 55%,
-    rgba(255, 255, 255, .46) 100%
+    rgba(255, 255, 255, .62) 0%,
+    rgba(255, 255, 255, .40) 55%,
+    rgba(255, 255, 255, .52) 100%
+  ) !important;
+  /* 覆盖插件 --hl-color 的浅灰, 用 GitHub 深色正文同款, 保证玻璃浅底上可读 */
+  color: #24292f;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, .34),
+    inset 0 1px 0 rgba(255, 255, 255, .58),
+    inset 0 -1px 0 rgba(255, 255, 255, .18),
+    0 12px 28px -18px rgba(48, 66, 104, .35);
+}
+
+/* dark: 仍为浅色玻璃(并非黑底) —— 代码块保持浅色以适配 github-light 文字 */
+html[data-theme='dark'] figure.shiki {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, .30) 0%,
+    rgba(244, 248, 252, .34) 55%,
+    rgba(255, 255, 255, .30) 100%
   ) !important;
   color: #24292f;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, .30),
-    inset 0 1px 0 rgba(255, 255, 255, .55),
-    inset 0 -1px 0 rgba(255, 255, 255, .18),
-    0 12px 28px -18px rgba(48, 66, 104, .35);
+    0 0 0 1px rgba(255, 255, 255, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    inset 0 -1px 0 rgba(255, 255, 255, .05),
+    0 16px 34px -22px rgba(0, 0, 0, .55);
 }
 
-/* dark: 深海军蓝玻璃 */
-html[data-theme='dark'] .container figure.highlight {
-  background: linear-gradient(
-    160deg,
-    rgba(34, 44, 74, .42) 0%,
-    rgba(16, 22, 38, .40) 55%,
-    rgba(24, 31, 52, .44) 100%
-  ) !important;
-  color: #e6edf3;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  box-shadow:
-    0 0 0 1px rgba(150, 180, 240, .14),
-    inset 0 1px 0 rgba(255, 255, 255, .14),
-    inset 0 -1px 0 rgba(255, 255, 255, .03),
-    0 16px 34px -22px rgba(0, 0, 0, .65);
-}
-
-.container figure.highlight ::selection {
+figure.shiki ::selection {
   background: rgba(110, 160, 255, .32);
 }
 
-html[data-theme='dark'] .container figure.highlight ::selection {
+html[data-theme='dark'] figure.shiki ::selection {
   background: rgba(130, 175, 255, .30);
 }
 
-/* mac 红绿灯未启用(macStyle:false), 隐藏防占位 */
-.container figure.highlight .highlight-tools .macStyle {
-  display: none !important;
-}
-
 /* ---------- 工具条(融入玻璃) ---------- */
-.container figure.highlight .highlight-tools {
-  height: 34px;
+figure.shiki .shiki-tools {
+  position: relative;
   min-height: 34px;
-  padding: 0 10px 0 4px;
+  height: 34px;
+  padding: 0 10px 0 10px !important;
   /* light 工具条=白玻璃上叠一层极浅冷雾 */
-  background: linear-gradient(180deg, rgba(255, 255, 255, .42), rgba(255, 255, 255, .20)) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .50), rgba(255, 255, 255, .26)) !important;
   color: #57606a;
   border-bottom: 1px solid rgba(120, 150, 200, .16);
 }
 
-html[data-theme='dark'] .container figure.highlight .highlight-tools {
-  background: linear-gradient(180deg, rgba(40, 52, 86, .40), rgba(24, 31, 52, .28)) !important;
-  color: #8b949e;
+html[data-theme='dark'] figure.shiki .shiki-tools {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(244, 248, 252, .16)) !important;
+  color: #57606a;
   border-bottom: 1px solid rgba(150, 180, 240, .12);
 }
 
-.container figure.highlight .highlight-tools i {
-  color: inherit;
+/* 遮蔽 Shiki 插件的 Mac 三色圆点(macStyle 未启用) */
+figure.shiki .shiki-tools:after {
+  display: none !important;
 }
 
 /* ---------- 语言标识: 左上角胶囊徽章(统一显示 C#) ---------- */
-.container figure.highlight .highlight-tools .code-lang {
-  order: -2;                 /* 最左, 真正"左上角" */
+figure.shiki .shiki-tools .code-lang {
+  order: -2;
   flex: 0 1 auto;
+  position: static !important;   /* 覆盖插件绝对定位 left:75px */
+  left: auto !important;
   margin: 3px 0 3px 6px;
   padding: 1px 10px 2px;
   border-radius: 999px;
   background: rgba(5, 80, 174, .10);
-  text-transform: none;      /* 不再全大写 */
-  font-size: 12px;
+  text-transform: none;          /* 不再全大写 */
+  font-size: 12px !important;
+  font-weight: 400 !important;
   line-height: 1.6;
   letter-spacing: .03em;
   color: #0969da;
@@ -131,23 +136,23 @@ html[data-theme='dark'] .container figure.highlight .highlight-tools {
   -webkit-user-select: none;
 }
 
-.container figure.highlight .highlight-tools .code-lang:empty {
+figure.shiki .shiki-tools .code-lang:empty {
   display: none;
 }
 
-html[data-theme='dark'] .container figure.highlight .highlight-tools .code-lang {
+html[data-theme='dark'] figure.shiki .shiki-tools .code-lang {
   background: rgba(121, 192, 255, .14);
   color: #79c0ff;
 }
 
-/* 语言徽章左侧贴边、其余工具靠右 */
-.container figure.highlight .highlight-tools .code-lang {
+/* 语言徽章左侧贴边 */
+figure.shiki .shiki-tools .code-lang {
   margin-right: auto;
 }
 
 /* 折叠/复制图标 */
-.container figure.highlight .highlight-tools .expand,
-.container figure.highlight .highlight-tools .copy-button {
+figure.shiki .shiki-tools .expand,
+figure.shiki .shiki-tools .copy-button {
   width: 26px;
   height: 26px;
   margin: 2px;
@@ -160,183 +165,64 @@ html[data-theme='dark'] .container figure.highlight .highlight-tools .code-lang 
   transition: background .2s, color .2s;
 }
 
-.container figure.highlight .highlight-tools .expand:hover,
-.container figure.highlight .highlight-tools .copy-button:hover {
+figure.shiki .shiki-tools .expand:hover,
+figure.shiki .shiki-tools .copy-button:hover {
   background: rgba(110, 155, 255, .16);
   color: #0969da;
 }
 
-html[data-theme='dark'] .container figure.highlight .highlight-tools .expand:hover,
-html[data-theme='dark'] .container figure.highlight .highlight-tools .copy-button:hover {
+html[data-theme='dark'] figure.shiki .shiki-tools .expand:hover,
+html[data-theme='dark'] figure.shiki .shiki-tools .copy-button:hover {
   color: #79c0ff;
 }
 
 /* ---------- 行号区(半透明, 区分于玻璃面板) ---------- */
-.container figure.highlight .gutter pre {
+figure.shiki .gutter pre {
   background: rgba(120, 155, 210, .10) !important;
   color: #6a7686 !important;
-  padding-right: 14px;
-  padding-left: 12px;
+  padding-right: 14px !important;
+  padding-left: 12px !important;
+  user-select: none !important;
 }
 
-html[data-theme='dark'] .container figure.highlight .gutter pre {
+html[data-theme='dark'] figure.shiki .gutter pre {
   background: rgba(120, 160, 255, .08) !important;
   color: #64748b !important;
 }
 
-.container figure.highlight .code pre {
-  padding-right: 18px;
-  padding-left: 18px;
+figure.shiki .code pre {
+  padding: 8px 18px !important;
+  background: none !important;
+}
+
+/* 代码区背景置透明, 由 figure 玻璃底透出 */
+figure.shiki .code pre.shiki {
+  background: none !important;
+}
+
+figure.shiki .code pre code {
+  background: none !important;
 }
 
 /* 行 hover 反馈 */
-.container figure.highlight table tbody tr:hover .code pre,
-.container figure.highlight table tbody tr:hover .gutter pre {
-  background-color: rgba(110, 155, 255, .07);
+figure.shiki .codeblock div:hover .code pre {
+  background-color: rgba(110, 155, 255, .06) !important;
 }
 
-html[data-theme='dark'] .container figure.highlight table tbody tr:hover .code pre,
-html[data-theme='dark'] .container figure.highlight table tbody tr:hover .gutter pre {
-  background-color: rgba(130, 170, 255, .06);
+html[data-theme='dark'] figure.shiki .codeblock div:hover .code pre {
+  background-color: rgba(130, 170, 255, .05) !important;
 }
 
 /* 快速滚动降级: 4px 低保真模糊 */
-body.fast-scrolling .container figure.highlight {
+body.fast-scrolling figure.shiki {
   -webkit-backdrop-filter: blur(4px) !important;
   backdrop-filter: blur(4px) !important;
   box-shadow: none !important;
 }
 
-/* ============================================================
-   GitHub Primer 官方语法配色 (github.com markdown 同款语义)
-   light / dark 两套, 严格对齐:
-   light: comment #6e7781 · keyword #cf222e · string #0a3069
-          const/number #0550ae · function/title #8250df
-          variable #953800 · tag #116329
-   dark : comment #8b949e · keyword #ff7b72 · string #a5d6ff
-          const/number #79c0ff · function/title #d2a8ff
-          variable #ffa657 · tag #7ee787
-   ============================================================ */
-
-/* ---- light: GitHub Light ---- */
-.container figure.highlight .hljs-comment,
-.container figure.highlight .hljs-quote {
-  color: #6e7781;
-  font-style: italic;
-}
-.container figure.highlight .hljs-keyword,
-.container figure.highlight .hljs-selector-tag,
-.container figure.highlight .hljs-doctag,
-.container figure.highlight .hljs-meta .hljs-keyword,
-.container figure.highlight .hljs-selector-id,
-.container figure.highlight .hljs-selector-class,
-.container figure.highlight .hljs-selector-pseudo {
-  color: #cf222e;
-}
-.container figure.highlight .hljs-literal,
-.container figure.highlight .hljs-number,
-.container figure.highlight .hljs-symbol,
-.container figure.highlight .hljs-bullet,
-.container figure.highlight .hljs-meta {
-  color: #0550ae;
-}
-.container figure.highlight .hljs-string,
-.container figure.highlight .hljs-regexp,
-.container figure.highlight .hljs-template-string {
-  color: #0a3069;
-}
-.container figure.highlight .hljs-title,
-.container figure.highlight .hljs-title.function_,
-.container figure.highlight .hljs-title.class_,
-.container figure.highlight .hljs-section,
-.container figure.highlight .hljs-attribute {
-  color: #8250df;
-}
-.container figure.highlight .hljs-built_in,
-.container figure.highlight .hljs-type {
-  color: #0550ae;
-}
-.container figure.highlight .hljs-variable,
-.container figure.highlight .hljs-template-variable,
-.container figure.highlight .hljs-params {
-  color: #953800;
-}
-.container figure.highlight .hljs-tag,
-.container figure.highlight .hljs-name,
-.container figure.highlight .hljs-addition {
-  color: #116329;
-}
-.container figure.highlight .hljs-deletion {
-  color: #82071e;
-}
-.container figure.highlight .hljs-emphasis {
-  font-style: italic;
-}
-.container figure.highlight .hljs-strong {
-  font-weight: 700;
-}
-
-/* ---- dark: GitHub Dark ---- */
-html[data-theme='dark'] .container figure.highlight .hljs-comment,
-html[data-theme='dark'] .container figure.highlight .hljs-quote {
-  color: #8b949e;
-  font-style: italic;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-keyword,
-html[data-theme='dark'] .container figure.highlight .hljs-selector-tag,
-html[data-theme='dark'] .container figure.highlight .hljs-doctag,
-html[data-theme='dark'] .container figure.highlight .hljs-meta .hljs-keyword,
-html[data-theme='dark'] .container figure.highlight .hljs-selector-id,
-html[data-theme='dark'] .container figure.highlight .hljs-selector-class,
-html[data-theme='dark'] .container figure.highlight .hljs-selector-pseudo {
-  color: #ff7b72;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-literal,
-html[data-theme='dark'] .container figure.highlight .hljs-number,
-html[data-theme='dark'] .container figure.highlight .hljs-symbol,
-html[data-theme='dark'] .container figure.highlight .hljs-bullet,
-html[data-theme='dark'] .container figure.highlight .hljs-meta {
-  color: #79c0ff;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-string,
-html[data-theme='dark'] .container figure.highlight .hljs-regexp,
-html[data-theme='dark'] .container figure.highlight .hljs-template-string {
-  color: #a5d6ff;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-title,
-html[data-theme='dark'] .container figure.highlight .hljs-title.function_,
-html[data-theme='dark'] .container figure.highlight .hljs-title.class_,
-html[data-theme='dark'] .container figure.highlight .hljs-section,
-html[data-theme='dark'] .container figure.highlight .hljs-attribute {
-  color: #d2a8ff;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-built_in,
-html[data-theme='dark'] .container figure.highlight .hljs-type {
-  color: #79c0ff;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-variable,
-html[data-theme='dark'] .container figure.highlight .hljs-template-variable,
-html[data-theme='dark'] .container figure.highlight .hljs-params {
-  color: #ffa657;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-tag,
-html[data-theme='dark'] .container figure.highlight .hljs-name,
-html[data-theme='dark'] .container figure.highlight .hljs-addition {
-  color: #7ee787;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-deletion {
-  color: #ffa198;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-emphasis {
-  font-style: italic;
-}
-html[data-theme='dark'] .container figure.highlight .hljs-strong {
-  font-weight: 700;
-}
-
 /* 移动端: 圆角略收 */
 @media (max-width: 768px) {
-  .container figure.highlight {
+  figure.shiki {
     border-radius: 8px !important;
   }
 }

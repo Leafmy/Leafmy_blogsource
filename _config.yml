@@ -47,18 +47,42 @@ render_drafts: false
 post_asset_folder: false
 relative_link: false
 future: true
-syntax_highlighter: highlight.js
+# 关闭原生高亮, 改用 hexo-shiki-plugin-butterfly (Shiki 高亮, 内置 github-light/dark)
+# Hexo 7.0+ 需将 syntax_highlighter 置空, 避免与 Shiki 冲突
+syntax_highlighter: ''
 highlight:
+  enable: false
   line_number: true
   auto_detect: false
   tab_replace: ''
   wrap: true
-  # 开启服务端 token 高亮(生成 .hljs-* 类); 此前 false 导致代码块无任何语法配色
   hljs: true
 prismjs:
+  enable: false
   preprocess: true
   line_number: true
   tab_replace: ''
+
+# --- Hexo Shiki Plugin (hexo-shiki-plugin-butterfly) 配置 ---
+shiki:
+  # theme: github-light 精确 GitHub 风格 (浅色); 若需深色可改 github-dark
+  theme: github-light
+  line_number: true          # 显示行号
+  beautify: true             # 启用代码块工具条(复制/语言/折叠), 依赖 font-awesome (Butterfly 已内置)
+  colorized_brackets: true   # 嵌套括号着色 (@shikijs/colorized-brackets)
+  highlight_copy: true       # 显示复制按钮
+  highlight_lang: true       # 显示代码语言
+  highlight_height_limit: 360 # 代码块最大高度(px), 超出显示折叠按钮
+  is_highlight_shrink: false # false=默认展开
+  # 本地化 CSS/JS, 避免依赖 jsdelivr CDN (博客可离线/自托管)
+  css_cdn: /custom/effects/shiki-codeblock.css
+  js_cdn: /custom/effects/shiki-codeblock.js
+  skip_languages:            # 不应由 shiki 高亮的语言(交由 Butterfly 处理)
+    - mermaid
+  copy:                      # 复制提示文案
+    success: '复制成功'
+    error: '复制失败'
+    no_support: '浏览器不支持'
 
 # Home page setting
 # path: Root path for your blogs index page. (default = '')
