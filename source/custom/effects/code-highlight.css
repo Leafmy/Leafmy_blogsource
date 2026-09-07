@@ -269,6 +269,101 @@ html[data-theme='dark'] figure.shiki .codeblock div:hover .code pre {
   background-color: rgba(130, 170, 255, .04) !important;
 }
 
+/* ============================================================
+   裸代码块 / 行内代码 —— 与黑白模式卡片同款磨砂玻璃 (v13)
+   ------------------------------------------------------------
+   问题: 部分文章里的代码没写语言标识, 不会走 Shiki 高亮, 输出为
+   裸 <pre><code> / 行内 <code>, 落在主题默认的 .container code
+   背景上 —— dark 模式被强设 #2c2c2c / pre>code lighten(#121212,2)
+   深黑块, 造成截图里"代码后黑色奇怪背景"。
+
+   解决: 让所有代码(无论是否高亮成块)都用卡片同款磨砂玻璃:
+   - 成块 裸 pre>code → 卡片同款玻璃卡(圆角 + 浅白/深黑玻璃 + blur)
+   - 行内 code      → 淡玻璃胶囊底, 去主题深黑底
+   ============================================================ */
+
+/* ---------- 成块裸代码: 卡片同款磨砂玻璃卡 ---------- */
+/* 只作用于文章正文里【没有走 Shiki 高亮】的整块 <pre><code>
+   (那些没写语言标识、输出为裸 <pre><code> 的代码段)。
+   关键: 高亮块的 code 在 <pre class="shiki ..."> 内, 裸块的 code
+   在无 class 的 <pre> 内 —— 用 pre:not(.shiki) 精准区分,
+   绝不误伤已高亮的 figure.shiki 代码块。 */
+#post .post-content pre:not(.shiki) > code {
+  /* 消除主题/插件写死的深黑背景(需 !important 压过 darkmode .container code) */
+  background: none !important;
+  color: var(--shiki-color-text);
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, 'Cascadia Code',
+    Consolas, 'Courier New', monospace !important;
+  font-weight: 400;
+  font-size: .88em;
+  line-height: 1.7;
+  display: block;
+  padding: 14px 18px;
+  border-radius: 10px;
+  position: relative;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  /* light: 卡片同款白玻璃(与 .recent-post-item 一致的透明底 + 磨砂) */
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, .14) 0%,
+    rgba(255, 255, 255, .06) 50%,
+    rgba(255, 255, 255, .10) 100%
+  ) !important;
+  border: 0 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .48),
+    inset 0 -1px 0 rgba(255, 255, 255, .22),
+    0 12px 28px -18px rgba(48, 66, 104, .30) !important;
+}
+
+/* dark: 黑玻璃卡(与卡片同款暗色磨砂) */
+html[data-theme='dark'] #post .post-content pre:not(.shiki) > code {
+  background: linear-gradient(
+    160deg,
+    rgba(30, 36, 54, .18) 0%,
+    rgba(16, 20, 34, .14) 52%,
+    rgba(24, 30, 46, .18) 100%
+  ) !important;
+  color: var(--shiki-color-text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    inset 0 -1px 0 rgba(255, 255, 255, .04),
+    0 16px 34px -20px rgba(0, 0, 0, .60) !important;
+}
+
+/* 裸 pre 本身去掉主题默认的深黑底/滚动条底色, 交给 code 卡片 */
+#post .post-content pre:not(.shiki) {
+  background: none !important;
+  border: 0 !important;
+  margin: 0 0 24px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+/* ---------- 行内代码: 淡玻璃胶囊底 ---------- */
+/* 只作用于正文里【直接父级非 pre】的「行内」<code>(小代码片段),
+   去主题深黑底。用父子选择器 :not(pre) > code 精准命中——
+   高亮块 code 直接父级是 pre.shiki、裸块 code 直接父级是 pre,
+   都会被排除; 只有 p/span 里的行内 code 命中。 */
+#post .post-content :not(pre) > code {
+  color: var(--shiki-color-text);
+  background: rgba(110, 155, 255, .10) !important;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: .90em;
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, 'Cascadia Code',
+    Consolas, 'Courier New', monospace !important;
+}
+
+html[data-theme='dark'] #post .post-content :not(pre) > code {
+  background: rgba(130, 170, 255, .12) !important;
+  color: var(--shiki-color-text);
+}
+
 /* 快速滚动降级: 已去 backdrop-filter, 代码块为静态预渲染, 无需降级 */
 
 /* 移动端: 圆角略收 */
