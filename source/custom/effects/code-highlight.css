@@ -115,39 +115,46 @@ figure.shiki {
   position: relative;
   overflow: hidden;
   border-radius: 10px !important;
-  /* light: 白玻璃(浅底承载 github-light 深色文字)
-     v12 性能: 背景 alpha 已很高(.74/.52/.64), 本就几乎不透,
-     故去掉 backdrop-filter(实时模糊重算是滚动卡顿源之一) →
-     玻璃感由静态渐变+高光+阴影承担, 可预渲染。 */
+  /* light: 卡片同款通透磨砂玻璃(与 .recent-post-item 一致)
+     v13: 用户要求代码栏也用卡片同款真毛玻璃 → 重新启用
+     backdrop-filter, 用低透明玻璃渐变透出背后 .bg-liquid 光斑。
+     代码块居中视口内少量元素, 非滚动重算最大头(长文容器才是),
+     用 fast-scrolling(仅 hero/footer)不冲突; 文字可读性靠
+     alpha 略高于首页卡片(.38/.26/.32 平衡透光与清晰)。 */
   background: linear-gradient(
     155deg,
-    rgba(255, 255, 255, .78) 0%,
-    rgba(255, 255, 255, .60) 55%,
-    rgba(255, 255, 255, .70) 100%
+    rgba(255, 255, 255, .40) 0%,
+    rgba(255, 255, 255, .26) 50%,
+    rgba(255, 255, 255, .33) 100%
   ) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   color: var(--shiki-color-text);
+  /* 光晕边(替代硬 1px border) + inset 高光/厚度 + 柔和外阴影 */
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, .38),
-    inset 0 1px 0 rgba(255, 255, 255, .60),
-    inset 0 -1px 0 rgba(255, 255, 255, .18),
-    0 12px 28px -18px rgba(48, 66, 104, .30);
+    0 0 0 1px rgba(255, 255, 255, .40),
+    inset 0 1px 0 rgba(255, 255, 255, .55),
+    inset 0 -1px 0 rgba(255, 255, 255, .20),
+    0 12px 28px -18px rgba(48, 66, 104, .28) !important;
 }
 
-/* dark: 深黑玻璃(GitHub Dark 黑卡) —— 用户要求深色模式代码栏为黑底
-   v12 性能: 同理去 backdrop-filter, 深色 alpha 已 .94/.90/.92 近实 */
+/* dark: 卡片同款通透黑玻璃(与卡片暗色磨砂一致) —— 用户要求深色代码栏
+   用卡片同款毛玻璃而非近实黑卡 */
 html[data-theme='dark'] figure.shiki {
   background: linear-gradient(
     160deg,
-    rgba(36, 41, 46, .96) 0%,
-    rgba(30, 34, 40, .93) 55%,
-    rgba(24, 28, 33, .94) 100%
+    rgba(30, 36, 54, .34) 0%,
+    rgba(18, 22, 36, .28) 52%,
+    rgba(26, 32, 48, .32) 100%
   ) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   color: var(--shiki-color-text);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, .10),
-    inset 0 1px 0 rgba(255, 255, 255, .08),
-    inset 0 -1px 0 rgba(255, 255, 255, .02),
-    0 16px 34px -20px rgba(0, 0, 0, .80);
+    0 0 0 1px rgba(150, 180, 240, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .16),
+    inset 0 -1px 0 rgba(255, 255, 255, .04),
+    0 16px 34px -20px rgba(0, 0, 0, .60) !important;
 }
 
 figure.shiki ::selection {
@@ -164,14 +171,14 @@ figure.shiki .shiki-tools {
   min-height: 34px;
   height: 34px;
   padding: 0 10px 0 10px !important;
-  /* light 工具条=白玻璃上叠一层极浅冷雾 */
-  background: linear-gradient(180deg, rgba(255, 255, 255, .56), rgba(255, 255, 255, .30)) !important;
+  /* light 工具条=与卡片同款通透玻璃(略深一档区分于代码区) */
+  background: linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .16)) !important;
   color: #57606a;
   border-bottom: 1px solid rgba(120, 150, 200, .18);
 }
 
 html[data-theme='dark'] figure.shiki .shiki-tools {
-  background: linear-gradient(180deg, rgba(53, 60, 68, .80), rgba(40, 45, 52, .70)) !important;
+  background: linear-gradient(180deg, rgba(40, 46, 66, .40), rgba(24, 30, 46, .30)) !important;
   color: #adbac7;
   border-bottom: 1px solid rgba(255, 255, 255, .06);
 }
