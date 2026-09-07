@@ -1,0 +1,398 @@
+/* ============================================================
+   文章翻译按钮
+   - 与搜索栏同款毛玻璃样式
+   - 位于文章标题附近
+   ============================================================ */
+
+/* 翻译按钮容器 */
+.translate-btn-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  vertical-align: middle;
+}
+
+/* 翻译按钮 - 与搜索栏同款毛玻璃胶囊 */
+.translate-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .60);
+  background: linear-gradient(150deg, rgba(246, 248, 252, .50), rgba(232, 238, 248, .40));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .6),
+    0 2px 8px rgba(40, 54, 88, .08);
+  color: rgba(70, 84, 116, .85);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  justify-content: center;
+  overflow: hidden;
+  /* 宽度过渡：默认态 ↔ 展开态 */
+  transition: padding 0.4s cubic-bezier(.34, 1.2, .64, 1),
+              background 0.2s ease,
+              color 0.2s ease;
+}
+
+.translate-btn:hover {
+  background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
+  color: var(--theme-color, #49b1f5);
+}
+
+/* 暗色模式 */
+html[data-theme='dark'] .translate-btn {
+  color: rgba(255, 255, 255, .88);
+  background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52));
+  border-color: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 8px rgba(0, 0, 0, .3);
+}
+
+html[data-theme='dark'] .translate-btn:hover {
+  background: linear-gradient(150deg, rgba(44, 52, 74, .58), rgba(26, 32, 46, .55));
+  border-color: rgba(255, 255, 255, .16);
+  color: var(--theme-color, #49b1f5);
+}
+
+/* 翻译图标 */
+.translate-btn i {
+  font-size: 14px;
+}
+
+/* 翻译文字过渡 */
+.translate-text {
+  transition: opacity 0.1s ease;
+}
+
+/* ==================== 展开态 ==================== */
+.translate-btn.expanded {
+  padding: 6px 20px;
+}
+
+/* ==================== Loading 态：跑马灯 + 流光字 ==================== */
+.translate-btn.loading {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 跑马灯边框（展开前先跑） */
+.translate-btn.loading::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  background: conic-gradient(
+    from var(--flow-angle, 0deg),
+    rgba(30, 58, 138, 0) 0%,
+    rgba(37, 99, 235, .95) 18%,
+    rgba(124, 58, 237, .95) 32%,
+    rgba(8, 145, 178, .92) 50%,
+    rgba(234, 88, 12, .92) 68%,
+    rgba(37, 99, 235, .95) 82%,
+    rgba(30, 58, 138, 0) 100%
+  );
+  z-index: -1;
+  padding: 2px;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: translate-flow-rotate 4s linear infinite,
+             translate-glow-fade 2s ease-in-out infinite;
+  opacity: 0;
+}
+
+@keyframes translate-flow-rotate {
+  to { --flow-angle: 360deg; }
+}
+
+@keyframes translate-glow-fade {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@property --flow-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* 流光字 */
+.translate-btn.loading .translate-text {
+  background: linear-gradient(
+    90deg,
+    #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: translate-text-flow 4s linear infinite,
+             translate-text-fade 2s ease-in-out infinite;
+}
+
+@keyframes translate-text-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes translate-text-fade {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* 翻译中状态文字 */
+.translate-status {
+  font-size: 12px;
+  color: rgba(90, 100, 130, .7);
+}
+
+/* 翻译后的内容样式 */
+.translated-content::before {
+  content: 'AI 翻译';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 11px;
+  color: rgba(120, 170, 255, .8);
+  background: rgba(120, 170, 255, .1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ==================== 设置齿轮按钮 ==================== */
+.translate-settings-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-left: 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .60);
+  background: linear-gradient(150deg, rgba(246, 248, 252, .50), rgba(232, 238, 248, .40));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .6),
+    0 2px 8px rgba(40, 54, 88, .08);
+  color: rgba(70, 84, 116, .85);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.translate-settings-btn:hover {
+  background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
+  color: var(--theme-color, #49b1f5);
+  transform: rotate(30deg);
+}
+
+html[data-theme='dark'] .translate-settings-btn {
+  color: rgba(255, 255, 255, .88);
+  background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52));
+  border-color: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 8px rgba(0, 0, 0, .3);
+}
+
+html[data-theme='dark'] .translate-settings-btn:hover {
+  background: linear-gradient(150deg, rgba(44, 52, 74, .58), rgba(26, 32, 46, .55));
+  border-color: rgba(255, 255, 255, .16);
+}
+
+/* ==================== 设置弹窗遮罩 ==================== */
+.translate-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 20, 35, .45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.translate-modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.translate-modal {
+  width: min(420px, 90vw);
+  padding: 26px 26px 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, .55);
+  background: linear-gradient(160deg, rgba(250, 252, 255, .92), rgba(240, 246, 255, .88));
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .6),
+    0 12px 40px rgba(15, 25, 50, .18);
+  transform: translateY(12px) scale(.97);
+  transition: transform 0.3s cubic-bezier(.34, 1.2, .64, 1);
+}
+
+.translate-modal-overlay.show .translate-modal {
+  transform: translateY(0) scale(1);
+}
+
+html[data-theme='dark'] .translate-modal {
+  border-color: rgba(255, 255, 255, .14);
+  background: linear-gradient(160deg, rgba(38, 44, 62, .92), rgba(24, 30, 44, .90));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .06),
+    0 12px 40px rgba(0, 0, 0, .4);
+}
+
+.translate-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(50, 64, 92, .95);
+  margin-bottom: 8px;
+}
+
+html[data-theme='dark'] .translate-modal-title {
+  color: rgba(255, 255, 255, .92);
+}
+
+.translate-modal-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(90, 104, 130, .75);
+  margin-bottom: 16px;
+}
+
+html[data-theme='dark'] .translate-modal-desc {
+  color: rgba(210, 220, 235, .6);
+}
+
+.translate-key-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(120, 150, 200, .35);
+  background: rgba(255, 255, 255, .55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: rgba(40, 54, 82, .9);
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.translate-key-input:focus {
+  outline: none;
+  border-color: rgba(73, 177, 245, .8);
+  box-shadow: 0 0 0 3px rgba(73, 177, 245, .15);
+}
+
+html[data-theme='dark'] .translate-key-input {
+  border-color: rgba(120, 150, 200, .25);
+  background: rgba(20, 26, 40, .55);
+  color: rgba(235, 242, 250, .9);
+}
+
+.translate-modal-status {
+  min-height: 18px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(90, 104, 130, .7);
+}
+
+.translate-modal-status.ok {
+  color: #2e9e5b;
+}
+
+.translate-modal-status.err {
+  color: #d9534f;
+}
+
+html[data-theme='dark'] .translate-modal-status {
+  color: rgba(210, 220, 235, .7);
+}
+
+html[data-theme='dark'] .translate-modal-status.ok {
+  color: #5fd58a;
+}
+
+html[data-theme='dark'] .translate-modal-status.err {
+  color: #ff8a86;
+}
+
+.translate-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tm-btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 150, 200, .35);
+  background: rgba(255, 255, 255, .5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: rgba(60, 76, 104, .9);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.tm-btn:hover {
+  background: rgba(255, 255, 255, .7);
+  color: var(--theme-color, #49b1f5);
+}
+
+.tm-save {
+  background: linear-gradient(135deg, rgba(73, 177, 245, .9), rgba(59, 130, 246, .9));
+  border-color: transparent;
+  color: #fff;
+}
+
+.tm-save:hover {
+  background: linear-gradient(135deg, rgba(73, 177, 245, 1), rgba(59, 130, 246, 1));
+  color: #fff;
+}
+
+.tm-clear {
+  color: rgba(180, 70, 70, .85);
+  border-color: rgba(200, 100, 100, .3);
+}
+
+html[data-theme='dark'] .tm-btn {
+  background: rgba(30, 38, 54, .5);
+  border-color: rgba(120, 150, 200, .2);
+  color: rgba(230, 238, 248, .88);
+}
+
+html[data-theme='dark'] .tm-btn:hover {
+  background: rgba(40, 52, 72, .55);
+}
+
+html[data-theme='dark'] .tm-save {
+  background: linear-gradient(135deg, rgba(73, 177, 245, .95), rgba(59, 130, 246, .95));
+}
+
+html[data-theme='dark'] .tm-clear {
+  color: #ff8a86;
+  border-color: rgba(200, 100, 100, .25);
+}
