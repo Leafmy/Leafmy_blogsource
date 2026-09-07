@@ -37,3 +37,29 @@ html[data-theme='dark'] #card-toc .item-headline .toc-percentage {
 #card-toc .item-headline .toc-percentage:empty {
   display: none;
 }
+
+/* ============================================================
+   锚点跳转避让固定导航 (scroll-margin-top)
+   ------------------------------------------------------------
+   导航 fixed 于视口顶 12px、高 54px → 底边 66px；
+   给文章内锚点标题设 scroll-margin-top，让浏览器原生锚点滚动
+   (URL 带 # 直接访问 / 其它锚点跳转) 自动让出导航高度，
+   标题精准落位在导航下方。
+   注意: 主题 btf.scrollToDest 走 JS 手动 scrollTo，不经原生锚点，
+   故对 TOC 点击的场景由 anchor-offset.js patch 处理，此处兜
+   原生/第三方锚点与带哈希直访。
+   ============================================================ */
+#article-container h1[id],
+#article-container h2[id],
+#article-container h3[id],
+#article-container h4[id],
+#article-container h5[id],
+#article-container h6[id],
+.post-content h1[id],
+.post-content h2[id],
+.post-content h3[id],
+.post-content h4[id],
+.post-content h5[id],
+.post-content h6[id] {
+  scroll-margin-top: 74px;
+}

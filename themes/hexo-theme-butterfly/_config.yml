@@ -1107,6 +1107,7 @@ inject:
     - <script src="/custom/effects/force-glow.js"></script>
     - <script src="/custom/effects/tab-visibility.js"></script>
     - <script src="/custom/effects/scroll-perf.js"></script>
+    - <script src="/custom/effects/anchor-offset.js"></script>
     # --- widgets 卡片/挂件/页脚 ---
     - <script src="/custom/widgets/announce-hover.js"></script>
     - <script src="/custom/widgets/visit-card.js"></script>
