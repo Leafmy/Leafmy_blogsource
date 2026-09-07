@@ -250,16 +250,24 @@ html[data-theme='dark'] figure.shiki .shiki-tools .copy-button:hover {
 }
 
 /* ---------- 行号区(区分于卡片底) ---------- */
-figure.shiki .gutter pre {
+/* v14 对齐修复: 插件 shiki-codeblock.css 用 !important 把 .gutter pre
+   padding 压成 10px + 无 min-width, 数字右对齐被挤到代码块左缘(偏左)。
+   这里用更高特异 + !important 明确 gutter 内边距与最小宽度:
+   - padding 左右各 12px/14px, 数字不贴边;
+   - min-width 保证两位数行号有空间, 数字 text-align:right 与代码列对齐。 */
+#post .post-content figure.shiki .gutter pre {
   background: rgba(120, 155, 210, .10) !important;
   color: #6a7686 !important;
-  padding-right: 14px !important;
-  padding-left: 12px !important;
+  padding: 8px 14px 8px 12px !important;
+  min-width: 34px !important;
+  text-align: right !important;
   user-select: none !important;
+  box-sizing: border-box;
 }
 
-html[data-theme='dark'] figure.shiki .gutter pre {
-  background: rgba(255, 255, 255, .04) !important;
+html[data-theme='dark'] figure.shiki .gutter pre,
+html[data-theme='dark'] #post .post-content figure.shiki .gutter pre {
+  background: rgba(255, 255, 255, .03) !important;
   color: #5b6472 !important;
 }
 
