@@ -1,61 +1,62 @@
 /* ============================================================
-   Theme switch: GPU 合成圆形扩散 (custom inject v9)
+   Theme switch: 明显圆形展开波纹 (custom inject v11)
    ------------------------------------------------------------
-   免 View Transitions 全页快照(会拍 6353px 长文+22 个 backdrop 两帧,
-   maxGap 127ms 掉帧主因)。改为空固定合成层做 transform:scale() 圆形
-   扩散——scale 走 GPU 合成器, 层内只有透明遮罩无内容 → 无快照无重排。
+   纯 GPU 合成圆形波纹: 空固定层 + transform:scale() 从点击中心
+   扩散, 用目标主题实色做不透明圆形, 效果明显可见。
+   层内只有纯色圆无任何页面内容 → 无快照、无重排、不掉帧。
    ============================================================ */
 
-/* 圆形扩散遮罩: 空 fixed 层, 圆心由 JS 用 --reveal-x/--reveal-y 定位 */
+/* 圆形遮罩: 空 fixed 层, 圆心由 JS 的 --reveal-x/--reveal-y 定位 */
 .theme-round-reveal {
   position: fixed;
   inset: 0;
   z-index: 9999;
   pointer-events: none;
   opacity: 0;
-  will-change: transform;
+  will-change: transform, opacity;
   transform: scale(0);
   transform-origin: var(--reveal-x, 50vw) var(--reveal-y, 50vh);
-  /* 半透明冷雾径向渐变遮罩, 模拟"新主题色从点击处圆形漾开" */
+  border-radius: 50%;
+  /* 默认浅色: 冷雾灰蓝实色圆(盖满屏幕时即 light 主题底色) */
   background: radial-gradient(
     circle at var(--reveal-x, 50vw) var(--reveal-y, 50vh),
-    rgba(120, 170, 255, .14) 0%,
-    rgba(96, 130, 210, .10) 45%,
-    rgba(60, 80, 130, .05) 78%,
-    transparent 100%
+    #b0bbcf 0%,
+    #a9b6cb 78%,
+    #9faec7 100%
   );
+  box-shadow: 0 0 120px rgba(0, 0, 0, .18);
 }
-/* 激活: scale 0 → 覆盖全屏(约4.5倍, 保证盖满视口)
-   用 ease-out 让开头快、结尾慢, 观感接近圆形漾开 */
+
+/* 目标主题为 dark: 深黑实色圆(盖满时即 dark 主题底色) */
+.theme-round-reveal[data-theme='dark'] {
+  background: radial-gradient(
+    circle at var(--reveal-x, 50vw) var(--reveal-y, 50vh),
+    #14161d 0%,
+    #0f1116 78%,
+    #0a0c12 100%
+  );
+  box-shadow: 0 0 120px rgba(0, 0, 0, .55);
+}
+
+/* 激活: scale 0 → 6(保证盖满全屏), ease-out 开头快结尾慢 */
 .theme-round-reveal.on {
-  animation: theme-round-grow .56s cubic-bezier(.22, .61, .36, 1) forwards;
+  animation: theme-round-grow .68s cubic-bezier(.22, .61, .36, 1) forwards;
 }
 @keyframes theme-round-grow {
   0% {
     transform: scale(0);
-    opacity: .9;
-  }
-  60% {
-    opacity: .55;
-  }
-  100% {
-    transform: scale(4.5);
     opacity: 0;
   }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(6);
+    opacity: 1;
+  }
 }
 
-/* dark 下遮罩偏冷蓝紫, 与新主题色更协调 */
-html[data-theme='dark'] .theme-round-reveal {
-  background: radial-gradient(
-    circle at var(--reveal-x, 50vw) var(--reveal-y, 50vh),
-    rgba(120, 180, 255, .12) 0%,
-    rgba(90, 120, 220, .09) 45%,
-    rgba(40, 60, 120, .05) 78%,
-    transparent 100%
-  );
-}
-
-/* 减少动效偏好: 直接关掉扩散动画 */
+/* 减少动效偏好: 直接关闭扩散动画 */
 @media (prefers-reduced-motion: reduce) {
   .theme-round-reveal {
     display: none !important;
