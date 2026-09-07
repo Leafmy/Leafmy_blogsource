@@ -1,47 +1,63 @@
 /* ============================================================
-   Theme switch: center content reveal (custom inject v8)
-   View Transitions 圆形扩散基础规则。
-   圆心固定网页中心(50% 50%) —— 百分比相对伪元素自身盒，
-   任何渲染环境下中心都精确，不依赖 JS 像素坐标。
+   Theme switch: GPU 合成圆形扩散 (custom inject v9)
+   ------------------------------------------------------------
+   免 View Transitions 全页快照(会拍 6353px 长文+22 个 backdrop 两帧,
+   maxGap 127ms 掉帧主因)。改为空固定合成层做 transform:scale() 圆形
+   扩散——scale 走 GPU 合成器, 层内只有透明遮罩无内容 → 无快照无重排。
    ============================================================ */
 
-::view-transition-image-pair(root) {
-  isolation: auto;
+/* 圆形扩散遮罩: 空 fixed 层, 圆心由 JS 用 --reveal-x/--reveal-y 定位 */
+.theme-round-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+  transform: scale(0);
+  transform-origin: var(--reveal-x, 50vw) var(--reveal-y, 50vh);
+  /* 半透明冷雾径向渐变遮罩, 模拟"新主题色从点击处圆形漾开" */
+  background: radial-gradient(
+    circle at var(--reveal-x, 50vw) var(--reveal-y, 50vh),
+    rgba(120, 170, 255, .14) 0%,
+    rgba(96, 130, 210, .10) 45%,
+    rgba(60, 80, 130, .05) 78%,
+    transparent 100%
+  );
 }
-
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-  display: block;
+/* 激活: scale 0 → 覆盖全屏(约4.5倍, 保证盖满视口)
+   用 ease-out 让开头快、结尾慢, 观感接近圆形漾开 */
+.theme-round-reveal.on {
+  animation: theme-round-grow .56s cubic-bezier(.22, .61, .36, 1) forwards;
 }
-
-/* 新主题内容从网页中心圆形长出（真实页面内容扩散） */
-::view-transition-new(root) {
-  clip-path: circle(0% at 50% 50%);
-  animation: center-content-reveal 0.62s cubic-bezier(0.45, 0, 0.25, 1) both;
-}
-
-@keyframes center-content-reveal {
-  to {
-    clip-path: circle(150% at 50% 50%);
+@keyframes theme-round-grow {
+  0% {
+    transform: scale(0);
+    opacity: .9;
+  }
+  60% {
+    opacity: .55;
+  }
+  100% {
+    transform: scale(4.5);
+    opacity: 0;
   }
 }
 
-/* ============================================================
-   背景层在 View Transition 期间并入 root 组（避免独立分层逃逸裁切）
-   -----------------------------------------------
-   性能优化给 .bg-liquid 加了 will-change + 持续动画 + mix-blend-mode，
-   这些会让 View Transitions 把它识别为「独立合成组」，不再被 root 的
-   clip-path: circle() 裁切 —— 切换时液体背景会铺满全屏、不随圆形扩散，
-   视觉上表现为"黑白转换动画坏了"。
-   修复：切换期间（theme-reveal.js 加 .vt-pause）暂停其动画、移除
-   will-change，让它被并入 root 一起扩散；切换结束(transition.finished)
-   后移除 .vt-pause 恢复正常。
-   ============================================================ */
-.glass-bg.vt-pause .bg-liquid,
-.glass-bg.vt-pause .bg-liquid::before,
-.glass-bg.vt-pause .bg-liquid::after {
-  animation: none;
-  will-change: auto;
+/* dark 下遮罩偏冷蓝紫, 与新主题色更协调 */
+html[data-theme='dark'] .theme-round-reveal {
+  background: radial-gradient(
+    circle at var(--reveal-x, 50vw) var(--reveal-y, 50vh),
+    rgba(120, 180, 255, .12) 0%,
+    rgba(90, 120, 220, .09) 45%,
+    rgba(40, 60, 120, .05) 78%,
+    transparent 100%
+  );
+}
+
+/* 减少动效偏好: 直接关掉扩散动画 */
+@media (prefers-reduced-motion: reduce) {
+  .theme-round-reveal {
+    display: none !important;
+  }
 }
