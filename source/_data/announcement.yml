@@ -1,0 +1,14 @@
+# 公告内容（由管理页 /admin/ 的「公告」标签页读写）
+# 优先级：本文件 > 主题 _config.yml 的 aside.card_announcement.content
+# 支持 HTML；悬停展开全文由 announce-hover.js 负责。
+content: |
+  <p>👋 <b>欢迎来到我的小站</b></p>
+  <p>这里记录技术、折腾与生活，内容随缘更新，主题还在持续装修中——要是看到什么奇怪的效果，别慌，多半是 Leaf 和我在折腾新玩法。</p>
+  <blockquote>「受命于天，既寿永昌」？不，只是个爱折腾的小博客。</blockquote>
+  <p><b>这条公告是拿来测试悬浮全文效果的</b>：鼠标悬停在「公告」卡片上，这段长文会以一块毛玻璃浮层展开，移开鼠标就自动收起。浮层支持长段落、列表、引用和链接混排。</p>
+  <ul>
+    <li>🔧 技术踩坑笔记 · 不定期更新</li>
+    <li>✍️ 生活随笔 · 想到就写</li>
+    <li>🎨 主题效果 · 亲手打磨中</li>
+  </ul>
+  <p>有任何建议都可以在文章评论区留言，或者去 <a href="https://github.com/Leafmy" target="_blank" rel="noopener">GitHub</a> 上找我。感谢到访，慢慢逛～</p>

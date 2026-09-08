@@ -1,0 +1,189 @@
+//- 管理控制台 /admin/ —— 独立页面，不继承站点头尾
+//- 进入方式：在检索栏输入管理员密钥（密钥哈希见 /custom/admin/admin-key.js）
+doctype html
+html(lang='zh-CN')
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover')
+    meta(name='robots' content='noindex,nofollow,noarchive')
+    meta(name='referrer' content='no-referrer')
+    title 管理控制台
+    link(rel='stylesheet' href=url_for('/custom/admin/admin.css'))
+  body.admin-body
+    //- ============ 门禁 ============
+    #admin-gate.admin-gate
+      .admin-gate-card
+        .admin-gate-icon
+          i.fas.fa-shield-halved
+        h1 管理控制台
+        p.admin-gate-desc 输入管理员密钥进入。密钥在检索栏输入同样有效。
+        input#gate-key.admin-input(type='password' placeholder='XXXXX-XXXXX-XXXXX-XXXXX' autocomplete='off' spellcheck='false')
+        button#gate-btn.admin-btn.admin-btn-primary(type='button') 进入
+        #gate-msg.admin-gate-msg
+
+    //- ============ 主界面 ============
+    #admin-app.admin-app(style='display:none')
+      header.admin-top
+        .admin-brand
+          i.fas.fa-shield-halved
+          span 管理控制台
+        .admin-top-actions
+          span#admin-repo.admin-repo —
+          button#btn-reload.admin-btn(type='button' title='重新拉取文章清单与元数据')
+            i.fas.fa-rotate
+            span 刷新清单
+          button#btn-logout.admin-btn(type='button' title='退出登录')
+            i.fas.fa-right-from-bracket
+            span 退出
+
+      nav#admin-tabs.admin-tabs
+        button.admin-tab.is-active(type='button' data-tab='overview') 概览
+        button.admin-tab(type='button' data-tab='posts') 文章
+        button.admin-tab(type='button' data-tab='announce') 公告
+        button.admin-tab(type='button' data-tab='taxonomy') 标签 / 分类
+        button.admin-tab(type='button' data-tab='archives') 归档
+        button.admin-tab(type='button' data-tab='settings') 设置
+
+      main.admin-main
+        //- ---------- 概览 ----------
+        section#tab-overview.admin-pane.is-active
+          .admin-cards
+            .admin-stat
+              .admin-stat-num#stat-posts 0
+              .admin-stat-label 篇文章
+            .admin-stat
+              .admin-stat-num#stat-tags 0
+              .admin-stat-label 个标签
+            .admin-stat
+              .admin-stat-num#stat-cats 0
+              .admin-stat-label 个分类
+            .admin-stat
+              .admin-stat-num#stat-months 0
+              .admin-stat-label 个月份归档
+          .admin-panel
+            .admin-panel-title 最近更新
+            #overview-recent.admin-list
+
+        //- ---------- 文章 ----------
+        section#tab-posts.admin-pane
+          #posts-list-view
+            .admin-toolbar
+              input#posts-filter.admin-input(type='text' placeholder='筛选标题 / 标签 / 分类…')
+              button#btn-new-post.admin-btn.admin-btn-primary(type='button')
+                i.fas.fa-plus
+                span 新建文章
+            #posts-list.admin-list
+          #post-editor-view(style='display:none')
+            .admin-toolbar
+              button#btn-back-list.admin-btn(type='button')
+                i.fas.fa-arrow-left
+                span 返回列表
+              .admin-editor-file#editor-file
+            .admin-form
+              .admin-field
+                label 标题
+                input#ed-title.admin-input(type='text')
+              .admin-row
+                .admin-field
+                  label 日期（YYYY-MM-DD HH:mm:ss）
+                  input#ed-date.admin-input(type='text')
+                .admin-field
+                  label 置顶权重（0 = 不置顶）
+                  input#ed-sticky.admin-input(type='number' min='0' step='1')
+              .admin-row
+                .admin-field
+                  label 分类（逗号分隔）
+                  input#ed-categories.admin-input(type='text')
+                .admin-field
+                  label 标签（逗号分隔）
+                  input#ed-tags.admin-input(type='text')
+              .admin-field
+                label 摘要 / description（可空）
+                input#ed-desc.admin-input(type='text')
+              .admin-field
+                label 正文（Markdown）
+                textarea#ed-body.admin-textarea(rows='22' spellcheck='false')
+              .admin-actions
+                button#btn-save-post.admin-btn.admin-btn-primary(type='button')
+                  i.fas.fa-floppy-disk
+                  span 保存到仓库
+                button#btn-delete-post.admin-btn.admin-btn-danger(type='button')
+                  i.fas.fa-trash
+                  span 删除文章
+                button#btn-cancel-edit.admin-btn(type='button') 取消
+
+        //- ---------- 公告 ----------
+        section#tab-announce.admin-pane
+          .admin-panel
+            .admin-panel-title 侧栏公告内容（支持 HTML）
+            textarea#announce-body.admin-textarea(rows='16' spellcheck='false')
+            .admin-actions
+              button#btn-save-announce.admin-btn.admin-btn-primary(type='button')
+                i.fas.fa-floppy-disk
+                span 保存公告
+              button#btn-reload-announce.admin-btn(type='button') 重新拉取
+            .admin-hint 保存后写入 <code>source/_data/announcement.yml</code>，站点重新构建后生效。
+
+        //- ---------- 标签 / 分类 ----------
+        section#tab-taxonomy.admin-pane
+          .admin-panel
+            .admin-panel-title 标签
+            #tax-tags.admin-tax
+          .admin-panel
+            .admin-panel-title 分类
+            #tax-cats.admin-tax
+          .admin-hint 重命名 / 删除会改写所有相关文章的 front-matter，逐篇提交到仓库。
+
+        //- ---------- 归档 ----------
+        section#tab-archives.admin-pane
+          #archives-view.admin-list
+
+        //- ---------- 设置 ----------
+        section#tab-settings.admin-pane
+          .admin-panel
+            .admin-panel-title GitHub 写入凭证
+            .admin-hint
+              | 管理页的增删改都通过 GitHub Contents API 完成，需要一枚
+              a(href='https://github.com/settings/personal-access-tokens/new' target='_blank' rel='noopener') 细粒度 PAT
+              | ：仅授权本仓库，权限只需 <b>Contents: Read and write</b>。
+              | Token 用可逆混淆编码后只存在本机浏览器，不会写进源码。
+            .admin-row
+              .admin-field
+                label 仓库所有者
+                input#gh-owner.admin-input(type='text' placeholder='Leafmy')
+              .admin-field
+                label 仓库名
+                input#gh-name.admin-input(type='text' placeholder='Leafmy_blogsource')
+            .admin-row
+              .admin-field
+                label 分支
+                input#gh-branch.admin-input(type='text' placeholder='main')
+              .admin-field
+                label GitHub Token（ghp_ / github_pat_…）
+                input#gh-token.admin-input(type='password' autocomplete='off' spellcheck='false')
+            .admin-actions
+              button#btn-save-gh.admin-btn.admin-btn-primary(type='button')
+                i.fas.fa-floppy-disk
+                span 保存凭证
+              button#btn-test-gh.admin-btn(type='button') 测试连接
+              button#btn-clear-gh.admin-btn.admin-btn-danger(type='button') 清除凭证
+            #gh-status.admin-hint
+
+          .admin-panel
+            .admin-panel-title 修改管理员密钥
+            .admin-hint
+              | 新密钥会以 SHA-256 哈希写入 <code>source/custom/admin/admin-key.js</code>，
+              | 提交后需重新构建站点；旧密钥立即失效。
+            .admin-row
+              .admin-field
+                label 新密钥（建议 4 组 5 位，如 XXXXX-XXXXX-XXXXX-XXXXX）
+                input#new-admin-key.admin-input(type='password' autocomplete='off' spellcheck='false')
+            .admin-actions
+              button#btn-save-admin-key.admin-btn.admin-btn-primary(type='button')
+                i.fas.fa-key
+                span 提交新密钥
+
+    .admin-toast#admin-toast
+
+    script(src=url_for('/custom/admin/admin-key.js'))
+    script(src=url_for('/custom/admin/admin.js'))

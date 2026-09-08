@@ -1,0 +1,475 @@
+/* ============================================================
+   管理控制台样式（/admin/，独立页面，不依赖站点 CSS）
+   风格与站点一致：深色玻璃 + 冷蓝光，但整体更偏"工具"密度
+   ============================================================ */
+
+:root {
+  --adm-bg: #0d1220;
+  --adm-bg2: #141b2e;
+  --adm-card: rgba(22, 30, 50, .72);
+  --adm-card-hi: rgba(255, 255, 255, .05);
+  --adm-line: rgba(140, 170, 230, .16);
+  --adm-line-hi: rgba(150, 185, 255, .34);
+  --adm-text: #e6edf7;
+  --adm-dim: rgba(198, 212, 236, .62);
+  --adm-accent: #6ea8ff;
+  --adm-accent2: #8b7bff;
+  --adm-danger: #ff7b72;
+  --adm-ok: #58d68d;
+  --adm-radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body.admin-body {
+  font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--adm-text);
+  background:
+    radial-gradient(1200px 800px at 12% 4%, rgba(90, 130, 235, .22), transparent 62%),
+    radial-gradient(1000px 760px at 88% 96%, rgba(120, 90, 235, .18), transparent 60%),
+    linear-gradient(160deg, #0b1020 0%, #0d1424 48%, #101a2e 100%);
+  background-attachment: fixed;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 门禁 ---------- */
+.admin-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.admin-gate-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 34px 30px 30px;
+  border-radius: 20px;
+  border: 1px solid var(--adm-line);
+  background: linear-gradient(160deg, rgba(30, 40, 66, .78), rgba(14, 19, 34, .82));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .08);
+  text-align: center;
+}
+
+.admin-gate-icon {
+  font-size: 30px;
+  color: var(--adm-accent);
+  margin-bottom: 12px;
+  text-shadow: 0 0 24px rgba(110, 168, 255, .55);
+}
+
+.admin-gate-card h1 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  letter-spacing: .04em;
+}
+
+.admin-gate-desc {
+  margin: 0 0 20px;
+  color: var(--adm-dim);
+  font-size: 13px;
+}
+
+.admin-gate-msg {
+  min-height: 20px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--adm-danger);
+}
+
+/* ---------- 通用控件 ---------- */
+.admin-input,
+.admin-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--adm-line);
+  background: rgba(8, 12, 22, .55);
+  color: var(--adm-text);
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.admin-textarea {
+  resize: vertical;
+  line-height: 1.7;
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  tab-size: 2;
+}
+
+.admin-input:focus,
+.admin-textarea:focus {
+  border-color: var(--adm-line-hi);
+  background: rgba(10, 16, 30, .78);
+  box-shadow: 0 0 0 3px rgba(110, 168, 255, .14);
+}
+
+.admin-input::placeholder,
+.admin-textarea::placeholder { color: rgba(170, 190, 220, .38); }
+
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 15px;
+  border-radius: 10px;
+  border: 1px solid var(--adm-line);
+  background: linear-gradient(160deg, rgba(38, 50, 78, .72), rgba(20, 27, 45, .72));
+  color: var(--adm-text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .2s ease, background .2s ease, transform .12s ease, opacity .2s ease;
+}
+
+.admin-btn:hover {
+  border-color: var(--adm-line-hi);
+  background: linear-gradient(160deg, rgba(48, 64, 100, .8), rgba(26, 34, 56, .8));
+}
+
+.admin-btn:active { transform: translateY(1px); }
+
+.admin-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+.admin-btn-primary {
+  border-color: rgba(120, 165, 255, .5);
+  background: linear-gradient(160deg, rgba(70, 110, 220, .85), rgba(88, 80, 210, .8));
+  box-shadow: 0 8px 22px -10px rgba(80, 120, 240, .8);
+}
+
+.admin-btn-primary:hover {
+  background: linear-gradient(160deg, rgba(84, 128, 240, .95), rgba(104, 96, 232, .9));
+}
+
+.admin-btn-danger {
+  border-color: rgba(255, 123, 114, .42);
+  color: #ffb4ae;
+  background: linear-gradient(160deg, rgba(70, 30, 34, .8), rgba(44, 20, 24, .8));
+}
+
+.admin-btn-danger:hover {
+  border-color: rgba(255, 123, 114, .7);
+  background: linear-gradient(160deg, rgba(92, 38, 42, .9), rgba(56, 26, 30, .9));
+}
+
+/* ---------- 顶栏 ---------- */
+.admin-app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px 20px 80px;
+}
+
+.admin-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-radius: var(--adm-radius);
+  border: 1px solid var(--adm-line);
+  background: var(--adm-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+
+.admin-brand i { color: var(--adm-accent); }
+
+.admin-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-repo {
+  font-size: 12px;
+  color: var(--adm-dim);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--adm-line);
+  background: rgba(8, 12, 22, .5);
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 标签页 ---------- */
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 16px 0 18px;
+}
+
+.admin-tab {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: rgba(20, 28, 46, .55);
+  color: var(--adm-dim);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.admin-tab:hover { color: var(--adm-text); border-color: var(--adm-line); }
+
+.admin-tab.is-active {
+  color: #fff;
+  border-color: rgba(120, 165, 255, .5);
+  background: linear-gradient(160deg, rgba(70, 110, 220, .55), rgba(88, 80, 210, .45));
+  box-shadow: 0 6px 20px -10px rgba(80, 120, 240, .8);
+}
+
+.admin-pane { display: none; }
+.admin-pane.is-active { display: block; }
+
+/* ---------- 卡片 / 面板 ---------- */
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-stat {
+  padding: 18px 16px;
+  border-radius: var(--adm-radius);
+  border: 1px solid var(--adm-line);
+  background: var(--adm-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  text-align: center;
+}
+
+.admin-stat-num {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--adm-accent);
+  line-height: 1.2;
+}
+
+.admin-stat-label {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--adm-dim);
+}
+
+.admin-panel {
+  margin-bottom: 16px;
+  padding: 18px;
+  border-radius: var(--adm-radius);
+  border: 1px solid var(--adm-line);
+  background: var(--adm-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+.admin-panel-title {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: .02em;
+}
+
+.admin-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.admin-toolbar .admin-input { flex: 1 1 220px; width: auto; }
+
+.admin-hint {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--adm-dim);
+}
+
+.admin-hint code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(8, 12, 22, .6);
+  border: 1px solid var(--adm-line);
+  font-size: 12px;
+}
+
+.admin-hint a { color: var(--adm-accent); }
+
+/* ---------- 列表 ---------- */
+.admin-list { display: flex; flex-direction: column; gap: 8px; }
+
+.admin-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--adm-line);
+  background: rgba(16, 23, 40, .62);
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, transform .12s ease;
+}
+
+.admin-item:hover {
+  border-color: var(--adm-line-hi);
+  background: rgba(26, 36, 60, .78);
+  transform: translateX(2px);
+}
+
+.admin-item-main { flex: 1; min-width: 0; }
+
+.admin-item-title {
+  font-size: 13.5px;
+  color: var(--adm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-item-meta {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--adm-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.admin-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  margin-right: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--adm-line);
+  background: rgba(110, 168, 255, .1);
+  color: #a9c8ff;
+  font-size: 11.5px;
+}
+
+.admin-empty {
+  padding: 26px 0;
+  text-align: center;
+  color: var(--adm-dim);
+  font-size: 13px;
+}
+
+/* ---------- 表单 ---------- */
+.admin-form { display: flex; flex-direction: column; gap: 12px; }
+
+.admin-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.admin-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+
+.admin-field label {
+  font-size: 12.5px;
+  color: var(--adm-dim);
+}
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.admin-editor-file {
+  flex: 1 1 100%;
+  font-size: 12px;
+  color: var(--adm-dim);
+  font-family: 'Fira Code', ui-monospace, Menlo, Consolas, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 标签/分类 ---------- */
+.admin-tax { display: flex; flex-direction: column; gap: 8px; }
+
+.admin-tax-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--adm-line);
+  background: rgba(16, 23, 40, .55);
+}
+
+.admin-tax-name { flex: 1; font-size: 13px; }
+
+.admin-tax-count { font-size: 12px; color: var(--adm-dim); margin-right: 6px; }
+
+/* ---------- Toast ---------- */
+.admin-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translate(-50%, 20px);
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 11px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--adm-line-hi);
+  background: linear-gradient(160deg, rgba(30, 40, 66, .95), rgba(16, 22, 38, .95));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 18px 44px -18px rgba(0, 0, 0, .8);
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .28s ease, transform .28s ease;
+  z-index: 9999;
+}
+
+.admin-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.admin-toast.ok { border-color: rgba(88, 214, 141, .45); color: #b7f0cd; }
+.admin-toast.err { border-color: rgba(255, 123, 114, .45); color: #ffc0bb; }
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 720px) {
+  .admin-app { padding: 14px 12px 70px; }
+  .admin-row { grid-template-columns: 1fr; }
+  .admin-top { padding: 12px 14px; }
+  .admin-repo { display: none; }
+  .admin-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .admin-tab { flex-shrink: 0; }
+  .admin-item { flex-wrap: wrap; }
+}

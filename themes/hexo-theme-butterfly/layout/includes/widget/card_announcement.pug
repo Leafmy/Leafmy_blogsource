@@ -1,6 +1,9 @@
 if theme.aside.card_announcement.enable
+  //- 公告内容优先读 source/_data/announcement.yml（管理页 /admin/ 可写），
+  //- 没有该文件时回落到主题 _config.yml，保持兼容
+  - const announcementContent = (site.data.announcement && site.data.announcement.content) || theme.aside.card_announcement.content
   .card-widget.card-announcement
     .item-headline
       i.fas.fa-bullhorn.fa-shake
       span= _p('aside.card_announcement')
-    .announcement_content!= theme.aside.card_announcement.content
+    .announcement_content!= announcementContent

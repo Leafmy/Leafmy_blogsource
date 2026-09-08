@@ -402,13 +402,38 @@
       openBox()
     }
   })
+  // ---- 管理员密钥入口：在检索栏输入密钥 → 进入 /admin/ ----
+  // 只比对 SHA-256（明文不落源码）；密钥形如 XXXXX-XXXXX-XXXXX-XXXXX
+  var ADMIN_HASH = String(window.ADMIN_KEY_SHA256 || '').toLowerCase()
+  var ADMIN_KEY_RE = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/
+  function tryAdminKey() {
+    if (!ADMIN_HASH || !window.crypto || !crypto.subtle) return false
+    var v = input.value.trim().toUpperCase()
+    if (!ADMIN_KEY_RE.test(v)) return false
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)).then(function (buf) {
+      var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
+        return ('0' + b.toString(16)).slice(-2)
+      }).join('')
+      if (hex !== ADMIN_HASH) return
+      // 命中：清空输入（别把密钥留在框里），直接进管理页
+      input.value = ''
+      lastQuery = ''
+      hidePanel()
+      try { sessionStorage.setItem('admin_unlocked', hex) } catch (e) {}
+      location.href = '/admin/'
+    }).catch(function () {})
+    return true // 形如密钥 → 不再当普通检索词
+  }
+
   // 输入
   input.addEventListener('input', function () {
     clearTimeout(searchTimer)
+    if (tryAdminKey()) return
     searchTimer = setTimeout(function () { runSearch(input.value) }, 80)
   })
   input.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { e.preventDefault(); closeBox() }
+    if (e.key === 'Escape') { e.preventDefault(); closeBox(); return }
+    if (e.key === 'Enter' && tryAdminKey()) e.preventDefault()
   })
   // 自定义光标: 聚焦/失焦/输入/点击/移动光标时重定位
   input.addEventListener('focus', positionCaret)
