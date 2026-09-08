@@ -131,7 +131,8 @@ body.admin-body {
     rgba(96, 208, 255, 0) 100%
   );
   transform: translate3d(-999px, -999px, 0);
-  opacity: var(--glow, 0);
+  /* 洗光整体降一档：避免光斑被卡片边缘硬切出一道生硬的边 */
+  opacity: calc(var(--glow, 0) * .62);
   transition: opacity .18s ease;
   z-index: 0;
 }
@@ -140,13 +141,15 @@ body.admin-body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  padding: 1px;
+  /* 环宽 1.6px + 亚像素模糊：1px 的 mask 环在胶囊曲线上会有锯齿，看着"毛躁" */
+  padding: 1.6px;
   pointer-events: none;
   overflow: hidden;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
+  filter: blur(.5px);
   opacity: var(--glow, 0);
   transition: opacity .18s ease;
   z-index: 2;
