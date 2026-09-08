@@ -776,32 +776,10 @@
   }
 
   // ==================== 标签页 ====================
-  // 选中指示器：滑动到被点击的按钮（CSS 里是非线性缓动 + 轻微回弹）
-  function moveTabsIndicator(tabBtn, animate) {
-    var ind = document.getElementById('tabs-indicator')
-    var box = document.getElementById('admin-tabs')
-    if (!ind || !box || !tabBtn) return
-    var b = box.getBoundingClientRect()
-    var t = tabBtn.getBoundingClientRect()
-    // 绝对定位元素的 left:0 落在 padding 边缘，需扣掉容器边框宽度
-    var x = t.left - b.left - box.clientLeft
-    if (animate === false) {
-      ind.style.transition = 'none'
-      ind.style.transform = 'translateX(' + x.toFixed(1) + 'px)'
-      ind.style.width = t.width.toFixed(1) + 'px'
-      void ind.offsetWidth                    // 强制回流，确保下次切换有动画
-      ind.style.transition = ''
-    } else {
-      ind.style.transform = 'translateX(' + x.toFixed(1) + 'px)'
-      ind.style.width = t.width.toFixed(1) + 'px'
-    }
-  }
-
+  // 选中态只靠文字变亮（CSS 负责），这里只切类名与面板
   function switchTab(name) {
     $$('.admin-tab').forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-tab') === name) })
     $$('.admin-pane').forEach(function (p) { p.classList.toggle('is-active', p.id === 'tab-' + name) })
-    var active = document.querySelector('.admin-tab.is-active')
-    if (active) moveTabsIndicator(active, true)
     if (name === 'posts') showListView()
     if (name === 'announce') loadAnnouncement()
   }
@@ -840,20 +818,6 @@
     $('#btn-test-gh').addEventListener('click', testConnection)
     $('#btn-clear-gh').addEventListener('click', clearCredentials)
     $('#btn-save-admin-key').addEventListener('click', changeAdminKey)
-
-    // 标签指示器：初始定位（不播动画），窗口变化时重新对齐
-    var activeTab = document.querySelector('.admin-tab.is-active')
-    if (activeTab) moveTabsIndicator(activeTab, false)
-    window.addEventListener('resize', function () {
-      var a = document.querySelector('.admin-tab.is-active')
-      if (a) moveTabsIndicator(a, false)
-    })
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(function () {
-        var a = document.querySelector('.admin-tab.is-active')
-        if (a) moveTabsIndicator(a, false)
-      })
-    }
 
     decorateCards()
     observeCards()

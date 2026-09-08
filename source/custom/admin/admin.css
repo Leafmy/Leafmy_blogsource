@@ -425,7 +425,7 @@ body.admin-body {
    标签页（分段胶囊）
    ============================================================ */
 .admin-tabs {
-  position: relative;          /* 滑块指示器的定位参照 */
+  position: relative;
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -436,31 +436,6 @@ body.admin-body {
   background: rgba(0, 0, 0, .22);
   width: fit-content;
   max-width: 100%;
-}
-
-/* 选中指示器：跟随点击的按钮线性滑动 */
-.admin-tabs-indicator {
-  position: absolute;
-  top: 5px;
-  bottom: 5px;
-  left: 0;
-  width: 0;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(76, 148, 244, .62), rgba(102, 94, 232, .58));
-  border: 1px solid rgba(150, 205, 255, .32);
-  box-shadow:
-    0 3px 12px -6px rgba(30, 80, 190, .6),
-    inset 0 1px 0 rgba(255, 255, 255, .16);
-  transform: translateX(0);
-  transition:
-    transform .38s linear,
-    width .38s linear;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .admin-tabs-indicator { transition: none; }
 }
 
 .admin-tab {
@@ -475,17 +450,20 @@ body.admin-body {
   font-size: 13px;
   text-align: center;
   cursor: pointer;
-  transition: color .28s ease;
+  transition: color .32s ease, text-shadow .32s ease;
 }
 
 .admin-tab:hover { color: var(--adm-text); }
 
+/* 选中：不加任何底/框，只把文字点亮（带一层冷色光晕） */
 .admin-tab.is-active {
   color: #fff;
-  /* 只用 background-color：background 简写会清掉流光文字的 background-image */
   background-color: transparent;
   box-shadow: none;
   font-weight: 500;
+  text-shadow:
+    0 0 10px rgba(140, 210, 255, .65),
+    0 0 24px rgba(96, 170, 255, .35);
 }
 
 .admin-pane { display: none; }
