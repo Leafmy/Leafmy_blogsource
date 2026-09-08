@@ -22,7 +22,7 @@ menu:
   # List||fas fa-list:
   #   Music: /music/ || fas fa-music
   #   Movie: /movies/ || fas fa-video
-  文章: / || fas fa-fire
+  文章: /articles/ || fas fa-fire
   归档: /archives/ || fas fa-box-archive
   关于: /about/ || fas fa-circle-info
 
@@ -1101,7 +1101,7 @@ inject:
   bottom:
     # - <script src="xxxx"></script>
     # --- nav 顶部导航栏 + 检索 ---
-    - <script src="/custom/nav/nav-apple.js"></script>
+    - <script src="/custom/nav/nav-apple.js?v=20260908c"></script>
     - <script src="/custom/nav/nav-search.js"></script>
     - <script src="/custom/nav/darkmode-move.js"></script>
     # --- effects 背景/玻璃/光效 ---

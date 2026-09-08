@@ -364,9 +364,9 @@
   }
 
   // 菜单 href → 下拉配置
-  // 文章：首页最近文章标题；归档：归档页侧栏的"月度归档"入口(如 九月 2026 → /archives/2026/09/)
+  // 文章：/articles/ 列表页的卡片标题；归档：归档页侧栏的"月度归档"入口(如 九月 2026 → /archives/2026/09/)
   var config = [
-    { href: '/', label: '文章', selector: '.recent-post-items a.article-title' },
+    { href: '/articles/', label: '文章', selector: '.recent-post-items a.article-title' },
     { href: '/archives/', label: '归档', selector: '.card-archive-list-link', titleSel: '.card-archive-list-date' }
   ]
 
