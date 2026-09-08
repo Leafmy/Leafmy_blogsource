@@ -715,6 +715,20 @@ body.admin-body {
   gap: 10px;
 }
 
+/* 去掉 number 输入框的原生上下箭头：深色主题下它是个扎眼的白块。
+   （去掉后仍可用键盘 ↑/↓ 调数值，只是不再显示原生步进器） */
+.admin-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.admin-input[type='number']::-webkit-outer-spin-button,
+.admin-input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
 .admin-sticky-row .admin-input {
   width: 104px;
   flex: 0 0 auto;
