@@ -280,11 +280,27 @@
       if (s < 0) s = 0
       else if (s > 1) s = 1
       s = s * s                                  // 二次衰减：近处亮得明显
-      if (el.__glow !== undefined && Math.abs(s - el.__glow) < 0.004) continue
-      el.__glow = s
-      el.style.setProperty('--glow', s.toFixed(3))
-      el.style.setProperty('--gx', (pointerX - r.left).toFixed(1) + 'px')
-      el.style.setProperty('--gy', (pointerY - r.top).toFixed(1) + 'px')
+
+      // 已熄灭且仍在范围外 → 连位置都不用更新
+      if (s <= 0 && el.__glow === 0) continue
+
+      // 光心：每帧用 transform 平移（合成器，不触发重绘）。
+      // 注意：位置更新**不能**跟强度一起跳过 —— 指针进入卡片后距离恒为 0、
+      // 强度锁死在 1，若同时跳过位置，光斑就会卡在进入点（用户报的"卡住"）。
+      var lx = pointerX - r.left
+      var ly = pointerY - r.top
+      if (el.__blob) {
+        el.__blob.style.transform = 'translate3d(' + (lx - 240).toFixed(1) + 'px,' + (ly - 160).toFixed(1) + 'px,0)'
+      }
+      if (el.__light) {
+        el.__light.style.transform = 'translate3d(' + (lx - 260).toFixed(1) + 'px,' + (ly - 190).toFixed(1) + 'px,0)'
+      }
+
+      // 强度：只在变化超过阈值时写（避免无谓的样式重算）
+      if (el.__glow === undefined || Math.abs(s - el.__glow) >= 0.004) {
+        el.__glow = s
+        el.style.setProperty('--glow', s.toFixed(3))
+      }
     }
   }
 
@@ -308,12 +324,26 @@
   document.addEventListener('mouseleave', killGlow)
   window.addEventListener('blur', killGlow)
 
-  // 给卡片挂 .adm-card（光效）
+  // 给卡片挂 .adm-card（光效）并注入光层元素
   var CARD_SEL = '.admin-top, .admin-panel, .admin-stat, .admin-item, .admin-tab, .admin-gate-card'
   function decorateCards(scope) {
     var host = scope || document
     var cards = host.querySelectorAll(CARD_SEL)
-    Array.prototype.forEach.call(cards, function (el) { el.classList.add('adm-card') })
+    Array.prototype.forEach.call(cards, function (el) {
+      el.classList.add('adm-card')
+      if (el.querySelector(':scope > .adm-glow-blob')) return
+      var blob = document.createElement('i')
+      blob.className = 'adm-glow-blob'
+      el.appendChild(blob)
+      var edge = document.createElement('i')
+      edge.className = 'adm-edge'
+      var light = document.createElement('i')
+      light.className = 'adm-edge-light'
+      edge.appendChild(light)
+      el.appendChild(edge)
+      el.__blob = blob
+      el.__light = light
+    })
     refreshGlowCards()
     scheduleGlow()
   }

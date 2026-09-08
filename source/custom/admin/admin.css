@@ -89,7 +89,15 @@ body.admin-body {
 }
 
 /* ============================================================
-   卡片光效：与顶部导航栏同款（指针跟随光斑 + 边缘高亮环）
+   卡片光效：一个光源照亮范围内所有卡片
+   ------------------------------------------------------------
+   结构（JS 注入到每张卡片里）：
+     .adm-glow-blob        软光斑（transform 跟随指针）
+     .adm-edge             1px 边缘环（固定 mask）
+       └ .adm-edge-light   环上的高光层（transform 跟随指针）
+   与顶部导航栏同款做法：**光心只做 transform 平移**（走合成器），
+   不在 radial-gradient 的位置上改 CSS 变量 —— 那会让浏览器每帧重绘渐变，
+   快速移动时出现拖影/跳动。透明度由 --glow(0~1) 控制。
    ============================================================ */
 .adm-card {
   position: relative;
@@ -97,8 +105,13 @@ body.admin-body {
   overflow: hidden;
 }
 
-.adm-card::before {
-  content: '';
+/* 卡片内容压在光斑之上（光斑是背景洗光，不能盖住文字） */
+.adm-card > *:not(.adm-glow-blob):not(.adm-edge) {
+  position: relative;
+  z-index: 1;
+}
+
+.adm-glow-blob {
   position: absolute;
   left: 0;
   top: 0;
@@ -106,25 +119,19 @@ body.admin-body {
   height: 320px;
   pointer-events: none;
   background: radial-gradient(closest-side, var(--adm-glow), transparent 72%);
-  transform: translate3d(calc(var(--gx, -999px) - 240px), calc(var(--gy, -999px) - 160px), 0);
-  /* 透明度 = 光源强度（JS 按指针距离写入 0~1） */
+  transform: translate3d(-999px, -999px, 0);
   opacity: var(--glow, 0);
   transition: opacity .18s ease;
   z-index: 0;
 }
 
-.adm-card::after {
-  content: '';
+.adm-edge {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
   pointer-events: none;
-  background: radial-gradient(
-    260px 190px at var(--gx, -999px) var(--gy, -999px),
-    var(--adm-glow-hi),
-    rgba(120, 200, 255, 0) 66%
-  );
+  overflow: hidden;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -132,6 +139,16 @@ body.admin-body {
   opacity: var(--glow, 0);
   transition: opacity .18s ease;
   z-index: 2;
+}
+
+.adm-edge-light {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 520px;
+  height: 380px;
+  background: radial-gradient(closest-side, var(--adm-glow-hi), rgba(120, 200, 255, 0) 70%);
+  transform: translate3d(-999px, -999px, 0);
 }
 
 /* ============================================================
