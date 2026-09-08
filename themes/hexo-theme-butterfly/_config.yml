@@ -1095,7 +1095,8 @@ inject:
     # --- cursor 自定义光标 ---
     - <link rel="stylesheet" href="/custom/cursor/site-cursor.css">
     # --- widgets 翻译按钮 ---
-    - <link rel="stylesheet" href="/custom/widgets/translate-btn.css">
+    # 带版本号：hexo/静态托管对自定义资源无 cache-control，不加版本号浏览器会长期跑旧 JS
+    - <link rel="stylesheet" href="/custom/widgets/translate-btn.css?v=20260908b">
   bottom:
     # - <script src="xxxx"></script>
     # --- nav 顶部导航栏 + 检索 ---
@@ -1118,7 +1119,7 @@ inject:
     # --- cursor 自定义光标 ---
     - <script src="/custom/cursor/site-cursor.js"></script>
     # --- widgets 翻译按钮 ---
-    - <script src="/custom/widgets/translate-btn.js"></script>
+    - <script src="/custom/widgets/translate-btn.js?v=20260908b"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work

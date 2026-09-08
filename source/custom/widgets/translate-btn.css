@@ -11,6 +11,7 @@
   gap: 6px;
   margin-left: 12px;
   vertical-align: middle;
+  position: relative;
 }
 
 /* 翻译按钮 - 与搜索栏同款毛玻璃胶囊 */
@@ -155,6 +156,50 @@ html[data-theme='dark'] .translate-btn:hover {
 .translate-status {
   font-size: 12px;
   color: rgba(90, 100, 130, .7);
+}
+
+/* ==================== 失败提示 toast ==================== */
+/* 挂在 body 上用 fixed 定位：标题容器有 overflow 裁剪，放在按钮旁边会被裁掉 */
+.translate-toast {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  max-width: 300px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 120, 120, .45);
+  background: linear-gradient(150deg, rgba(255, 246, 246, .92), rgba(255, 236, 236, .88));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 6px 20px rgba(180, 40, 40, .18);
+  color: #c0392b;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .25s ease, transform .25s ease;
+  pointer-events: none;
+}
+
+.translate-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+html[data-theme='dark'] .translate-toast {
+  border-color: rgba(255, 140, 140, .3);
+  background: linear-gradient(150deg, rgba(58, 30, 34, .92), rgba(40, 22, 26, .9));
+  color: #ff9f9f;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+}
+
+/* 忙碌态：请求期间禁止重复点击 */
+.translate-btn.busy {
+  pointer-events: none;
+  opacity: .85;
 }
 
 /* 翻译后的内容样式 */

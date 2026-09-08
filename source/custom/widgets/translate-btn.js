@@ -104,10 +104,11 @@
   // 存储 key 的 localStorage 键
   var KEY_STORE = 'deepseek_translate_key'
   // 翻译缓存键：带版本号，避免旧版(方向错误/原文照抄)缓存被复用
-  var CACHE_VERSION = 'v2'
+  var CACHE_VERSION = 'v3'
   var cacheKey = 'translate_' + CACHE_VERSION + '_' + slug
-  // 旧版缓存键（无版本），供迁移清理
-  var oldCacheKeys = ['translate_' + slug]
+  // 旧版缓存键清理：无版本键 + v2 键
+  // （v2 会把"分隔符错位"的半吊子译文当成功结果缓存，必须废弃）
+  var oldCacheKeys = ['translate_' + slug, 'translate_v2_' + slug]
   oldCacheKeys.forEach(function (k) { localStorage.removeItem(k) })
 
   // ==================== 创建按钮组 ====================
@@ -132,6 +133,8 @@
 
   var isTranslated = false
   var isAnimating = false
+  // 忙碌锁：API 请求期间禁止重复点击（否则会并发发多次请求、状态互相打架）
+  var isBusy = false
   var translationData = null
   // 当前生效的明文 key（运行时从 localStorage 解析得到）
   var deepseekKey = decodeKey(localStorage.getItem(KEY_STORE))
@@ -245,8 +248,8 @@
         bad++
       }
     }
-    // 超过 50% 段无效 → 判定整体无效
-    return bad / segments.length < 0.5
+    // 无效段超过 15% → 判定整体无效（宁可让用户重试，也不缓存半吊子译文）
+    return bad / segments.length < 0.85
   }
 
   // 读取缓存，带健康校验；无效则清除并返回 null
@@ -312,7 +315,7 @@
         }
       })
       .catch(function () {
-        translationData = null
+        // 竞态保护：若运行时翻译已抢先完成，不要把它清空
       })
   }
 
@@ -320,7 +323,7 @@
 
   // 翻译按钮点击事件
   btn.addEventListener('click', function () {
-    if (isAnimating) return
+    if (isAnimating || isBusy) return
     if (isTranslated) {
       doRevert()
     } else {
@@ -331,7 +334,7 @@
   // ==================== 翻译流程 ====================
   function doTranslate() {
     // 有预翻译数据：直接走原有动画
-    if (translationData && translationData.segments) {
+    if (translationData && translationData.segments && isHealthySegments(translationData.segments)) {
       runTranslateAnimation(function () { applyTranslation() })
       return
     }
@@ -343,24 +346,32 @@
     }
 
     // 运行时翻译：先 loading，再调 API
+    isBusy = true
     btn.classList.add('loading')
-    runApiTranslate().then(function (segResults) {
-      btn.classList.remove('loading')
+    btn.classList.add('busy')
+
+    runApiTranslate().then(function (out) {
+      var segResults = out && out.segments
+      var stats = (out && out.stats) || { total: 0, ok: 0 }
       if (!segResults || !segResults.length) {
-        translateText.style.opacity = '0'
-        setTimeout(function () {
-          translateText.textContent = '翻译'
-          translateText.style.opacity = '1'
-        }, 100)
-        return
+        throw new Error('没有可翻译的内容')
+      }
+      // 健康门禁：译文达标才允许切换状态/写缓存，绝不"假装翻译完成"
+      var ratio = stats.total ? stats.ok / stats.total : 0
+      if (ratio < HEALTH_MIN_RATIO) {
+        throw new Error('模型返回异常（有效译文 ' + stats.ok + '/' + stats.total + '）')
       }
       translationData = { segments: segResults }
-      // 仅当翻译结果健康(非原文照抄)时写缓存，避免缓存坏数据
       writeTranslationCache(segResults)
+      btn.classList.remove('loading')
+      btn.classList.remove('busy')
+      isBusy = false
       runTranslateAnimation(function () { applyTranslation() })
     }).catch(function (err) {
       btn.classList.remove('loading')
-      showFatal(err && err.message ? err.message : '翻译失败')
+      btn.classList.remove('busy')
+      isBusy = false
+      showError(err && err.message ? err.message : '翻译失败')
     })
   }
 
@@ -382,9 +393,17 @@
           postContent.style.opacity = '0'
           postContent.style.transition = 'opacity 0.3s ease'
           setTimeout(function () {
-            fn()
+            try {
+              fn()
+              isTranslated = true
+            } catch (e) {
+              // 替换失败：恢复原文并解除动画锁，避免按钮永久卡死
+              if (postContent.dataset.original) postContent.innerHTML = postContent.dataset.original
+              postContent.classList.remove('translated-content')
+              isTranslated = false
+              showError('翻译应用失败：' + (e && e.message ? e.message : e))
+            }
             postContent.style.opacity = '1'
-            isTranslated = true
             isAnimating = false
           }, 300)
         }, 100)
@@ -396,12 +415,19 @@
   var DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
   // 翻译任务用轻量 flash 即可，成本更低、速度更快
   var DEEPSEEK_MODEL = 'deepseek-v4-flash'
-  // 全篇一次打包请求：段间用分隔符拼接，模型按相同分隔符逐段返回。
-  // 只发一次 system prompt → 极省 token。
+  // 旧版分隔符协议（仅作解析兜底保留，不再作为主协议）
   var SEG_DELIM = '\n<<<SEG___>>\n'
   // 单请求可承载的最大文本长度（字符）。超长文章拆成多个批次请求，
   // 每个批次仍是一次请求一次 system prompt。
-  var MAX_BATCH_CHARS = 8000
+  var MAX_BATCH_CHARS = 4000
+  // 输出 token 上限（超模型上限会被直接 400 拒绝）
+  var MAX_TOKENS_CAP = 8192
+  // 批次里没拿到译文的段，逐段单独重试（不依赖任何结构，最稳）
+  var SINGLE_RETRY_CONCURRENCY = 3
+  // 缺失段过多时不逐段重试（避免几十次请求），直接判定失败让用户重试
+  var MAX_SINGLE_RETRY = 30
+  // 有效译文占比低于此值 → 判定翻译失败，绝不切换状态/写缓存
+  var HEALTH_MIN_RATIO = 0.85
 
   // 提取文本段（跳过 code/pre/script/style/svg/math）。
   // 只收集段列表，不对 HTML 做任何就地替换 —— 避免"短段(如 'In')是长段子串"
@@ -433,68 +459,158 @@
     return { segments: segments }
   }
 
-  // 调用 DeepSeek 翻译一个批次（含多段，用 SEG_DELIM 分隔）
-  // 返回逐段译文数组（长度与输入段数一致），失败段为 null
-  function deepseekTranslateBatch(texts) {
-    // 用户明确要【英译中】: 原文为英文, 输出简体中文。方向写死避免歧义。
-    var system =
-      'The user text is in English. Translate each text segment into Simplified Chinese (简体中文). ' +
-      'Output THE SAME number of results, each on its own line, in the same order. ' +
-      'Keep numbers, units, variable names and code identifiers unchanged. ' +
-      'Do not add explanations, quotes or notes. ' +
-      'Separate your results by the delimiter "' + SEG_DELIM + '".'
+  // 构造请求体。
+  // 批次模式：user 是 JSON 数组，要求模型返回 { "0": 译文, "1": 译文, ... }
+  //   —— 用「索引键」对齐，模型即使换行/加符号/吃掉分隔符也不会错位。
+  // 单段模式：user 是纯文本，返回纯译文，不依赖任何结构（兜底重试用）。
+  function buildRequestBody(texts, single) {
+    var system = single
+      ? 'You are a professional translator. Translate the user text from English into Simplified Chinese (简体中文). ' +
+        'Output ONLY the translation. No quotes, no explanations, no notes. ' +
+        'Keep numbers, units, code identifiers, URLs and proper nouns unchanged.'
+      : 'You are a professional translator. The user message is a JSON array of English text segments. ' +
+        'Translate EVERY segment into Simplified Chinese (简体中文). ' +
+        'Return ONLY a JSON object whose keys are the segment indexes as strings ("0","1","2",...) and whose values are the Chinese translations. ' +
+        'Return exactly one entry per input segment, same order, never merge or split segments. ' +
+        'Keep numbers, units, code identifiers, URLs and proper nouns unchanged. ' +
+        'No markdown fences, no explanations.'
+    var user = single ? texts[0] : JSON.stringify(texts)
+    return {
+      model: DEEPSEEK_MODEL,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ],
+      temperature: 0.2,
+      stream: false,
+      max_tokens: Math.min(MAX_TOKENS_CAP, Math.max(1024, Math.ceil(user.length * 2.2)))
+    }
+  }
 
-    var joined = texts.join(SEG_DELIM)
-
+  // 单次请求，返回 { content, truncated }
+  function callDeepSeek(body) {
     return fetch(DEEPSEEK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + deepseekKey
       },
-      body: JSON.stringify({
-        model: DEEPSEEK_MODEL,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: joined }
-        ],
-        temperature: 0.2,
-        stream: false,
-        // 按目标语言估算最大长度；给足余量避免截断
-        max_tokens: Math.max(1024, Math.ceil(joined.length * 1.6))
-      })
+      body: JSON.stringify(body)
     }).then(function (res) {
       if (!res.ok) {
         if (res.status === 401) throw new Error('API Key 无效或已过期')
+        if (res.status === 402) throw new Error('账户余额不足')
         if (res.status === 429) throw new Error('请求过频，请稍后再试')
+        if (res.status === 400) throw new Error('请求被拒绝（HTTP 400，可能文本过长）')
         throw new Error('DeepSeek HTTP ' + res.status)
       }
       return res.json()
     }).then(function (data) {
       var choice = data && data.choices && data.choices[0]
-      var content = choice && choice.message ? choice.message.content : ''
-      return splitResults(content, texts.length)
+      var msg = choice && choice.message
+      return {
+        content: (msg && msg.content) || '',
+        truncated: !!(choice && choice.finish_reason === 'length')
+      }
     })
   }
 
-  // 把模型返回的连续文本按分隔符拆成逐段结果，与输入段数对齐
-  function splitResults(content, expected) {
-    if (!content) return new Array(expected).fill(null)
-    var parts = content.split(SEG_DELIM)
-    // 去掉首尾空行，且只保留 expected 段
-    var results = parts.map(function (p) { return p.trim() }).filter(function (p, i) {
-      return p.length > 0
-    })
-    // 若模型返回段数比预期多或少，做对齐处理
-    if (results.length >= expected) {
-      return results.slice(0, expected)
-    }
-    // 段数不足：填充 null，避免错位
+  // 宽松解析「索引 → 译文」映射：
+  // 容忍 ```json 包裹、首尾多余文字、1-based 键（"1".."n"）、数组形式返回值。
+  function parseTranslations(content, expected) {
     var out = new Array(expected).fill(null)
-    for (var i = 0; i < results.length; i++) out[i] = results[i]
+    if (!content) return out
+    var txt = String(content).trim()
+      .replace(/^```[a-zA-Z]*\s*/, '')
+      .replace(/```\s*$/, '')
+      .trim()
+    var obj = null
+    try {
+      obj = JSON.parse(txt)
+    } catch (e) {
+      var s = txt.indexOf('{'), e2 = txt.lastIndexOf('}')
+      if (s > -1 && e2 > s) {
+        try { obj = JSON.parse(txt.slice(s, e2 + 1)) } catch (e3) { obj = null }
+      }
+    }
+    if (!obj) return out
+
+    function put(idx, val) {
+      if (typeof val === 'number') val = String(val)
+      if (typeof val !== 'string') return
+      var t = val.trim()
+      if (idx >= 0 && idx < expected && t) out[idx] = t
+    }
+
+    if (Array.isArray(obj)) {
+      for (var i = 0; i < obj.length && i < expected; i++) put(i, obj[i])
+      return out
+    }
+    var keys = Object.keys(obj)
+    // 键从 1 开始时（无 "0" 且有 "1"）按 1-based 映射
+    var oneBased = keys.length > 0 && keys.indexOf('0') === -1 && keys.indexOf('1') > -1
+    keys.forEach(function (k) {
+      var idx = parseInt(k, 10)
+      if (isNaN(idx)) return
+      put(oneBased ? idx - 1 : idx, obj[k])
+    })
     return out
   }
 
+  // 批次翻译：一次请求翻多段，返回与输入等长的数组（失败段为 null）
+  function deepseekTranslateBatch(texts) {
+    return callDeepSeek(buildRequestBody(texts, false)).then(function (r) {
+      var arr = parseTranslations(r.content, texts.length)
+      var got = arr.filter(function (v) { return v }).length
+      // 兜底：模型偶尔仍按旧分隔符协议返回
+      if (got === 0 && r.content.indexOf(SEG_DELIM) !== -1) {
+        var parts = r.content.split(SEG_DELIM).map(function (p) { return p.trim() }).filter(function (p) { return p })
+        if (parts.length === texts.length) arr = parts
+      }
+      return arr
+    })
+  }
+
+  // 单段翻译：不依赖任何结构，用于批次缺失段的兜底重试
+  function deepseekTranslateOne(text) {
+    return callDeepSeek(buildRequestBody([text], true)).then(function (r) {
+      var t = String(r.content || '').trim().replace(/^["“]([\s\S]*)["”]$/, '$1').trim()
+      return t || null
+    }).catch(function () { return null })
+  }
+
+  // 简单并发池：对 items 并发执行 worker，全部完成后 resolve
+  function runPool(items, concurrency, worker) {
+    return new Promise(function (resolve) {
+      var total = items.length
+      if (total === 0) return resolve()
+      var next = 0, active = 0, finished = 0
+      function pump() {
+        while (active < concurrency && next < total) {
+          (function (item) {
+            active++
+            Promise.resolve().then(function () { return worker(item) })
+              .catch(function () {})
+              .then(function () {
+                active--; finished++
+                if (finished === total) resolve(); else pump()
+              })
+          })(items[next++])
+        }
+      }
+      pump()
+    })
+  }
+
+  // 致命错误（鉴权/余额/限流/请求被拒）：重试也没意义，直接放弃
+  function isFatalError(err) {
+    var m = err && err.message ? err.message : ''
+    return m.indexOf('API Key') > -1 || m.indexOf('余额') > -1 ||
+           m.indexOf('过频') > -1 || m.indexOf('HTTP 400') > -1
+  }
+
+  // 运行时翻译主流程。返回 { segments: [{original, translated}], stats: {total, ok} }
+  // stats.ok = 真正拿到译文的段数（未变的段不计），供上层健康门禁判断。
   function runApiTranslate() {
     var html = postContent.dataset.original || postContent.innerHTML
     var extracted = extractTextSegments(html)
@@ -502,74 +618,65 @@
     // 缓存原 HTML，供回退 + 作为翻译替换的未污染底稿
     if (!postContent.dataset.original) postContent.dataset.original = postContent.innerHTML
 
-    // 翻译方向固定英译中（见 deepseekTranslateBatch 的 system prompt）
+    // 翻译方向固定英译中（见 buildRequestBody 的 system prompt）
 
-    if (segments.length === 0) return Promise.resolve([])
+    if (segments.length === 0) return Promise.resolve({ segments: [], stats: { total: 0, ok: 0 } })
 
     // 把段落按字符量分桶，每桶一次请求（一次 system prompt），极省 token
     var batches = bucketSegments(segments, MAX_BATCH_CHARS)
     var allTexts = segments.map(function (s) { return s.original })
     var results = new Array(segments.length).fill(null)
+    var firstError = null
 
-    if (batches.length === 0) return Promise.resolve([])
-
-    // 并行处理各桶，提升翻译速度（限制并发，避免触发限流）
-    var BATCH_CONCURRENCY = 2
-    var idx = 0
+    if (batches.length === 0) return Promise.resolve({ segments: [], stats: { total: 0, ok: 0 } })
 
     var runBatch = function (indices) {
       var texts = indices.map(function (i) { return allTexts[i] })
       return deepseekTranslateBatch(texts).then(function (trans) {
         for (var k = 0; k < indices.length; k++) {
-          // 单段失败保留原文
-          results[indices[k]] = (trans[k] && trans[k].length > 0) ? trans[k] : allTexts[indices[k]]
+          var v = trans[k]
+          // 只收真译文；缺失的留给兜底逐段重试
+          if (v && v.length) results[indices[k]] = v
         }
-      }).catch(function () {
-        // 桶级失败：该桶内所有段保留原文
-        indices.forEach(function (i) { results[i] = allTexts[i] })
+      }).catch(function (err) {
+        if (!firstError) firstError = err
       })
     }
 
-    // 简单的并行池
-    function pool() {
-      var arr = []
-      var active = 0
-      var taskIndex = 0
-      return {
-        run: function () {
-          var resolveAll
-          var done = new Promise(function (r) { resolveAll = r })
-          var finished = 0
-          var total = batches.length
-          function pump() {
-            while (active < BATCH_CONCURRENCY && taskIndex < total) {
-              (function (indices) {
-                active++
-                runBatch(indices).then(function () {
-                  active--
-                  finished++
-                  if (finished === total) resolveAll()
-                  else pump()
-                })
-              })(batches[taskIndex++])
-            }
-            if (total === 0) resolveAll()
-          }
-          pump()
-          return done
-        }
-      }
-    }
-
-    return pool().run().then(function () {
-      // 返回 [{ original, translated }]，去重段复用已翻译结果
+    // 并行处理各桶（限并发，避免触发限流）
+    return runPool(batches, 2, runBatch).then(function () {
+      // 致命错误直接终止，不做无意义的兜底重试
+      if (isFatalError(firstError)) return null
+      // 兜底第 1 层：缺失段改用更小的桶重试（请求越短，模型越不容易跑偏）
+      var missing = []
+      for (var i = 0; i < results.length; i++) if (!results[i]) missing.push(i)
+      if (!missing.length) return null
+      var retryBatches = bucketSegments(missing.map(function (idx) { return segments[idx] }), 800)
+        .map(function (grp) { return grp.map(function (localIdx) { return missing[localIdx] }) })
+      return runPool(retryBatches, 2, runBatch)
+    }).then(function () {
+      // 兜底第 2 层：仍缺的段逐段单独请求（不依赖任何结构）
+      if (isFatalError(firstError)) return null
+      var missing = []
+      for (var i = 0; i < results.length; i++) if (!results[i]) missing.push(i)
+      if (!missing.length || missing.length > MAX_SINGLE_RETRY) return null
+      return runPool(missing, SINGLE_RETRY_CONCURRENCY, function (idx) {
+        return deepseekTranslateOne(allTexts[idx]).then(function (t) {
+          if (t) results[idx] = t
+        })
+      })
+    }).then(function () {
       var segResults = []
+      var ok = 0
       for (var j = 0; j < segments.length; j++) {
         var orig = segments[j].original
         var tr = results[j] && results[j].length > 0 ? results[j] : orig
+        if (tr !== orig) ok++
         segResults.push({ original: orig, translated: tr })
       }
-      return segResults
+      // 全军覆没时抛出具体错误（401/429 等），而不是假装成功
+      if (ok === 0 && firstError) throw firstError
+      return { segments: segResults, stats: { total: segments.length, ok: ok } }
     })
   }
 
@@ -592,13 +699,34 @@
     return batches
   }
 
-  function showFatal(msg) {
-    // 轻提示
-    translateText.style.opacity = '0'
-    translateText.textContent = '重试'
-    translateText.style.opacity = '1'
-    setTimeout(function () { translateText.textContent = '翻译' }, 2200)
+  // 失败提示：按钮下方弹一条毛玻璃 toast，并短暂把按钮文字改成「重试」
+  // 挂在 body 上 + position:fixed：标题容器有 overflow 裁剪，挂在按钮旁边会被裁掉
+  function showError(msg) {
     console.warn('[translate] ' + msg)
+    var old = document.querySelector('.translate-toast')
+    if (old && old.parentNode) old.parentNode.removeChild(old)
+
+    var t = document.createElement('span')
+    t.className = 'translate-toast'
+    t.textContent = msg
+    document.body.appendChild(t)
+
+    // 定位到按钮下方，且不超出视口
+    var r = btnWrap.getBoundingClientRect()
+    var left = Math.max(8, Math.min(r.left, window.innerWidth - t.offsetWidth - 8))
+    t.style.left = left + 'px'
+    t.style.top = (r.bottom + 8) + 'px'
+    t.style.maxWidth = Math.min(300, window.innerWidth - 16) + 'px'
+
+    void t.offsetWidth
+    t.classList.add('show')
+
+    translateText.textContent = '重试'
+    setTimeout(function () {
+      t.classList.remove('show')
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t) }, 300)
+      if (!isTranslated) translateText.textContent = '翻译'
+    }, 4200)
   }
 
   // ==================== 应用翻译到页面（保留 HTML 结构）====================
