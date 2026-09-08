@@ -53,7 +53,7 @@
   background: linear-gradient(150deg, rgba(246, 248, 252, .50), rgba(232, 238, 248, .40));
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, .60);   /* 导航同款白边框 */
+  border: 1px solid rgba(255, 255, 255, .60);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .6),
     0 2px 8px rgba(40, 54, 88, .08);
@@ -63,19 +63,9 @@
     border-color .2s ease;
 }
 
-/* ---- 边框流光跑马灯(conic-gradient 旋转), 仅展开态显示 ----
-   用户要求: 检索栏边框加跑马灯, 颜色取大背景的颜色; 默认态不显示。
-   原理: ::before 覆盖整个胶囊, background 用 conic-gradient 取大背景
-   主色渐变并随 --angle 旋转(流光); 用 mask 裁出"外缘 1.5px 环带"
-   (content-box 挖空中心), 只在边框处显色 → 沿胶囊圆角边缘流动的光。
-   @property 注册 --angle 让 conic 渐变角度可动画(Chrome/Edge 支持)。
-
-   出现的柔和化(解决"流光出现生硬"):
-   - 旋转动画从"页面加载即后台常转"改为**仅在展开态启动**: 收起时 --nav-flow
-     回到 0deg, 每次展开流光都从顶部起点开始流动 → 有"光从起点流出来"的
-     方向感, 而不是整圈彩弧在任意相位凭空瞬现。
-   - 淡入从 .35s ease(起步冲得快)改为 .6s 缓入缓出(轻微 overshoot 前先慢起),
-     光是一点一点"点亮"而不是"啪"地一圈全亮。 */
+/* ---- 边框流光跑马灯 ----
+   效果：冷雾蓝渐变沿搜索栏边框旋转流动
+   结构：::before 覆盖整个胶囊，用 mask 裁出边框环 */
 @property --nav-flow {
   syntax: '<angle>';
   inherits: false;
@@ -84,18 +74,18 @@
 @keyframes nav-flow-rotate {
   to { --nav-flow: 360deg }
 }
-/* 默认态不显示; 收起时靠 transition 快速淡出 */
+
+/* 默认态不显示；收起时快速淡出 */
 #nav .nav-search-bar::before {
   content: '';
   position: absolute;
-  inset: -1px;            /* 盖住 1px 边框区域 */
+  inset: -2px;
   border-radius: 999px;
-  z-index: 1;            /* 盖在 bar 背景之上; 中心由 mask 排除, 不遮挡内容 */
+  z-index: -1;
   pointer-events: none;
   opacity: 0;
-  /* 收起/常态快速熄灭用 transition; 展开的渐显由 .open 的 transition 接管 */
   transition: opacity .18s ease;
-  /* light: 暗色高饱和彩色(深蓝→紫→青→橙), 在浅色玻璃上对比明显 */
+  /* 冷雾蓝渐变跑马灯 */
   background: conic-gradient(
     from var(--nav-flow),
     rgba(30, 58, 138, 0) 0%,
@@ -106,8 +96,8 @@
     rgba(37, 99, 235, .95) 82%,
     rgba(30, 58, 138, 0) 100%
   );
-  /* 裁出外缘 1.5px 环带: content-box 显示, padding-box 之外露出 */
-  padding: 1.5px;
+  /* 裁出边框环：只显示边缘 2px */
+  padding: 2px;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -117,17 +107,15 @@
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
 }
-/* 展开: 延迟一拍再渐显(输入框先展开到位, 流光边框缓缓浮现, 层次递进);
-   流光旋转动画在此才启动 → 每次从顶部起点(0deg)起流, 出现自然不突兀;
-   收起回退默认 transition(delay 0) → 立即熄灭不拖沓 */
+
+/* 展开态：直接渐显 + 旋转，不做放大 */
 #nav .nav-search-open .nav-search-bar::before {
   opacity: 1;
-  /* 慢起缓入, 让光"点亮"而非"瞬现": .6s + 柔缓动, 延迟 .5s 不变 */
   transition: opacity .6s cubic-bezier(.3, .02, .2, 1) .5s;
   animation: nav-flow-rotate 7s linear infinite;
 }
 
-/* dark: 边框流光取深色玻璃主色 */
+/* dark: 跑马灯取深色玻璃主色 */
 html[data-theme='dark'] #nav .nav-search-bar::before {
   background: conic-gradient(
     from var(--nav-flow),
@@ -137,6 +125,18 @@ html[data-theme='dark'] #nav .nav-search-bar::before {
     rgba(60, 200, 180, .80) 50%,
     rgba(245, 145, 82, .78) 68%,
     rgba(120, 160, 250, .85) 82%,
+    rgba(90, 135, 240, 0) 100%
+  );
+}
+html[data-theme='dark'] #nav .nav-search-bar::after {
+  background: conic-gradient(
+    from var(--nav-flow),
+    rgba(90, 135, 240, 0) 0%,
+    rgba(120, 160, 250, .6) 18%,
+    rgba(180, 120, 245, .55) 32%,
+    rgba(60, 200, 180, .5) 50%,
+    rgba(245, 145, 82, .48) 68%,
+    rgba(120, 160, 250, .6) 82%,
     rgba(90, 135, 240, 0) 100%
   );
 }

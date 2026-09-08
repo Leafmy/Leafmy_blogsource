@@ -62,11 +62,11 @@ html[data-theme='dark'] #nav #darkmode:hover {
   margin-left: 0;
 }
 
-/* 移动端: darkmode 移到导航栏最左边(其余功能键靠右), 尺寸略缩 */
+/* 移动端: darkmode 紧挨首页按钮右侧, 尺寸略缩 */
 @media (max-width: 768px) {
   #nav #darkmode {
-    order: 0;
-    margin: 0 auto 0 0;         /* 右 auto 把搜索/汉堡推到最右 */
+    order: 1;                    /* 紧跟首页(order:0)之后 */
+    margin: 0;                   /* 无额外间距, 由首页 margin-right:6px 控制 */
     width: 32px;
     height: 32px;
     font-size: 15px;

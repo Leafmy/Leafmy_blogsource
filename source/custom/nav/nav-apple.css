@@ -39,6 +39,8 @@
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, .60);
+  /* 强制 GPU 加速: backdrop-filter 必须走 GPU 合成层 */
+  will-change: transform;
 }
 
 /* 跟随指针的局部光晕层：改为独立合成层(元素) + transform 平移。
@@ -578,28 +580,75 @@ html[data-theme='dark'] #nav .nav-drop {
     touch-action: pan-y !important;
     max-height: 300px;
   }
-  /* 移动端导航栏只保留功能按钮(搜索 + 汉堡):
-     隐藏站名标题与文章/归档菜单项(用户要求), 避免窄屏拥挤错位。
-     用 #nav #menus .menus_items 高特异性压掉桌面 #nav #menus .menus_items
-     的 display:flex !important(同 !important 比特异性, 桌面规则高 0,3,0) */
+  /* 移动端导航栏只保留功能按钮(首页 + 搜索 + 黑白切换 + 汉堡):
+     隐藏站名标题与文章/归档菜单项(用户要求), 避免窄屏拥挤错位。 */
   #nav #blog-info,
   #nav #menus .menus_items {
     display: none !important;
   }
-  /* 功能按钮靠右排布: #menus 内容整体右对齐 */
+  /* 移动端首页按钮: 显示在最左侧 */
+  #nav .nav-mobile-home {
+    display: flex !important;
+    order: 0 !important;
+    flex: 0 0 auto !important;
+    margin-right: 6px !important;  /* 与黑白切换键保持小间距 */
+  }
+  #nav .nav-mobile-home a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    color: rgba(70, 84, 116, .85);
+    font-size: 15px;
+    background: linear-gradient(150deg, rgba(246, 248, 252, .50), rgba(232, 238, 248, .40));
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, .60);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 8px rgba(40, 54, 88, .08);
+    transition: background-color .2s ease, color .2s ease, transform .2s ease;
+  }
+  #nav .nav-mobile-home a:hover {
+    background: linear-gradient(150deg, rgba(255, 255, 255, .46), rgba(255, 255, 255, .22));
+    color: var(--theme-color, #49b1f5);
+  }
+  #nav .nav-mobile-home a:active {
+    transform: scale(.92);
+  }
+  html[data-theme='dark'] #nav .nav-mobile-home a {
+    color: rgba(255, 255, 255, .88);
+    background: linear-gradient(150deg, rgba(36, 42, 60, .55), rgba(20, 24, 36, .52));
+    border-color: rgba(255, 255, 255, .12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 8px rgba(0, 0, 0, .3);
+  }
+  html[data-theme='dark'] #nav .nav-mobile-home a:hover {
+    background: linear-gradient(150deg, rgba(44, 52, 74, .58), rgba(26, 32, 46, .55));
+    border-color: rgba(255, 255, 255, .16);
+    color: var(--theme-color, #49b1f5);
+  }
+  /* 功能按钮布局: 首页+黑白切换在左, 搜索+汉堡在右 */
   #nav #menus {
-    justify-content: flex-end !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;  /* 左右两组分开 */
   }
   /* 汉堡按钮提到最右端(order 最大); flex-shrink:0 防止被展开的搜索胶囊挤压 */
   #nav #menus #toggle-menu {
-    order: 3 !important;
+    order: 4 !important;
     margin-left: 6px !important;
     flex: 0 0 auto !important;
   }
-  /* 搜索胶囊在汉堡左侧相邻(order 次之), 移除 auto 推挤 */
+  /* 黑白切换按钮紧挨首页键右侧 */
+  #nav #darkmode {
+    order: 1 !important;  /* 紧跟首页(order:0)之后 */
+    margin: 0 !important;  /* 无额外间距, 由首页的 margin-right:6px 控制 */
+    flex: 0 0 auto !important;
+  }
+  /* 搜索胶囊在汉堡左侧 */
   #nav #menus .nav-search {
-    order: 2 !important;
-    margin-left: 0 !important;
+    order: 3 !important;
+    margin-left: auto !important;  /* 推到右侧 */
   }
   #nav .nav-drop {
     left: 0 !important;
@@ -608,7 +657,14 @@ html[data-theme='dark'] #nav .nav-drop {
     max-width: none;
   }
   /* 触屏 .open 生效时也要去掉 translateX(-50%)，用全宽定位 */
-  #nav .menus_item.open .nav-drop {
-    transform: translateY(0) !important;
+#nav .menus_item.open .nav-drop {
+  transform: translateY(0) !important;
+  }
+}
+
+/* 桌面端隐藏移动端首页按钮 */
+@media (min-width: 769px) {
+  #nav .nav-mobile-home {
+    display: none !important;
   }
 }

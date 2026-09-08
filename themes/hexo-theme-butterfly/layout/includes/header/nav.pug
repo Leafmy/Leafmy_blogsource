@@ -12,6 +12,10 @@ nav#nav
           i.fa-solid.fa-circle-arrow-left
           span= '  ' + _p('post.back_to_home')
 
+  #mobile-home-btn.nav-mobile-home
+    a(href=url_for('/'))
+      i.fas.fa-home
+
   #menus
     if theme.search.use
       #search-button
