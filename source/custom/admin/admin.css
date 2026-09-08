@@ -1,88 +1,42 @@
 /* ============================================================
-   管理控制台样式 /admin/
+   管理控制台样式 /admin/ —— 现代 · 简约 · 宇宙感
    ------------------------------------------------------------
-   风格：极客 / 科技风
-   - 深空 canvas 星场（admin-space.js）+ 星云 + 网格 + 扫描线
-   - 卡片玻璃：backdrop-filter + 分层阴影 + HUD 直角括角
-   - 卡片光效：与顶部导航栏同款（指针跟随光斑 + 边缘高亮环）
-   - 明暗双主题：html[data-theme='dark'|'light']
+   - 字体：与站点一致（PingFangMedium）
+   - 背景：canvas 宇宙（银河 / 恒星 / 黑洞 / 星链 / 流星，见 admin-space.js）
+   - 卡片：真玻璃（backdrop-filter）+ 柔和阴影 + 导航栏同款指针光效
+   - 单主题：深色
    ============================================================ */
 
 @font-face {
-  font-family: 'Fira Code';
-  src: url('/custom/assets/fonts/fira-code/FiraCode-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Fira Code';
-  src: url('/custom/assets/fonts/fira-code/FiraCode-Bold.woff2') format('woff2');
-  font-weight: 700;
+  font-family: 'PingFangMedium';
+  src: url('/custom/assets/fonts/PingFang-Medium.woff2') format('woff2');
   font-display: swap;
 }
 
 :root {
   --adm-bg: #04060d;
-  --adm-grid: rgba(120, 180, 255, .055);
-  --adm-scan: rgba(180, 220, 255, .035);
-  --adm-panel: rgba(13, 19, 33, .58);
-  --adm-panel-solid: rgba(12, 18, 31, .86);
-  --adm-line: rgba(120, 180, 255, .16);
+  --adm-glass:
+    linear-gradient(160deg, rgba(255, 255, 255, .055) 0%, rgba(255, 255, 255, .015) 40%, rgba(255, 255, 255, 0) 68%),
+    linear-gradient(160deg, rgba(12, 19, 34, .58), rgba(6, 10, 20, .52));
+  --adm-glass-solid: rgba(11, 17, 30, .82);
+  --adm-line: rgba(140, 180, 240, .14);
   --adm-line-hi: rgba(120, 200, 255, .42);
-  --adm-text: #dde8f8;
-  --adm-dim: rgba(180, 202, 232, .62);
-  --adm-accent: #58e0ff;
-  --adm-accent2: #7c8bff;
+  --adm-text: #e2ebf8;
+  --adm-dim: rgba(184, 205, 234, .6);
+  --adm-accent: #62d8ff;
+  --adm-accent2: #8b8bff;
   --adm-danger: #ff7b72;
-  --adm-ok: #58d68d;
-  --adm-radius: 10px;
-  --adm-glow: rgba(96, 208, 255, .30);
-  --adm-glow-hi: rgba(140, 225, 255, .85);
+  --adm-ok: #5ad48c;
+  --adm-radius: 16px;
+  --adm-radius-sm: 10px;
+  --adm-glow: rgba(96, 208, 255, .26);
+  --adm-glow-hi: rgba(150, 230, 255, .9);
   --adm-shadow:
-    0 0 0 1px rgba(120, 190, 255, .10),
-    0 18px 40px -18px rgba(0, 0, 0, .85),
-    0 2px 10px -4px rgba(0, 0, 0, .6);
-  --adm-inset: inset 0 1px 0 rgba(255, 255, 255, .07);
+    0 1px 0 rgba(255, 255, 255, .06) inset,
+    0 20px 46px -26px rgba(0, 0, 0, .9),
+    0 4px 14px -8px rgba(0, 0, 0, .5);
+  --adm-font: 'PingFangMedium', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
   --adm-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  /* 玻璃：分层渐变（不用 backdrop-filter —— 背景是动态星场，
-     实时模糊会每帧重采样，实测吃掉 17ms/帧，见文件末尾注释） */
-  --adm-glass:
-    linear-gradient(148deg, rgba(255, 255, 255, .065) 0%, rgba(255, 255, 255, .018) 38%, rgba(255, 255, 255, 0) 62%),
-    linear-gradient(162deg, rgba(14, 22, 40, .74), rgba(7, 11, 21, .68));
-  --adm-glass-soft:
-    linear-gradient(150deg, rgba(255, 255, 255, .05) 0%, rgba(255, 255, 255, .012) 45%, rgba(255, 255, 255, 0) 70%),
-    linear-gradient(160deg, rgba(12, 19, 34, .62), rgba(7, 11, 21, .56));
-  --adm-sheen: inset 0 1px 0 rgba(255, 255, 255, .09), inset 0 -1px 0 rgba(255, 255, 255, .025);
-}
-
-html[data-theme='light'] {
-  --adm-bg: #eaf0f9;
-  --adm-grid: rgba(30, 80, 150, .07);
-  --adm-scan: rgba(20, 60, 120, .03);
-  --adm-panel: rgba(255, 255, 255, .62);
-  --adm-panel-solid: rgba(255, 255, 255, .92);
-  --adm-line: rgba(24, 70, 140, .16);
-  --adm-line-hi: rgba(20, 110, 200, .45);
-  --adm-text: #14243c;
-  --adm-dim: rgba(40, 66, 104, .66);
-  --adm-accent: #0a7bc4;
-  --adm-accent2: #4a5bd6;
-  --adm-danger: #d64545;
-  --adm-ok: #1f9d5a;
-  --adm-glow: rgba(30, 140, 220, .22);
-  --adm-glow-hi: rgba(20, 130, 220, .70);
-  --adm-shadow:
-    0 0 0 1px rgba(30, 90, 160, .08),
-    0 16px 34px -18px rgba(30, 60, 110, .38),
-    0 2px 8px -4px rgba(30, 60, 110, .18);
-  --adm-inset: inset 0 1px 0 rgba(255, 255, 255, .75);
-  --adm-glass:
-    linear-gradient(148deg, rgba(255, 255, 255, .85) 0%, rgba(255, 255, 255, .42) 40%, rgba(255, 255, 255, .18) 66%),
-    linear-gradient(162deg, rgba(252, 254, 255, .74), rgba(238, 244, 252, .66));
-  --adm-glass-soft:
-    linear-gradient(150deg, rgba(255, 255, 255, .8) 0%, rgba(255, 255, 255, .38) 46%, rgba(255, 255, 255, .16) 72%),
-    linear-gradient(160deg, rgba(253, 255, 255, .66), rgba(240, 246, 253, .58));
-  --adm-sheen: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 -1px 0 rgba(20, 60, 120, .06);
 }
 
 * { box-sizing: border-box; }
@@ -91,17 +45,16 @@ html, body { margin: 0; padding: 0; min-height: 100%; }
 
 body.admin-body {
   position: relative;
-  font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--adm-font);
   color: var(--adm-text);
   background: var(--adm-bg);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  transition: background-color .35s ease, color .35s ease;
 }
 
 /* ============================================================
-   背景层：canvas 星场 / 星云 / 网格 / 扫描线
+   背景：canvas 宇宙 + 星云
    ============================================================ */
 #admin-space {
   position: fixed;
@@ -116,85 +69,24 @@ body.admin-body {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(46% 38% at 16% 12%, rgba(58, 110, 255, .30), transparent 64%),
-    radial-gradient(40% 34% at 84% 14%, rgba(126, 74, 255, .26), transparent 62%),
-    radial-gradient(52% 42% at 48% 96%, rgba(30, 110, 220, .30), transparent 66%),
-    radial-gradient(30% 26% at 74% 60%, rgba(255, 96, 180, .16), transparent 60%),
-    radial-gradient(24% 20% at 28% 74%, rgba(70, 220, 255, .18), transparent 60%);
-  animation: adm-nebula-drift 90s ease-in-out infinite alternate;
-}
-
-html[data-theme='light'] .admin-nebula {
-  background:
-    radial-gradient(46% 38% at 16% 12%, rgba(96, 160, 255, .26), transparent 64%),
-    radial-gradient(40% 34% at 84% 14%, rgba(150, 120, 255, .20), transparent 62%),
-    radial-gradient(52% 42% at 48% 96%, rgba(90, 190, 255, .24), transparent 66%),
-    radial-gradient(24% 20% at 28% 74%, rgba(120, 235, 255, .22), transparent 60%);
-}
-
-/* 科技网格 */
-.admin-grid {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(var(--adm-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--adm-grid) 1px, transparent 1px);
-  background-size: 68px 68px;
-  -webkit-mask-image: radial-gradient(130% 110% at 50% 0%, #000 24%, transparent 78%);
-  mask-image: radial-gradient(130% 110% at 50% 0%, #000 24%, transparent 78%);
-}
-
-/* 扫描线 + 缓慢下扫的光带 */
-.admin-scanlines {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  background-image: repeating-linear-gradient(
-    0deg,
-    var(--adm-scan) 0 1px,
-    transparent 1px 3px
-  );
-}
-
-.admin-scanlines::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 38%;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    var(--adm-glow) 46%,
-    var(--adm-glow-hi) 50%,
-    var(--adm-glow) 54%,
-    transparent
-  );
-  opacity: .22;
-  animation: adm-sweep 11s linear infinite;
-}
-
-@keyframes adm-sweep {
-  0% { transform: translate3d(0, -120%, 0); }
-  100% { transform: translate3d(0, 320%, 0); }
+    radial-gradient(46% 38% at 14% 10%, rgba(58, 110, 255, .26), transparent 66%),
+    radial-gradient(40% 34% at 86% 16%, rgba(126, 74, 255, .22), transparent 64%),
+    radial-gradient(52% 42% at 48% 98%, rgba(30, 110, 220, .24), transparent 68%),
+    radial-gradient(28% 24% at 76% 58%, rgba(255, 96, 180, .12), transparent 62%);
+  animation: adm-nebula-drift 120s ease-in-out infinite alternate;
 }
 
 @keyframes adm-nebula-drift {
   0% { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(-4%, -3%, 0) scale(1.12); }
+  100% { transform: translate3d(-3.5%, -2.6%, 0) scale(1.1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-nebula,
-  .admin-scanlines::after { animation: none; }
+  .admin-nebula { animation: none; }
 }
 
 /* ============================================================
-   卡片光效（与顶部导航栏同款：指针跟随光斑 + 边缘高亮环）
+   卡片光效：与顶部导航栏同款（指针跟随光斑 + 边缘高亮环）
    ============================================================ */
 .adm-card {
   position: relative;
@@ -202,23 +94,21 @@ html[data-theme='light'] .admin-nebula {
   overflow: hidden;
 }
 
-/* 指针跟随光斑（transform 走合成器） */
 .adm-card::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0;
-  width: 460px;
-  height: 300px;
+  width: 480px;
+  height: 320px;
   pointer-events: none;
   background: radial-gradient(closest-side, var(--adm-glow), transparent 72%);
-  transform: translate3d(calc(var(--gx, -999px) - 230px), calc(var(--gy, -999px) - 150px), 0);
+  transform: translate3d(calc(var(--gx, -999px) - 240px), calc(var(--gy, -999px) - 160px), 0);
   opacity: 0;
-  transition: opacity .3s ease;
+  transition: opacity .35s ease;
   z-index: 0;
 }
 
-/* 边缘高亮环（1px 环 + 指针处的高光） */
 .adm-card::after {
   content: '';
   position: absolute;
@@ -227,40 +117,21 @@ html[data-theme='light'] .admin-nebula {
   padding: 1px;
   pointer-events: none;
   background: radial-gradient(
-    240px 180px at var(--gx, -999px) var(--gy, -999px),
+    260px 190px at var(--gx, -999px) var(--gy, -999px),
     var(--adm-glow-hi),
-    rgba(120, 200, 255, 0) 68%
+    rgba(120, 200, 255, 0) 66%
   );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity .3s ease;
+  transition: opacity .35s ease;
   z-index: 2;
 }
 
 .adm-card.glow-on::before,
 .adm-card.glow-on::after { opacity: 1; }
-
-/* HUD 直角括角 */
-.adm-hud {
-  position: absolute;
-  inset: 7px;
-  pointer-events: none;
-  z-index: 1;
-  opacity: .5;
-  --c: var(--adm-line-hi);
-  background:
-    linear-gradient(var(--c), var(--c)) left top / 13px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) left top / 1px 13px no-repeat,
-    linear-gradient(var(--c), var(--c)) right top / 13px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) right top / 1px 13px no-repeat,
-    linear-gradient(var(--c), var(--c)) left bottom / 13px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) left bottom / 1px 13px no-repeat,
-    linear-gradient(var(--c), var(--c)) right bottom / 13px 1px no-repeat,
-    linear-gradient(var(--c), var(--c)) right bottom / 1px 13px no-repeat;
-}
 
 /* ============================================================
    门禁
@@ -278,40 +149,40 @@ html[data-theme='light'] .admin-nebula {
 .admin-gate-card {
   width: 100%;
   max-width: 400px;
-  padding: 34px 30px 30px;
-  border-radius: 14px;
+  padding: 36px 32px 32px;
+  border-radius: 20px;
   border: 1px solid var(--adm-line);
-  background: var(--adm-glass);
-  box-shadow: var(--adm-shadow), var(--adm-sheen);
+  background: var(--adm-glass-solid);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: var(--adm-shadow);
   text-align: center;
 }
 
 .admin-gate-icon {
-  font-size: 28px;
+  font-size: 26px;
   color: var(--adm-accent);
-  margin-bottom: 10px;
-  text-shadow: 0 0 26px var(--adm-glow);
+  margin-bottom: 12px;
+  text-shadow: 0 0 26px var(--adm-glow-hi);
 }
 
 .admin-gate-card h1 {
-  margin: 0 0 6px;
-  font-family: var(--adm-mono);
-  font-size: 18px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: .04em;
 }
 
 .admin-gate-desc {
-  margin: 0 0 20px;
+  margin: 0 0 22px;
   color: var(--adm-dim);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 .admin-gate-msg {
   min-height: 20px;
   margin-top: 12px;
-  font-family: var(--adm-mono);
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--adm-danger);
 }
 
@@ -321,10 +192,10 @@ html[data-theme='light'] .admin-nebula {
 .admin-input,
 .admin-textarea {
   width: 100%;
-  padding: 9px 12px;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border-radius: var(--adm-radius-sm);
   border: 1px solid var(--adm-line);
-  background: rgba(0, 0, 0, .28);
+  background: rgba(0, 0, 0, .26);
   color: var(--adm-text);
   font-size: 13.5px;
   font-family: inherit;
@@ -332,8 +203,13 @@ html[data-theme='light'] .admin-nebula {
   transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
 
-html[data-theme='light'] .admin-input,
-html[data-theme='light'] .admin-textarea { background: rgba(255, 255, 255, .78); }
+/* 门禁输入框居中，表单输入框左对齐 */
+.admin-gate .admin-input,
+.admin-toolbar .admin-input { text-align: center; }
+
+.admin-form .admin-input,
+.admin-field .admin-input,
+.admin-textarea { text-align: left; }
 
 .admin-textarea {
   resize: vertical;
@@ -346,63 +222,64 @@ html[data-theme='light'] .admin-textarea { background: rgba(255, 255, 255, .78);
 .admin-input:focus,
 .admin-textarea:focus {
   border-color: var(--adm-line-hi);
-  box-shadow: 0 0 0 3px var(--adm-glow), 0 0 18px -6px var(--adm-glow-hi);
+  box-shadow: 0 0 0 3px rgba(98, 216, 255, .12), 0 0 20px -8px var(--adm-glow-hi);
 }
 
 .admin-input::placeholder,
-.admin-textarea::placeholder { color: var(--adm-dim); opacity: .7; }
+.admin-textarea::placeholder { color: var(--adm-dim); opacity: .65; }
 
+/* 按钮：内容一律居中 */
 .admin-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 9px 18px;
+  border-radius: var(--adm-radius-sm);
   border: 1px solid var(--adm-line);
-  background: rgba(0, 0, 0, .26);
+  background: rgba(255, 255, 255, .04);
   color: var(--adm-text);
-  font-family: var(--adm-mono);
-  font-size: 12.5px;
-  letter-spacing: .02em;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
   cursor: pointer;
   white-space: nowrap;
   transition: border-color .2s ease, background .2s ease, color .2s ease, box-shadow .2s ease, transform .12s ease;
 }
 
-html[data-theme='light'] .admin-btn { background: rgba(255, 255, 255, .7); }
+.admin-btn i { font-size: 12.5px; line-height: 1; }
 
 .admin-btn:hover {
   border-color: var(--adm-line-hi);
-  color: var(--adm-accent);
-  box-shadow: 0 0 18px -6px var(--adm-glow-hi), var(--adm-inset);
+  background: rgba(98, 216, 255, .1);
+  box-shadow: 0 0 20px -8px var(--adm-glow-hi);
 }
 
 .admin-btn:active { transform: translateY(1px); }
 .admin-btn[disabled] { opacity: .45; cursor: not-allowed; }
 
 .admin-btn-primary {
-  border-color: var(--adm-line-hi);
-  background: linear-gradient(160deg, rgba(56, 130, 235, .34), rgba(96, 78, 220, .30));
-  color: var(--adm-text);
-  box-shadow: 0 0 22px -8px var(--adm-glow-hi), var(--adm-inset);
+  border-color: rgba(120, 200, 255, .45);
+  background: linear-gradient(160deg, rgba(70, 140, 240, .55), rgba(110, 90, 235, .5));
+  color: #fff;
+  box-shadow: 0 0 24px -10px var(--adm-glow-hi);
 }
 
 .admin-btn-primary:hover {
-  color: #fff;
-  background: linear-gradient(160deg, rgba(64, 148, 255, .48), rgba(110, 90, 240, .42));
+  background: linear-gradient(160deg, rgba(84, 158, 255, .68), rgba(126, 104, 250, .62));
 }
 
-html[data-theme='light'] .admin-btn-primary { color: #fff; }
-
 .admin-btn-danger {
-  border-color: rgba(255, 123, 114, .42);
-  color: var(--adm-danger);
+  border-color: rgba(255, 123, 114, .38);
+  color: #ffb0aa;
+  background: rgba(255, 90, 80, .08);
 }
 
 .admin-btn-danger:hover {
-  border-color: var(--adm-danger);
-  color: var(--adm-danger);
-  box-shadow: 0 0 18px -6px rgba(255, 123, 114, .6);
+  border-color: rgba(255, 123, 114, .7);
+  background: rgba(255, 90, 80, .16);
+  box-shadow: 0 0 20px -8px rgba(255, 123, 114, .7);
 }
 
 /* ============================================================
@@ -413,46 +290,35 @@ html[data-theme='light'] .admin-btn-primary { color: #fff; }
   z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 20px 90px;
+  padding: 24px 22px 96px;
 }
 
 .admin-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
-  padding: 13px 18px;
+  padding: 14px 20px;
   border-radius: var(--adm-radius);
   border: 1px solid var(--adm-line);
   background: var(--adm-glass);
-  box-shadow: var(--adm-shadow), var(--adm-sheen);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: var(--adm-shadow);
 }
 
 .admin-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--adm-mono);
-  font-size: 13.5px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: 15px;
+  letter-spacing: .03em;
 }
 
-.admin-brand i { color: var(--adm-accent); text-shadow: 0 0 14px var(--adm-glow-hi); }
-
-.admin-brand .adm-led {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--adm-ok);
-  box-shadow: 0 0 10px var(--adm-ok);
-  animation: adm-led 2.4s ease-in-out infinite;
-}
-
-@keyframes adm-led {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .35; }
+.admin-brand i {
+  color: var(--adm-accent);
+  text-shadow: 0 0 16px var(--adm-glow-hi);
 }
 
 .admin-top-actions {
@@ -463,53 +329,53 @@ html[data-theme='light'] .admin-btn-primary { color: #fff; }
 }
 
 .admin-repo {
-  font-family: var(--adm-mono);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--adm-dim);
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
   border: 1px solid var(--adm-line);
-  background: rgba(0, 0, 0, .24);
+  background: rgba(0, 0, 0, .22);
   max-width: 360px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-html[data-theme='light'] .admin-repo { background: rgba(255, 255, 255, .7); }
-
 /* ============================================================
-   标签页
+   标签页（分段胶囊）
    ============================================================ */
 .admin-tabs {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin: 14px 0 16px;
+  margin: 16px 0 18px;
+  padding: 5px;
+  border-radius: 999px;
+  border: 1px solid var(--adm-line);
+  background: rgba(0, 0, 0, .22);
+  width: fit-content;
+  max-width: 100%;
 }
 
 .admin-tab {
-  padding: 7px 15px;
-  border-radius: 6px;
-  border: 1px solid var(--adm-line);
-  background: rgba(0, 0, 0, .22);
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--adm-dim);
-  font-family: var(--adm-mono);
-  font-size: 12.5px;
-  letter-spacing: .03em;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: center;
   cursor: pointer;
-  transition: all .2s ease;
+  transition: color .2s ease, background .2s ease, box-shadow .2s ease;
 }
 
-html[data-theme='light'] .admin-tab { background: rgba(255, 255, 255, .68); }
-
-.admin-tab:hover { color: var(--adm-text); border-color: var(--adm-line-hi); }
+.admin-tab:hover { color: var(--adm-text); }
 
 .admin-tab.is-active {
-  color: var(--adm-accent);
-  border-color: var(--adm-line-hi);
-  background: linear-gradient(160deg, rgba(56, 130, 235, .26), rgba(96, 78, 220, .22));
-  box-shadow: 0 0 20px -8px var(--adm-glow-hi), var(--adm-inset);
+  color: #fff;
+  background: linear-gradient(160deg, rgba(70, 140, 240, .55), rgba(110, 90, 235, .5));
+  box-shadow: 0 0 22px -10px var(--adm-glow-hi);
 }
 
 .admin-pane { display: none; }
@@ -520,60 +386,50 @@ html[data-theme='light'] .admin-tab { background: rgba(255, 255, 255, .68); }
    ============================================================ */
 .admin-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-.admin-stat {
-  padding: 18px 16px;
+.admin-stat,
+.admin-panel {
   border-radius: var(--adm-radius);
   border: 1px solid var(--adm-line);
   background: var(--adm-glass);
-  box-shadow: var(--adm-shadow), var(--adm-sheen);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: var(--adm-shadow);
+}
+
+.admin-stat {
+  padding: 22px 18px;
   text-align: center;
 }
 
 .admin-stat-num {
-  font-family: var(--adm-mono);
-  font-size: 27px;
-  font-weight: 700;
+  font-size: 30px;
+  font-weight: 500;
   color: var(--adm-accent);
-  line-height: 1.15;
-  text-shadow: 0 0 22px var(--adm-glow);
+  line-height: 1.1;
+  text-shadow: 0 0 26px var(--adm-glow);
 }
 
 .admin-stat-label {
-  margin-top: 4px;
-  font-family: var(--adm-mono);
-  font-size: 11.5px;
-  letter-spacing: .06em;
+  margin-top: 6px;
+  font-size: 12.5px;
   color: var(--adm-dim);
 }
 
 .admin-panel {
-  margin-bottom: 14px;
-  padding: 18px;
-  border-radius: var(--adm-radius);
-  border: 1px solid var(--adm-line);
-  background: var(--adm-glass);
-  box-shadow: var(--adm-shadow), var(--adm-sheen);
+  margin-bottom: 16px;
+  padding: 22px;
 }
 
 .admin-panel-title {
-  margin-bottom: 12px;
-  font-family: var(--adm-mono);
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--adm-text);
-}
-
-.admin-panel-title::before {
-  content: '// ';
-  color: var(--adm-accent);
-  opacity: .8;
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
 }
 
 .admin-toolbar {
@@ -581,27 +437,25 @@ html[data-theme='light'] .admin-tab { background: rgba(255, 255, 255, .68); }
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .admin-toolbar .admin-input { flex: 1 1 220px; width: auto; }
 
 .admin-hint {
-  margin-top: 10px;
-  font-size: 12px;
+  margin-top: 12px;
+  font-size: 12.5px;
   color: var(--adm-dim);
 }
 
 .admin-hint code {
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 1px 7px;
+  border-radius: 6px;
   background: rgba(0, 0, 0, .3);
   border: 1px solid var(--adm-line);
   font-family: var(--adm-mono);
   font-size: 11.5px;
 }
-
-html[data-theme='light'] .admin-hint code { background: rgba(255, 255, 255, .8); }
 
 .admin-hint a { color: var(--adm-accent); }
 
@@ -614,24 +468,24 @@ html[data-theme='light'] .admin-hint code { background: rgba(255, 255, 255, .8);
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 14px;
-  border-radius: 8px;
+  padding: 13px 16px;
+  border-radius: var(--adm-radius-sm);
   border: 1px solid var(--adm-line);
-  background: var(--adm-glass-soft);
-  box-shadow: var(--adm-sheen);
+  background: rgba(255, 255, 255, .035);
   cursor: pointer;
-  transition: border-color .2s ease, background .2s ease, transform .12s ease, box-shadow .2s ease;
+  transition: border-color .2s ease, background .2s ease, transform .15s ease;
 }
 
 .admin-item:hover {
   border-color: var(--adm-line-hi);
+  background: rgba(98, 216, 255, .07);
   transform: translateX(2px);
 }
 
 .admin-item-main { flex: 1; min-width: 0; }
 
 .admin-item-title {
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--adm-text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -639,9 +493,8 @@ html[data-theme='light'] .admin-hint code { background: rgba(255, 255, 255, .8);
 }
 
 .admin-item-meta {
-  margin-top: 2px;
-  font-family: var(--adm-mono);
-  font-size: 11.5px;
+  margin-top: 3px;
+  font-size: 12px;
   color: var(--adm-dim);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -652,41 +505,36 @@ html[data-theme='light'] .admin-hint code { background: rgba(255, 255, 255, .8);
 
 .admin-pill {
   display: inline-block;
-  padding: 1px 7px;
+  padding: 1px 8px;
   margin-left: 6px;
-  border-radius: 4px;
+  border-radius: 999px;
   border: 1px solid var(--adm-line-hi);
   color: var(--adm-accent);
-  font-family: var(--adm-mono);
-  font-size: 10.5px;
-  letter-spacing: .04em;
+  font-size: 11px;
 }
 
 .admin-empty {
-  padding: 26px 0;
+  padding: 28px 0;
   text-align: center;
   color: var(--adm-dim);
-  font-family: var(--adm-mono);
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 /* ============================================================
    表单
    ============================================================ */
-.admin-form { display: flex; flex-direction: column; gap: 12px; }
+.admin-form { display: flex; flex-direction: column; gap: 14px; }
 
 .admin-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 
-.admin-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.admin-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
 .admin-field label {
-  font-family: var(--adm-mono);
-  font-size: 11.5px;
-  letter-spacing: .04em;
+  font-size: 12.5px;
   color: var(--adm-dim);
 }
 
@@ -716,19 +564,16 @@ html[data-theme='light'] .admin-hint code { background: rgba(255, 255, 255, .8);
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
-  border-radius: 8px;
+  padding: 11px 14px;
+  border-radius: var(--adm-radius-sm);
   border: 1px solid var(--adm-line);
-  background: rgba(0, 0, 0, .2);
+  background: rgba(255, 255, 255, .035);
 }
 
-html[data-theme='light'] .admin-tax-row { background: rgba(255, 255, 255, .6); }
-
-.admin-tax-name { flex: 1; font-size: 13px; }
+.admin-tax-name { flex: 1; font-size: 13.5px; }
 
 .admin-tax-count {
-  font-family: var(--adm-mono);
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--adm-dim);
   margin-right: 6px;
 }
@@ -739,16 +584,18 @@ html[data-theme='light'] .admin-tax-row { background: rgba(255, 255, 255, .6); }
 .admin-toast {
   position: fixed;
   left: 50%;
-  bottom: 28px;
+  bottom: 30px;
   transform: translate(-50%, 18px);
   max-width: min(580px, calc(100vw - 32px));
-  padding: 11px 18px;
-  border-radius: 8px;
+  padding: 12px 20px;
+  border-radius: var(--adm-radius-sm);
   border: 1px solid var(--adm-line-hi);
-  background: var(--adm-glass);
+  background: var(--adm-glass-solid);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   box-shadow: var(--adm-shadow);
-  font-family: var(--adm-mono);
-  font-size: 12.5px;
+  font-size: 13px;
+  text-align: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity .28s ease, transform .28s ease;
@@ -756,18 +603,17 @@ html[data-theme='light'] .admin-tax-row { background: rgba(255, 255, 255, .6); }
 }
 
 .admin-toast.show { opacity: 1; transform: translate(-50%, 0); }
-.admin-toast.ok { border-color: rgba(88, 214, 141, .55); color: var(--adm-ok); }
-.admin-toast.err { border-color: rgba(255, 123, 114, .55); color: var(--adm-danger); }
+.admin-toast.ok { border-color: rgba(90, 212, 140, .5); color: #b6f0cd; }
+.admin-toast.err { border-color: rgba(255, 123, 114, .5); color: #ffc0bb; }
 
 /* ============================================================
    移动端
    ============================================================ */
 @media (max-width: 720px) {
-  .admin-app { padding: 14px 12px 76px; }
+  .admin-app { padding: 16px 14px 80px; }
   .admin-row { grid-template-columns: 1fr; }
-  .admin-top { padding: 12px 14px; }
   .admin-repo { display: none; }
-  .admin-tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .admin-tabs { overflow-x: auto; flex-wrap: nowrap; width: 100%; }
   .admin-tab { flex-shrink: 0; }
   .admin-item { flex-wrap: wrap; }
 }
