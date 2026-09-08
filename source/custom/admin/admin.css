@@ -79,35 +79,13 @@ body.admin-body {
 }
 
 /* ============================================================
-   背景：canvas 宇宙 + 星云
+   背景：canvas 液态玻璃 + 星链 + 流星（见 admin-space.js）
    ============================================================ */
 #admin-space {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-}
-
-.admin-nebula {
-  position: fixed;
-  inset: -20%;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(46% 38% at 14% 10%, rgba(58, 110, 255, .26), transparent 66%),
-    radial-gradient(40% 34% at 86% 16%, rgba(126, 74, 255, .22), transparent 64%),
-    radial-gradient(52% 42% at 48% 98%, rgba(30, 110, 220, .24), transparent 68%),
-    radial-gradient(28% 24% at 76% 58%, rgba(255, 96, 180, .12), transparent 62%);
-  animation: adm-nebula-drift 120s ease-in-out infinite alternate;
-}
-
-@keyframes adm-nebula-drift {
-  0% { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(-3.5%, -2.6%, 0) scale(1.1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .admin-nebula { animation: none; }
 }
 
 /* ============================================================
