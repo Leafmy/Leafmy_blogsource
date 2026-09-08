@@ -361,12 +361,14 @@ html[data-theme='dark'] #post .post-content pre:not(.shiki) > code {
 /* 只作用于正文里【直接父级非 pre】的「行内」<code>(小代码片段),
    去主题深黑底。用父子选择器 :not(pre) > code 精准命中——
    高亮块 code 直接父级是 pre.shiki、裸块 code 直接父级是 pre,
-   都会被排除; 只有 p/span 里的行内 code 命中。 */
+   都会被排除; 只有 p/span 里的行内 code 命中。
+   注意: 故意【不加 backdrop-filter】—— 实测 Chromium 对【行内元素】
+   的 backdrop-filter 会把同一行(甚至相邻行)的正文文本一并模糊采样,
+   造成"正文被打码"的假象(块级 figure.shiki / pre:not(.shiki) 均无此问题,
+   只有行内 box 中招)。行内码用纯胶囊底即可, 磨砂感由块级承载。 */
 #post .post-content :not(pre) > code {
   color: var(--shiki-color-text);
   background: rgba(110, 155, 255, .10) !important;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
   border-radius: 4px;
   padding: 2px 6px;
   font-size: .90em;
