@@ -116,18 +116,18 @@ body.admin-body {
   position: absolute;
   left: 0;
   top: 0;
-  width: 620px;
-  height: 620px;
+  width: 420px;
+  height: 420px;
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(
     circle closest-side,
-    rgba(96, 208, 255, .30) 0%,
-    rgba(96, 208, 255, .23) 16%,
-    rgba(96, 208, 255, .15) 32%,
-    rgba(96, 208, 255, .085) 50%,
-    rgba(96, 208, 255, .04) 68%,
-    rgba(96, 208, 255, .014) 84%,
+    rgba(96, 208, 255, .34) 0%,
+    rgba(96, 208, 255, .26) 16%,
+    rgba(96, 208, 255, .17) 32%,
+    rgba(96, 208, 255, .095) 50%,
+    rgba(96, 208, 255, .045) 68%,
+    rgba(96, 208, 255, .015) 84%,
     rgba(96, 208, 255, 0) 100%
   );
   transform: translate3d(-999px, -999px, 0);
@@ -157,15 +157,15 @@ body.admin-body {
   position: absolute;
   left: 0;
   top: 0;
-  width: 560px;
-  height: 560px;
+  width: 380px;
+  height: 380px;
   border-radius: 50%;
   background: radial-gradient(
     circle closest-side,
     var(--adm-glow-hi) 0%,
-    rgba(140, 220, 255, .62) 22%,
-    rgba(130, 210, 255, .30) 44%,
-    rgba(120, 200, 255, .10) 66%,
+    rgba(140, 220, 255, .58) 22%,
+    rgba(130, 210, 255, .26) 44%,
+    rgba(120, 200, 255, .085) 66%,
     rgba(120, 200, 255, 0) 100%
   );
   transform: translate3d(-999px, -999px, 0);
@@ -173,11 +173,10 @@ body.admin-body {
 
 /* ============================================================
    流光文字：彩色文字用缓慢流动的渐变填充
-   （统计数字 / 选中的标签 / 置顶徽章）
+   （统计数字 / 置顶徽章）
    ============================================================ */
 .adm-flow-text,
 .admin-stat-num,
-.admin-tab.is-active,
 .admin-pill {
   background-image: linear-gradient(
     100deg,
@@ -207,7 +206,6 @@ body.admin-body {
 @media (prefers-reduced-motion: reduce) {
   .adm-flow-text,
   .admin-stat-num,
-  .admin-tab.is-active,
   .admin-pill {
     animation: none;
     -webkit-text-fill-color: currentColor;
@@ -440,7 +438,7 @@ body.admin-body {
   max-width: 100%;
 }
 
-/* 选中指示器：跟随点击的按钮滑动（非线性缓动 + 轻微回弹） */
+/* 选中指示器：跟随点击的按钮线性滑动 */
 .admin-tabs-indicator {
   position: absolute;
   top: 5px;
@@ -448,12 +446,15 @@ body.admin-body {
   left: 0;
   width: 0;
   border-radius: 999px;
-  background: linear-gradient(160deg, rgba(70, 140, 240, .58), rgba(110, 90, 235, .52));
-  box-shadow: 0 0 24px -10px var(--adm-glow-hi), inset 0 1px 0 rgba(255, 255, 255, .14);
+  background: linear-gradient(180deg, rgba(76, 148, 244, .62), rgba(102, 94, 232, .58));
+  border: 1px solid rgba(150, 205, 255, .32);
+  box-shadow:
+    0 3px 12px -6px rgba(30, 80, 190, .6),
+    inset 0 1px 0 rgba(255, 255, 255, .16);
   transform: translateX(0);
   transition:
-    transform .5s cubic-bezier(.34, 1.42, .48, 1),
-    width .5s cubic-bezier(.34, 1.42, .48, 1);
+    transform .38s linear,
+    width .38s linear;
   pointer-events: none;
   z-index: 0;
 }
@@ -481,10 +482,10 @@ body.admin-body {
 
 .admin-tab.is-active {
   color: #fff;
-  /* 注意：这里只能用 background-color，不能用 background 简写 ——
-     简写会把流光文字的 background-image / background-clip 一起清掉 */
+  /* 只用 background-color：background 简写会清掉流光文字的 background-image */
   background-color: transparent;
   box-shadow: none;
+  font-weight: 500;
 }
 
 .admin-pane { display: none; }

@@ -256,7 +256,7 @@
   // 指针是一个"光源"：范围内每张卡片按到指针的距离衰减发光，
   // 近的更亮、远的更淡；卡片内的光斑位置仍跟随指针。
   // CSS 侧用 --glow(0~1) 控制 ::before/::after 的透明度，--gx/--gy 控制光心。
-  var GLOW_RADIUS = 460          // 影响半径（px）
+  var GLOW_RADIUS = 280          // 影响半径（px）
   var glowCards = []
   var pointerX = -9999, pointerY = -9999
   var glowRaf = 0
@@ -289,12 +289,12 @@
       // 强度锁死在 1，若同时跳过位置，光斑就会卡在进入点（用户报的"卡住"）。
       var lx = pointerX - r.left
       var ly = pointerY - r.top
-      // 光斑 620×620（正圆）、环高光 560×560（正圆）→ 位移偏移取各自半径
+      // 光斑 420×420（正圆）、环高光 380×380（正圆）→ 位移偏移取各自半径
       if (el.__blob) {
-        el.__blob.style.transform = 'translate3d(' + (lx - 310).toFixed(1) + 'px,' + (ly - 310).toFixed(1) + 'px,0)'
+        el.__blob.style.transform = 'translate3d(' + (lx - 210).toFixed(1) + 'px,' + (ly - 210).toFixed(1) + 'px,0)'
       }
       if (el.__light) {
-        el.__light.style.transform = 'translate3d(' + (lx - 280).toFixed(1) + 'px,' + (ly - 280).toFixed(1) + 'px,0)'
+        el.__light.style.transform = 'translate3d(' + (lx - 190).toFixed(1) + 'px,' + (ly - 190).toFixed(1) + 'px,0)'
       }
 
       // 强度：只在变化超过阈值时写（避免无谓的样式重算）
