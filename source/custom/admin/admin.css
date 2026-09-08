@@ -1,172 +1,273 @@
 /* ============================================================
-   管理控制台样式（/admin/，独立页面，不依赖站点 CSS）
-   风格与站点一致：深色玻璃 + 冷蓝光，但整体更偏"工具"密度
+   管理控制台样式 /admin/
+   ------------------------------------------------------------
+   风格：极客 / 科技风
+   - 深空 canvas 星场（admin-space.js）+ 星云 + 网格 + 扫描线
+   - 卡片玻璃：backdrop-filter + 分层阴影 + HUD 直角括角
+   - 卡片光效：与顶部导航栏同款（指针跟随光斑 + 边缘高亮环）
+   - 明暗双主题：html[data-theme='dark'|'light']
    ============================================================ */
 
+@font-face {
+  font-family: 'Fira Code';
+  src: url('/custom/assets/fonts/fira-code/FiraCode-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fira Code';
+  src: url('/custom/assets/fonts/fira-code/FiraCode-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
-  --adm-bg: #0d1220;
-  --adm-bg2: #141b2e;
-  --adm-card: rgba(22, 30, 50, .72);
-  --adm-card-hi: rgba(255, 255, 255, .05);
-  --adm-line: rgba(140, 170, 230, .16);
-  --adm-line-hi: rgba(150, 185, 255, .34);
-  --adm-text: #e6edf7;
-  --adm-dim: rgba(198, 212, 236, .62);
-  --adm-accent: #6ea8ff;
-  --adm-accent2: #8b7bff;
+  --adm-bg: #04060d;
+  --adm-grid: rgba(120, 180, 255, .055);
+  --adm-scan: rgba(180, 220, 255, .035);
+  --adm-panel: rgba(13, 19, 33, .58);
+  --adm-panel-solid: rgba(12, 18, 31, .86);
+  --adm-line: rgba(120, 180, 255, .16);
+  --adm-line-hi: rgba(120, 200, 255, .42);
+  --adm-text: #dde8f8;
+  --adm-dim: rgba(180, 202, 232, .62);
+  --adm-accent: #58e0ff;
+  --adm-accent2: #7c8bff;
   --adm-danger: #ff7b72;
   --adm-ok: #58d68d;
-  --adm-radius: 14px;
+  --adm-radius: 10px;
+  --adm-glow: rgba(96, 208, 255, .30);
+  --adm-glow-hi: rgba(140, 225, 255, .85);
+  --adm-shadow:
+    0 0 0 1px rgba(120, 190, 255, .10),
+    0 18px 40px -18px rgba(0, 0, 0, .85),
+    0 2px 10px -4px rgba(0, 0, 0, .6);
+  --adm-inset: inset 0 1px 0 rgba(255, 255, 255, .07);
+  --adm-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* 玻璃：分层渐变（不用 backdrop-filter —— 背景是动态星场，
+     实时模糊会每帧重采样，实测吃掉 17ms/帧，见文件末尾注释） */
+  --adm-glass:
+    linear-gradient(148deg, rgba(255, 255, 255, .065) 0%, rgba(255, 255, 255, .018) 38%, rgba(255, 255, 255, 0) 62%),
+    linear-gradient(162deg, rgba(14, 22, 40, .74), rgba(7, 11, 21, .68));
+  --adm-glass-soft:
+    linear-gradient(150deg, rgba(255, 255, 255, .05) 0%, rgba(255, 255, 255, .012) 45%, rgba(255, 255, 255, 0) 70%),
+    linear-gradient(160deg, rgba(12, 19, 34, .62), rgba(7, 11, 21, .56));
+  --adm-sheen: inset 0 1px 0 rgba(255, 255, 255, .09), inset 0 -1px 0 rgba(255, 255, 255, .025);
+}
+
+html[data-theme='light'] {
+  --adm-bg: #eaf0f9;
+  --adm-grid: rgba(30, 80, 150, .07);
+  --adm-scan: rgba(20, 60, 120, .03);
+  --adm-panel: rgba(255, 255, 255, .62);
+  --adm-panel-solid: rgba(255, 255, 255, .92);
+  --adm-line: rgba(24, 70, 140, .16);
+  --adm-line-hi: rgba(20, 110, 200, .45);
+  --adm-text: #14243c;
+  --adm-dim: rgba(40, 66, 104, .66);
+  --adm-accent: #0a7bc4;
+  --adm-accent2: #4a5bd6;
+  --adm-danger: #d64545;
+  --adm-ok: #1f9d5a;
+  --adm-glow: rgba(30, 140, 220, .22);
+  --adm-glow-hi: rgba(20, 130, 220, .70);
+  --adm-shadow:
+    0 0 0 1px rgba(30, 90, 160, .08),
+    0 16px 34px -18px rgba(30, 60, 110, .38),
+    0 2px 8px -4px rgba(30, 60, 110, .18);
+  --adm-inset: inset 0 1px 0 rgba(255, 255, 255, .75);
+  --adm-glass:
+    linear-gradient(148deg, rgba(255, 255, 255, .85) 0%, rgba(255, 255, 255, .42) 40%, rgba(255, 255, 255, .18) 66%),
+    linear-gradient(162deg, rgba(252, 254, 255, .74), rgba(238, 244, 252, .66));
+  --adm-glass-soft:
+    linear-gradient(150deg, rgba(255, 255, 255, .8) 0%, rgba(255, 255, 255, .38) 46%, rgba(255, 255, 255, .16) 72%),
+    linear-gradient(160deg, rgba(253, 255, 255, .66), rgba(240, 246, 253, .58));
+  --adm-sheen: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 -1px 0 rgba(20, 60, 120, .06);
 }
 
 * { box-sizing: border-box; }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  min-height: 100%;
-}
+html, body { margin: 0; padding: 0; min-height: 100%; }
 
 body.admin-body {
+  position: relative;
   font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--adm-text);
-  /* 深空底色：近黑 + 冷蓝紫渐层（星云/星场由 .admin-space 叠在上面） */
-  background:
-    radial-gradient(1400px 900px at 50% -10%, rgba(58, 84, 168, .30), transparent 62%),
-    linear-gradient(180deg, #05070f 0%, #070b18 42%, #0a0f1f 100%);
-  background-attachment: fixed;
+  background: var(--adm-bg);
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  transition: background-color .35s ease, color .35s ease;
 }
 
 /* ============================================================
-   宇宙背景层（固定定位 + 纯 transform/opacity 动画 → GPU 合成）
-   层级：body 底色 → .admin-space(0) → 内容(1)
+   背景层：canvas 星场 / 星云 / 网格 / 扫描线
    ============================================================ */
-.admin-space {
+#admin-space {
   position: fixed;
   inset: 0;
   z-index: 0;
-  overflow: hidden;
   pointer-events: none;
 }
 
-.admin-space > * { position: absolute; }
-
-/* ---- 星云：几团冷色云雾，极慢漂移 ----
-   注意：这里**不能**加 filter: blur()。实测 blur(14px) + transform 动画
-   会让浏览器每帧重新模糊一张超出视口的大图（18.78ms → 6.94ms，掉到 53fps）。
-   径向渐变本身足够柔和，去 blur 后动画成本≈0（合成器只做位移）。 */
-.admin-space-nebula {
-  inset: -25%;
+.admin-nebula {
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
   background:
-    /* 银河带（斜向淡光） */
-    linear-gradient(118deg, transparent 34%, rgba(176, 200, 255, .07) 47%, rgba(200, 215, 255, .10) 51%, rgba(176, 200, 255, .07) 55%, transparent 68%),
-    radial-gradient(46% 38% at 18% 14%, rgba(86, 122, 255, .40), transparent 64%),
-    radial-gradient(40% 34% at 82% 16%, rgba(150, 88, 255, .32), transparent 62%),
-    radial-gradient(52% 42% at 50% 94%, rgba(38, 116, 214, .34), transparent 66%),
-    radial-gradient(30% 26% at 72% 62%, rgba(255, 110, 190, .18), transparent 60%),
-    radial-gradient(24% 20% at 30% 72%, rgba(90, 220, 255, .18), transparent 60%),
-    radial-gradient(20% 16% at 8% 78%, rgba(120, 150, 255, .20), transparent 60%);
-  animation: adm-nebula-drift 150s ease-in-out infinite alternate;
+    radial-gradient(46% 38% at 16% 12%, rgba(58, 110, 255, .30), transparent 64%),
+    radial-gradient(40% 34% at 84% 14%, rgba(126, 74, 255, .26), transparent 62%),
+    radial-gradient(52% 42% at 48% 96%, rgba(30, 110, 220, .30), transparent 66%),
+    radial-gradient(30% 26% at 74% 60%, rgba(255, 96, 180, .16), transparent 60%),
+    radial-gradient(24% 20% at 28% 74%, rgba(70, 220, 255, .18), transparent 60%);
+  animation: adm-nebula-drift 90s ease-in-out infinite alternate;
 }
 
-/* ---- 星场：两层不同密度/尺寸的点阵，互不重复 → 看不出网格 ---- */
-.admin-space-stars {
-  inset: -10%;
+html[data-theme='light'] .admin-nebula {
+  background:
+    radial-gradient(46% 38% at 16% 12%, rgba(96, 160, 255, .26), transparent 64%),
+    radial-gradient(40% 34% at 84% 14%, rgba(150, 120, 255, .20), transparent 62%),
+    radial-gradient(52% 42% at 48% 96%, rgba(90, 190, 255, .24), transparent 66%),
+    radial-gradient(24% 20% at 28% 74%, rgba(120, 235, 255, .22), transparent 60%);
+}
+
+/* 科技网格 */
+.admin-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background-image:
-    /* 带光晕的亮星（少量，撑起"星海"层次） */
-    radial-gradient(2.6px 2.6px at 180px 140px, rgba(255, 255, 255, .95), rgba(170, 205, 255, .30) 38%, transparent 72%),
-    radial-gradient(2.4px 2.4px at 340px 318px, rgba(255, 250, 235, .95), rgba(255, 210, 160, .26) 38%, transparent 72%),
-    radial-gradient(2.2px 2.2px at 96px 296px, rgba(240, 248, 255, .9), rgba(160, 200, 255, .24) 40%, transparent 74%),
-    /* 普通星点 */
-    radial-gradient(1.5px 1.5px at 26px 38px, rgba(255, 255, 255, .95), transparent),
-    radial-gradient(1.2px 1.2px at 154px 96px, rgba(214, 230, 255, .85), transparent),
-    radial-gradient(1px 1px at 274px 190px, rgba(190, 214, 255, .7), transparent),
-    radial-gradient(1.7px 1.7px at 330px 66px, rgba(255, 255, 255, .92), transparent),
-    radial-gradient(1px 1px at 88px 216px, rgba(200, 220, 255, .62), transparent),
-    radial-gradient(1.3px 1.3px at 202px 300px, rgba(255, 255, 255, .78), transparent),
-    radial-gradient(1px 1px at 372px 262px, rgba(210, 226, 255, .55), transparent);
-  background-size: 420px 420px;
-  background-repeat: repeat;
-  opacity: .9;
-  animation: adm-twinkle 7s ease-in-out infinite alternate, adm-stars-drift 220s linear infinite;
+    linear-gradient(var(--adm-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--adm-grid) 1px, transparent 1px);
+  background-size: 68px 68px;
+  -webkit-mask-image: radial-gradient(130% 110% at 50% 0%, #000 24%, transparent 78%);
+  mask-image: radial-gradient(130% 110% at 50% 0%, #000 24%, transparent 78%);
 }
 
-.admin-space-stars.far {
-  background-image:
-    radial-gradient(1px 1px at 60px 120px, rgba(200, 220, 255, .55), transparent),
-    radial-gradient(1.2px 1.2px at 220px 40px, rgba(255, 255, 255, .6), transparent),
-    radial-gradient(1px 1px at 140px 250px, rgba(190, 215, 255, .5), transparent),
-    radial-gradient(1.4px 1.4px at 300px 170px, rgba(255, 255, 255, .55), transparent);
-  background-size: 260px 260px;
-  opacity: .5;
-  animation: adm-twinkle 11s ease-in-out infinite alternate, adm-stars-drift 320s linear infinite reverse;
+/* 扫描线 + 缓慢下扫的光带 */
+.admin-scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--adm-scan) 0 1px,
+    transparent 1px 3px
+  );
 }
 
-/* ---- 流星：两颗，长间隔掠过 ---- */
-.admin-shooting-star {
-  top: var(--y, 10%);
-  left: var(--x, 8%);
-  width: 140px;
-  height: 1.5px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(214, 232, 255, .85) 68%, #fff);
-  box-shadow: 0 0 8px rgba(160, 200, 255, .75);
-  opacity: 0;
-  transform: rotate(20deg) translate3d(0, 0, 0);
-  animation: adm-shoot 17s linear infinite;
-  animation-delay: var(--delay, 0s);
-}
-
-/* 暗角：让面板与文字在星场上依然清晰 */
-.admin-space::after {
+.admin-scanlines::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: radial-gradient(130% 110% at 50% 0%, transparent 38%, rgba(3, 5, 12, .55) 100%);
+  left: 0;
+  right: 0;
+  height: 38%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--adm-glow) 46%,
+    var(--adm-glow-hi) 50%,
+    var(--adm-glow) 54%,
+    transparent
+  );
+  opacity: .22;
+  animation: adm-sweep 11s linear infinite;
+}
+
+@keyframes adm-sweep {
+  0% { transform: translate3d(0, -120%, 0); }
+  100% { transform: translate3d(0, 320%, 0); }
 }
 
 @keyframes adm-nebula-drift {
   0% { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(-3%, -2.4%, 0) scale(1.08); }
-}
-
-@keyframes adm-stars-drift {
-  0% { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(-42px, -26px, 0); }
-}
-
-@keyframes adm-twinkle {
-  0% { opacity: .55; }
-  100% { opacity: .95; }
-}
-
-@keyframes adm-shoot {
-  0%, 91% { opacity: 0; transform: rotate(20deg) translate3d(0, 0, 0); }
-  92% { opacity: 1; }
-  96% { opacity: .85; }
-  100% { opacity: 0; transform: rotate(20deg) translate3d(560px, 205px, 0); }
-}
-
-/* 内容层压住背景 */
-.admin-gate,
-.admin-app {
-  position: relative;
-  z-index: 1;
+  100% { transform: translate3d(-4%, -3%, 0) scale(1.12); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-space-nebula,
-  .admin-space-stars,
-  .admin-shooting-star {
-    animation: none;
-  }
+  .admin-nebula,
+  .admin-scanlines::after { animation: none; }
 }
 
-/* ---------- 门禁 ---------- */
+/* ============================================================
+   卡片光效（与顶部导航栏同款：指针跟随光斑 + 边缘高亮环）
+   ============================================================ */
+.adm-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* 指针跟随光斑（transform 走合成器） */
+.adm-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 460px;
+  height: 300px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--adm-glow), transparent 72%);
+  transform: translate3d(calc(var(--gx, -999px) - 230px), calc(var(--gy, -999px) - 150px), 0);
+  opacity: 0;
+  transition: opacity .3s ease;
+  z-index: 0;
+}
+
+/* 边缘高亮环（1px 环 + 指针处的高光） */
+.adm-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: radial-gradient(
+    240px 180px at var(--gx, -999px) var(--gy, -999px),
+    var(--adm-glow-hi),
+    rgba(120, 200, 255, 0) 68%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity .3s ease;
+  z-index: 2;
+}
+
+.adm-card.glow-on::before,
+.adm-card.glow-on::after { opacity: 1; }
+
+/* HUD 直角括角 */
+.adm-hud {
+  position: absolute;
+  inset: 7px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: .5;
+  --c: var(--adm-line-hi);
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 13px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) left top / 1px 13px no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / 13px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / 1px 13px no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / 13px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / 1px 13px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 13px 1px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 1px 13px no-repeat;
+}
+
+/* ============================================================
+   门禁
+   ============================================================ */
 .admin-gate {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -176,51 +277,54 @@ body.admin-body {
 
 .admin-gate-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   padding: 34px 30px 30px;
-  border-radius: 20px;
+  border-radius: 14px;
   border: 1px solid var(--adm-line);
-  background: linear-gradient(160deg, rgba(30, 40, 66, .78), rgba(14, 19, 34, .82));
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .08);
+  background: var(--adm-glass);
+  box-shadow: var(--adm-shadow), var(--adm-sheen);
   text-align: center;
 }
 
 .admin-gate-icon {
-  font-size: 30px;
+  font-size: 28px;
   color: var(--adm-accent);
-  margin-bottom: 12px;
-  text-shadow: 0 0 24px rgba(110, 168, 255, .55);
+  margin-bottom: 10px;
+  text-shadow: 0 0 26px var(--adm-glow);
 }
 
 .admin-gate-card h1 {
-  margin: 0 0 8px;
-  font-size: 20px;
-  letter-spacing: .04em;
+  margin: 0 0 6px;
+  font-family: var(--adm-mono);
+  font-size: 18px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
 .admin-gate-desc {
   margin: 0 0 20px;
   color: var(--adm-dim);
-  font-size: 13px;
+  font-size: 12.5px;
 }
 
 .admin-gate-msg {
   min-height: 20px;
   margin-top: 12px;
-  font-size: 12.5px;
+  font-family: var(--adm-mono);
+  font-size: 12px;
   color: var(--adm-danger);
 }
 
-/* ---------- 通用控件 ---------- */
+/* ============================================================
+   控件
+   ============================================================ */
 .admin-input,
 .admin-textarea {
   width: 100%;
   padding: 9px 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid var(--adm-line);
-  background: rgba(8, 12, 22, .55);
+  background: rgba(0, 0, 0, .28);
   color: var(--adm-text);
   font-size: 13.5px;
   font-family: inherit;
@@ -228,75 +332,88 @@ body.admin-body {
   transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
 
+html[data-theme='light'] .admin-input,
+html[data-theme='light'] .admin-textarea { background: rgba(255, 255, 255, .78); }
+
 .admin-textarea {
   resize: vertical;
-  line-height: 1.7;
-  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
+  line-height: 1.75;
+  font-family: var(--adm-mono);
+  font-size: 12.5px;
   tab-size: 2;
 }
 
 .admin-input:focus,
 .admin-textarea:focus {
   border-color: var(--adm-line-hi);
-  background: rgba(10, 16, 30, .78);
-  box-shadow: 0 0 0 3px rgba(110, 168, 255, .14);
+  box-shadow: 0 0 0 3px var(--adm-glow), 0 0 18px -6px var(--adm-glow-hi);
 }
 
 .admin-input::placeholder,
-.admin-textarea::placeholder { color: rgba(170, 190, 220, .38); }
+.admin-textarea::placeholder { color: var(--adm-dim); opacity: .7; }
 
 .admin-btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 15px;
-  border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 6px;
   border: 1px solid var(--adm-line);
-  background: linear-gradient(160deg, rgba(38, 50, 78, .72), rgba(20, 27, 45, .72));
+  background: rgba(0, 0, 0, .26);
   color: var(--adm-text);
-  font-size: 13px;
-  font-family: inherit;
+  font-family: var(--adm-mono);
+  font-size: 12.5px;
+  letter-spacing: .02em;
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color .2s ease, background .2s ease, transform .12s ease, opacity .2s ease;
+  transition: border-color .2s ease, background .2s ease, color .2s ease, box-shadow .2s ease, transform .12s ease;
 }
+
+html[data-theme='light'] .admin-btn { background: rgba(255, 255, 255, .7); }
 
 .admin-btn:hover {
   border-color: var(--adm-line-hi);
-  background: linear-gradient(160deg, rgba(48, 64, 100, .8), rgba(26, 34, 56, .8));
+  color: var(--adm-accent);
+  box-shadow: 0 0 18px -6px var(--adm-glow-hi), var(--adm-inset);
 }
 
 .admin-btn:active { transform: translateY(1px); }
-
-.admin-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.admin-btn[disabled] { opacity: .45; cursor: not-allowed; }
 
 .admin-btn-primary {
-  border-color: rgba(120, 165, 255, .5);
-  background: linear-gradient(160deg, rgba(70, 110, 220, .85), rgba(88, 80, 210, .8));
-  box-shadow: 0 8px 22px -10px rgba(80, 120, 240, .8);
+  border-color: var(--adm-line-hi);
+  background: linear-gradient(160deg, rgba(56, 130, 235, .34), rgba(96, 78, 220, .30));
+  color: var(--adm-text);
+  box-shadow: 0 0 22px -8px var(--adm-glow-hi), var(--adm-inset);
 }
 
 .admin-btn-primary:hover {
-  background: linear-gradient(160deg, rgba(84, 128, 240, .95), rgba(104, 96, 232, .9));
+  color: #fff;
+  background: linear-gradient(160deg, rgba(64, 148, 255, .48), rgba(110, 90, 240, .42));
 }
+
+html[data-theme='light'] .admin-btn-primary { color: #fff; }
 
 .admin-btn-danger {
   border-color: rgba(255, 123, 114, .42);
-  color: #ffb4ae;
-  background: linear-gradient(160deg, rgba(70, 30, 34, .8), rgba(44, 20, 24, .8));
+  color: var(--adm-danger);
 }
 
 .admin-btn-danger:hover {
-  border-color: rgba(255, 123, 114, .7);
-  background: linear-gradient(160deg, rgba(92, 38, 42, .9), rgba(56, 26, 30, .9));
+  border-color: var(--adm-danger);
+  color: var(--adm-danger);
+  box-shadow: 0 0 18px -6px rgba(255, 123, 114, .6);
 }
 
-/* ---------- 顶栏 ---------- */
+/* ============================================================
+   顶栏
+   ============================================================ */
 .admin-app {
-  max-width: 1180px;
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 22px 20px 80px;
+  padding: 20px 20px 90px;
 }
 
 .admin-top {
@@ -305,25 +422,38 @@ body.admin-body {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  padding: 14px 18px;
+  padding: 13px 18px;
   border-radius: var(--adm-radius);
   border: 1px solid var(--adm-line);
-  background: var(--adm-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+  background: var(--adm-glass);
+  box-shadow: var(--adm-shadow), var(--adm-sheen);
 }
 
 .admin-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: .04em;
+  font-family: var(--adm-mono);
+  font-size: 13.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
 }
 
-.admin-brand i { color: var(--adm-accent); }
+.admin-brand i { color: var(--adm-accent); text-shadow: 0 0 14px var(--adm-glow-hi); }
+
+.admin-brand .adm-led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--adm-ok);
+  box-shadow: 0 0 10px var(--adm-ok);
+  animation: adm-led 2.4s ease-in-out infinite;
+}
+
+@keyframes adm-led {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
 
 .admin-top-actions {
   display: flex;
@@ -333,98 +463,117 @@ body.admin-body {
 }
 
 .admin-repo {
-  font-size: 12px;
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
   color: var(--adm-dim);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--adm-line);
-  background: rgba(8, 12, 22, .5);
-  max-width: 340px;
+  background: rgba(0, 0, 0, .24);
+  max-width: 360px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ---------- 标签页 ---------- */
+html[data-theme='light'] .admin-repo { background: rgba(255, 255, 255, .7); }
+
+/* ============================================================
+   标签页
+   ============================================================ */
 .admin-tabs {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin: 16px 0 18px;
+  margin: 14px 0 16px;
 }
 
 .admin-tab {
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: rgba(20, 28, 46, .55);
+  padding: 7px 15px;
+  border-radius: 6px;
+  border: 1px solid var(--adm-line);
+  background: rgba(0, 0, 0, .22);
   color: var(--adm-dim);
-  font-size: 13px;
-  font-family: inherit;
+  font-family: var(--adm-mono);
+  font-size: 12.5px;
+  letter-spacing: .03em;
   cursor: pointer;
   transition: all .2s ease;
 }
 
-.admin-tab:hover { color: var(--adm-text); border-color: var(--adm-line); }
+html[data-theme='light'] .admin-tab { background: rgba(255, 255, 255, .68); }
+
+.admin-tab:hover { color: var(--adm-text); border-color: var(--adm-line-hi); }
 
 .admin-tab.is-active {
-  color: #fff;
-  border-color: rgba(120, 165, 255, .5);
-  background: linear-gradient(160deg, rgba(70, 110, 220, .55), rgba(88, 80, 210, .45));
-  box-shadow: 0 6px 20px -10px rgba(80, 120, 240, .8);
+  color: var(--adm-accent);
+  border-color: var(--adm-line-hi);
+  background: linear-gradient(160deg, rgba(56, 130, 235, .26), rgba(96, 78, 220, .22));
+  box-shadow: 0 0 20px -8px var(--adm-glow-hi), var(--adm-inset);
 }
 
 .admin-pane { display: none; }
 .admin-pane.is-active { display: block; }
 
-/* ---------- 卡片 / 面板 ---------- */
+/* ============================================================
+   卡片 / 面板
+   ============================================================ */
 .admin-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .admin-stat {
   padding: 18px 16px;
   border-radius: var(--adm-radius);
   border: 1px solid var(--adm-line);
-  background: var(--adm-card);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--adm-glass);
+  box-shadow: var(--adm-shadow), var(--adm-sheen);
   text-align: center;
 }
 
 .admin-stat-num {
-  font-size: 26px;
-  font-weight: 600;
+  font-family: var(--adm-mono);
+  font-size: 27px;
+  font-weight: 700;
   color: var(--adm-accent);
-  line-height: 1.2;
+  line-height: 1.15;
+  text-shadow: 0 0 22px var(--adm-glow);
 }
 
 .admin-stat-label {
   margin-top: 4px;
-  font-size: 12.5px;
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
+  letter-spacing: .06em;
   color: var(--adm-dim);
 }
 
 .admin-panel {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   padding: 18px;
   border-radius: var(--adm-radius);
   border: 1px solid var(--adm-line);
-  background: var(--adm-card);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+  background: var(--adm-glass);
+  box-shadow: var(--adm-shadow), var(--adm-sheen);
 }
 
 .admin-panel-title {
   margin-bottom: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: .02em;
+  font-family: var(--adm-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--adm-text);
+}
+
+.admin-panel-title::before {
+  content: '// ';
+  color: var(--adm-accent);
+  opacity: .8;
 }
 
 .admin-toolbar {
@@ -432,45 +581,50 @@ body.admin-body {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .admin-toolbar .admin-input { flex: 1 1 220px; width: auto; }
 
 .admin-hint {
   margin-top: 10px;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--adm-dim);
 }
 
 .admin-hint code {
   padding: 1px 6px;
-  border-radius: 6px;
-  background: rgba(8, 12, 22, .6);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .3);
   border: 1px solid var(--adm-line);
-  font-size: 12px;
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
 }
+
+html[data-theme='light'] .admin-hint code { background: rgba(255, 255, 255, .8); }
 
 .admin-hint a { color: var(--adm-accent); }
 
-/* ---------- 列表 ---------- */
+/* ============================================================
+   列表项
+   ============================================================ */
 .admin-list { display: flex; flex-direction: column; gap: 8px; }
 
 .admin-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 11px 14px;
+  border-radius: 8px;
   border: 1px solid var(--adm-line);
-  background: rgba(16, 23, 40, .62);
+  background: var(--adm-glass-soft);
+  box-shadow: var(--adm-sheen);
   cursor: pointer;
-  transition: border-color .2s ease, background .2s ease, transform .12s ease;
+  transition: border-color .2s ease, background .2s ease, transform .12s ease, box-shadow .2s ease;
 }
 
 .admin-item:hover {
   border-color: var(--adm-line-hi);
-  background: rgba(26, 36, 60, .78);
   transform: translateX(2px);
 }
 
@@ -485,8 +639,9 @@ body.admin-body {
 }
 
 .admin-item-meta {
-  margin-top: 3px;
-  font-size: 12px;
+  margin-top: 2px;
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
   color: var(--adm-dim);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -497,23 +652,27 @@ body.admin-body {
 
 .admin-pill {
   display: inline-block;
-  padding: 1px 8px;
-  margin-right: 6px;
-  border-radius: 999px;
-  border: 1px solid var(--adm-line);
-  background: rgba(110, 168, 255, .1);
-  color: #a9c8ff;
-  font-size: 11.5px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  border-radius: 4px;
+  border: 1px solid var(--adm-line-hi);
+  color: var(--adm-accent);
+  font-family: var(--adm-mono);
+  font-size: 10.5px;
+  letter-spacing: .04em;
 }
 
 .admin-empty {
   padding: 26px 0;
   text-align: center;
   color: var(--adm-dim);
-  font-size: 13px;
+  font-family: var(--adm-mono);
+  font-size: 12.5px;
 }
 
-/* ---------- 表单 ---------- */
+/* ============================================================
+   表单
+   ============================================================ */
 .admin-form { display: flex; flex-direction: column; gap: 12px; }
 
 .admin-row {
@@ -525,7 +684,9 @@ body.admin-body {
 .admin-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 
 .admin-field label {
-  font-size: 12.5px;
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
+  letter-spacing: .04em;
   color: var(--adm-dim);
 }
 
@@ -538,15 +699,17 @@ body.admin-body {
 
 .admin-editor-file {
   flex: 1 1 100%;
-  font-size: 12px;
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
   color: var(--adm-dim);
-  font-family: 'Fira Code', ui-monospace, Menlo, Consolas, monospace;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ---------- 标签/分类 ---------- */
+/* ============================================================
+   标签 / 分类
+   ============================================================ */
 .admin-tax { display: flex; flex-direction: column; gap: 8px; }
 
 .admin-tax-row {
@@ -554,30 +717,38 @@ body.admin-body {
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--adm-line);
-  background: rgba(16, 23, 40, .55);
+  background: rgba(0, 0, 0, .2);
 }
+
+html[data-theme='light'] .admin-tax-row { background: rgba(255, 255, 255, .6); }
 
 .admin-tax-name { flex: 1; font-size: 13px; }
 
-.admin-tax-count { font-size: 12px; color: var(--adm-dim); margin-right: 6px; }
+.admin-tax-count {
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
+  color: var(--adm-dim);
+  margin-right: 6px;
+}
 
-/* ---------- Toast ---------- */
+/* ============================================================
+   Toast
+   ============================================================ */
 .admin-toast {
   position: fixed;
   left: 50%;
   bottom: 28px;
-  transform: translate(-50%, 20px);
-  max-width: min(560px, calc(100vw - 32px));
+  transform: translate(-50%, 18px);
+  max-width: min(580px, calc(100vw - 32px));
   padding: 11px 18px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--adm-line-hi);
-  background: linear-gradient(160deg, rgba(30, 40, 66, .95), rgba(16, 22, 38, .95));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 18px 44px -18px rgba(0, 0, 0, .8);
-  font-size: 13px;
+  background: var(--adm-glass);
+  box-shadow: var(--adm-shadow);
+  font-family: var(--adm-mono);
+  font-size: 12.5px;
   opacity: 0;
   pointer-events: none;
   transition: opacity .28s ease, transform .28s ease;
@@ -585,12 +756,14 @@ body.admin-body {
 }
 
 .admin-toast.show { opacity: 1; transform: translate(-50%, 0); }
-.admin-toast.ok { border-color: rgba(88, 214, 141, .45); color: #b7f0cd; }
-.admin-toast.err { border-color: rgba(255, 123, 114, .45); color: #ffc0bb; }
+.admin-toast.ok { border-color: rgba(88, 214, 141, .55); color: var(--adm-ok); }
+.admin-toast.err { border-color: rgba(255, 123, 114, .55); color: var(--adm-danger); }
 
-/* ---------- 移动端 ---------- */
+/* ============================================================
+   移动端
+   ============================================================ */
 @media (max-width: 720px) {
-  .admin-app { padding: 14px 12px 70px; }
+  .admin-app { padding: 14px 12px 76px; }
   .admin-row { grid-template-columns: 1fr; }
   .admin-top { padding: 12px 14px; }
   .admin-repo { display: none; }

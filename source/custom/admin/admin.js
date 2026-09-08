@@ -252,6 +252,85 @@
     })
   }
 
+  // ==================== 主题（明 / 暗） ====================
+  var THEME_STORE = 'admin_theme'
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t)
+    try { localStorage.setItem(THEME_STORE, t) } catch (e) {}
+    var icon = $('#theme-icon'), label = $('#theme-label')
+    if (icon) icon.className = 'fas ' + (t === 'light' ? 'fa-sun' : 'fa-moon')
+    if (label) label.textContent = t === 'light' ? '亮色' : '暗色'
+    // 通知 canvas 星场换配色
+    document.dispatchEvent(new CustomEvent('admin:theme', { detail: t }))
+  }
+  function initTheme() {
+    var t = document.documentElement.getAttribute('data-theme')
+    if (t !== 'light' && t !== 'dark') {
+      try { t = localStorage.getItem(THEME_STORE) || 'dark' } catch (e) { t = 'dark' }
+    }
+    applyTheme(t)
+    $('#btn-theme').addEventListener('click', function () {
+      applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light')
+    })
+  }
+
+  // ==================== 卡片光效（顶部导航栏同款）====================
+  // 指针跟随光斑 + 边缘高亮环：CSS 用 --gx/--gy 驱动，JS 只在 rAF 里写变量
+  var glowCard = null
+  var glowRaf = 0
+  var glowX = 0, glowY = 0
+
+  function writeGlow() {
+    glowRaf = 0
+    if (!glowCard) return
+    var r = glowCard.getBoundingClientRect()
+    glowCard.style.setProperty('--gx', (glowX - r.left).toFixed(1) + 'px')
+    glowCard.style.setProperty('--gy', (glowY - r.top).toFixed(1) + 'px')
+  }
+
+  document.addEventListener('pointermove', function (e) {
+    glowX = e.clientX
+    glowY = e.clientY
+    var card = e.target && e.target.closest ? e.target.closest('.adm-card') : null
+    if (card !== glowCard) {
+      if (glowCard) glowCard.classList.remove('glow-on')
+      glowCard = card
+      if (card) card.classList.add('glow-on')
+    }
+    if (card && !glowRaf) glowRaf = requestAnimationFrame(writeGlow)
+  }, { passive: true })
+
+  document.addEventListener('pointerleave', function () {
+    if (glowCard) { glowCard.classList.remove('glow-on'); glowCard = null }
+  })
+
+  // 给卡片挂 .adm-card（光效）+ 面板加 HUD 括角
+  var CARD_SEL = '.admin-top, .admin-panel, .admin-stat, .admin-item, .admin-tab, .admin-gate-card'
+  var HUD_SEL = '.admin-panel, .admin-stat, .admin-gate-card'
+  function decorateCards(scope) {
+    var host = scope || document
+    var cards = host.querySelectorAll(CARD_SEL)
+    Array.prototype.forEach.call(cards, function (el) {
+      el.classList.add('adm-card')
+      if (el.matches(HUD_SEL) && !el.querySelector(':scope > .adm-hud')) {
+        var hud = document.createElement('i')
+        hud.className = 'adm-hud'
+        el.appendChild(hud)
+      }
+    })
+  }
+
+  // 列表是动态渲染的，用 MutationObserver 兜住所有新增卡片（防抖 60ms）
+  function observeCards() {
+    if (!window.MutationObserver) return
+    var timer = 0
+    var mo = new MutationObserver(function () {
+      clearTimeout(timer)
+      timer = setTimeout(function () { decorateCards() }, 60)
+    })
+    mo.observe($('#admin-app'), { childList: true, subtree: true })
+  }
+
   // ==================== 门禁 ====================
   function unlocked() {
     try { return sessionStorage.getItem(UNLOCK_STORE) === ADMIN_HASH } catch (e) { return false }
@@ -679,11 +758,14 @@
   function boot() {
     loadGhConfig()
     renderRepoStatus()
+    initTheme()
+    decorateCards()
     $('#gh-owner').value = state.gh.owner
     $('#gh-name').value = state.gh.name
     $('#gh-branch').value = state.gh.branch
     $('#gh-token').value = state.gh.token
 
+    $('#btn-home').addEventListener('click', function () { location.href = '/' })
     $$('.admin-tab').forEach(function (b) {
       b.addEventListener('click', function () { switchTab(b.getAttribute('data-tab')) })
     })
@@ -708,6 +790,8 @@
     $('#btn-clear-gh').addEventListener('click', clearCredentials)
     $('#btn-save-admin-key').addEventListener('click', changeAdminKey)
 
+    decorateCards()
+    observeCards()
     reloadManifest(true)
   }
 

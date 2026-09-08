@@ -8,15 +8,22 @@ html(lang='zh-CN')
     meta(name='robots' content='noindex,nofollow,noarchive')
     meta(name='referrer' content='no-referrer')
     title 管理控制台
+    //- 尽早定主题，避免明暗闪烁
+    script.
+      (function () {
+        try {
+          var t = localStorage.getItem('admin_theme') || 'dark'
+          document.documentElement.setAttribute('data-theme', t)
+        } catch (e) { document.documentElement.setAttribute('data-theme', 'dark') }
+      })()
+    link(rel='stylesheet' href=url_for('/custom/cursor/site-cursor.css'))
     link(rel='stylesheet' href=url_for('/custom/admin/admin.css'))
   body.admin-body
-    //- 宇宙背景（纯 CSS 多层星场 + 星云 + 流星，见 admin.css）
-    .admin-space(aria-hidden='true')
-      .admin-space-nebula
-      .admin-space-stars
-      .admin-space-stars.far
-      .admin-shooting-star(style='--x:6%; --y:8%; --delay:3s')
-      .admin-shooting-star(style='--x:58%; --y:4%; --delay:12s')
+    //- ============ 背景：canvas 星场 / 星云 / 网格 / 扫描线 ============
+    canvas#admin-space(aria-hidden='true')
+    .admin-nebula(aria-hidden='true')
+    .admin-grid(aria-hidden='true')
+    .admin-scanlines(aria-hidden='true')
 
     //- ============ 门禁 ============
     #admin-gate.admin-gate
@@ -24,7 +31,7 @@ html(lang='zh-CN')
         .admin-gate-icon
           i.fas.fa-shield-halved
         h1 管理控制台
-        p.admin-gate-desc 输入管理员密钥进入。密钥在检索栏输入同样有效。
+        p.admin-gate-desc 输入管理员密钥进入。密钥在站点检索栏输入同样有效。
         input#gate-key.admin-input(type='password' placeholder='XXXXX-XXXXX-XXXXX-XXXXX' autocomplete='off' spellcheck='false')
         button#gate-btn.admin-btn.admin-btn-primary(type='button') 进入
         #gate-msg.admin-gate-msg
@@ -33,13 +40,20 @@ html(lang='zh-CN')
     #admin-app.admin-app(style='display:none')
       header.admin-top
         .admin-brand
-          i.fas.fa-shield-halved
+          span.adm-led
+          i.fas.fa-satellite-dish
           span 管理控制台
         .admin-top-actions
           span#admin-repo.admin-repo —
+          button#btn-home.admin-btn(type='button' title='返回站点首页')
+            i.fas.fa-house
+            span 首页
+          button#btn-theme.admin-btn(type='button' title='切换明暗模式')
+            i#theme-icon.fas.fa-moon
+            span#theme-label 暗色
           button#btn-reload.admin-btn(type='button' title='重新拉取文章清单与元数据')
             i.fas.fa-rotate
-            span 刷新清单
+            span 刷新
           button#btn-logout.admin-btn(type='button' title='退出登录')
             i.fas.fa-right-from-bracket
             span 退出
@@ -193,5 +207,7 @@ html(lang='zh-CN')
 
     .admin-toast#admin-toast
 
+    script(src=url_for('/custom/cursor/site-cursor.js'))
     script(src=url_for('/custom/admin/admin-key.js'))
+    script(src=url_for('/custom/admin/admin-space.js'))
     script(src=url_for('/custom/admin/admin.js'))
