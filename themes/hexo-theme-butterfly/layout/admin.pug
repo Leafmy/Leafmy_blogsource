@@ -10,7 +10,8 @@ html(lang='zh-CN' data-theme='dark')
     title 管理控制台
     link(rel='stylesheet' href=url_for('/custom/assets/fontawesome/all.min.css'))
     link(rel='stylesheet' href=url_for('/custom/cursor/site-cursor.css'))
-    link(rel='stylesheet' href=url_for('/custom/admin/admin.css'))
+    //- 带版本号：静态托管对自定义资源无 cache-control，不加版本号浏览器会长期跑旧文件
+    link(rel='stylesheet' href=url_for('/custom/admin/admin.css') + '?v=20260909b')
   body.admin-body
     //- ============ 背景：canvas 液态玻璃 + 星链 + 流星 ============
     canvas#admin-space(aria-hidden='true')
@@ -21,7 +22,7 @@ html(lang='zh-CN' data-theme='dark')
         .admin-gate-icon
           i.fas.fa-shield-halved
         h1 管理控制台
-        p.admin-gate-desc 输入管理员密钥进入。密钥在站点检索栏输入同样有效。
+        p.admin-gate-desc 输入管理员密钥进入。也可以在站点检索栏输入密钥后<b>按回车</b>直接跳转。
         input#gate-key.admin-input(type='password' placeholder='XXXXX-XXXXX-XXXXX-XXXXX' autocomplete='off' spellcheck='false')
         button#gate-btn.admin-btn.admin-btn-primary(type='button') 进入
         #gate-msg.admin-gate-msg
@@ -88,38 +89,90 @@ html(lang='zh-CN' data-theme='dark')
                 i.fas.fa-arrow-left
                 span 返回列表
               .admin-editor-file#editor-file
-            .admin-form
-              .admin-field
-                label 标题
-                input#ed-title.admin-input(type='text')
-              .admin-row
+              span#editor-state.admin-editor-state
+            .admin-editor
+              #editor-draft.editor-draft(style='display:none')
+                i.fas.fa-clock-rotate-left
+                span#editor-draft-text 检测到本地草稿
+                button#btn-restore-draft.editor-draft-btn(type='button') 恢复
+                button#btn-drop-draft.editor-draft-btn(type='button') 忽略
+              .admin-form
                 .admin-field
-                  label 日期（YYYY-MM-DD HH:mm:ss）
-                  input#ed-date.admin-input(type='text')
+                  label 标题
+                  input#ed-title.admin-input.admin-input-lg(type='text' placeholder='给这篇文章起个标题…')
+                .admin-row
+                  .admin-field
+                    label 日期（YYYY-MM-DD HH:mm:ss）
+                    input#ed-date.admin-input(type='text')
+                  .admin-field
+                    label 置顶权重
+                    .admin-sticky-row
+                      input#ed-sticky.admin-input(type='number' min='0' step='1')
+                      span#sticky-state.admin-sticky-state
+                    .admin-field-hint
+                      | 数字<b>越小越靠前</b>（<b>1 = 最前</b>）；<b>0 = 不置顶</b>，按日期倒序排在普通文章里。
+                      | 数字相同的置顶文章之间再按日期倒序。
+                .admin-row
+                  .admin-field
+                    label 分类（逗号分隔）
+                    input#ed-categories.admin-input(type='text' placeholder='如：教程, Hexo')
+                  .admin-field
+                    label 标签（逗号分隔）
+                    input#ed-tags.admin-input(type='text' placeholder='如：Terraria, 模组')
                 .admin-field
-                  label 置顶权重（0 = 不置顶）
-                  input#ed-sticky.admin-input(type='number' min='0' step='1')
-              .admin-row
+                  label 摘要 / description（可空，用于列表页与搜索引擎）
+                  input#ed-desc.admin-input(type='text')
                 .admin-field
-                  label 分类（逗号分隔）
-                  input#ed-categories.admin-input(type='text')
-                .admin-field
-                  label 标签（逗号分隔）
-                  input#ed-tags.admin-input(type='text')
-              .admin-field
-                label 摘要 / description（可空）
-                input#ed-desc.admin-input(type='text')
-              .admin-field
-                label 正文（Markdown）
-                textarea#ed-body.admin-textarea(rows='22' spellcheck='false')
-              .admin-actions
-                button#btn-save-post.admin-btn.admin-btn-primary(type='button')
-                  i.fas.fa-floppy-disk
-                  span 保存到仓库
-                button#btn-delete-post.admin-btn.admin-btn-danger(type='button')
-                  i.fas.fa-trash
-                  span 删除文章
-                button#btn-cancel-edit.admin-btn(type='button') 取消
+                  label 正文（Markdown）
+                  .editor-body#editor-body
+                    .editor-bar
+                      .editor-tools
+                        button.editor-tool(type='button' data-md='bold' title='加粗（Ctrl+B）')
+                          i.fas.fa-bold
+                        button.editor-tool(type='button' data-md='italic' title='斜体（Ctrl+I）')
+                          i.fas.fa-italic
+                        button.editor-tool(type='button' data-md='strike' title='删除线')
+                          i.fas.fa-strikethrough
+                        span.editor-tools-sep
+                        button.editor-tool(type='button' data-md='h2' title='二级标题')
+                          i.fas.fa-heading
+                        button.editor-tool(type='button' data-md='quote' title='引用')
+                          i.fas.fa-quote-left
+                        button.editor-tool(type='button' data-md='ul' title='无序列表')
+                          i.fas.fa-list-ul
+                        button.editor-tool(type='button' data-md='ol' title='有序列表')
+                          i.fas.fa-list-ol
+                        span.editor-tools-sep
+                        button.editor-tool(type='button' data-md='code' title='行内代码')
+                          i.fas.fa-code
+                        button.editor-tool(type='button' data-md='codeblock' title='代码块')
+                          i.fas.fa-file-code
+                        button.editor-tool(type='button' data-md='link' title='链接（Ctrl+K）')
+                          i.fas.fa-link
+                        button.editor-tool(type='button' data-md='image' title='图片')
+                          i.fas.fa-image
+                        button.editor-tool(type='button' data-md='table' title='表格')
+                          i.fas.fa-table
+                        button.editor-tool(type='button' data-md='hr' title='分割线')
+                          i.fas.fa-minus
+                      .editor-modes
+                        button.editor-mode.is-active(type='button' data-mode='edit') 编辑
+                        button.editor-mode(type='button' data-mode='split') 分栏
+                        button.editor-mode(type='button' data-mode='preview') 预览
+                    .editor-panes
+                      textarea#ed-body.admin-textarea(rows='22' spellcheck='false' placeholder='用 Markdown 写正文…')
+                      .editor-preview#editor-preview
+                    .editor-foot
+                      span#ed-stats.editor-stats 0 字 · 0 行 · 约 1 分钟
+                      span.editor-tip Ctrl+B 加粗 · Ctrl+K 链接 · Ctrl+S 保存 · Tab 缩进
+                .admin-actions
+                  button#btn-save-post.admin-btn.admin-btn-primary(type='button')
+                    i.fas.fa-floppy-disk
+                    span 保存到仓库
+                  button#btn-delete-post.admin-btn.admin-btn-danger(type='button')
+                    i.fas.fa-trash
+                    span 删除文章
+                  button#btn-cancel-edit.admin-btn(type='button') 取消
 
         //- ---------- 公告 ----------
         section#tab-announce.admin-pane
@@ -197,4 +250,4 @@ html(lang='zh-CN' data-theme='dark')
     script(src=url_for('/custom/cursor/site-cursor.js'))
     script(src=url_for('/custom/admin/admin-key.js'))
     script(src=url_for('/custom/admin/admin-space.js'))
-    script(src=url_for('/custom/admin/admin.js'))
+    script(src=url_for('/custom/admin/admin.js') + '?v=20260909b')

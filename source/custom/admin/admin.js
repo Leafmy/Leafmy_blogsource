@@ -2,7 +2,7 @@
    管理控制台 /admin/
    ------------------------------------------------------------
    进入方式：
-   1) 在站点检索栏输入管理员密钥（回车/输入即校验）→ 自动跳转
+   1) 在站点搜索栏输入管理员密钥后**按回车** → 自动跳转
    2) 直接访问 /admin/，在门禁里输入密钥
 
    数据写入：GitHub Contents API（站长自己的细粒度 PAT，只存本机浏览器）
@@ -360,6 +360,480 @@
     mo.observe($('#admin-app'), { childList: true, subtree: true })
   }
 
+  // ==================== 写作页（编辑器）====================
+  // 目标：像一个真正的写作页 —— Markdown 工具栏、实时预览、字数统计、
+  // 快捷键、本地草稿、未保存提醒。
+  var DRAFT_STORE = 'admin_draft_v1'
+  var editorMode = 'edit'
+  var editorDirty = false
+  var draftTimer = 0
+  var previewTimer = 0
+
+  // 当前草稿归属：新文章 / 具体文件路径
+  function draftKey() {
+    var ed = state.editing
+    if (!ed) return ''
+    return ed.mode === 'new' ? 'new' : ed.path
+  }
+
+  // ---- 未保存状态 ----
+  function markDirty(v, label) {
+    editorDirty = !!v
+    var el = $('#editor-state')
+    if (!el) return
+    if (!editorDirty) { el.className = 'admin-editor-state'; el.textContent = label || ''; return }
+    el.className = 'admin-editor-state is-dirty'
+    el.textContent = '● 有未保存的修改'
+  }
+
+  // ---- 本地草稿（刷新 / 误关页面后还能捡回来）----
+  function snapshotEditor() {
+    return {
+      key: draftKey(),
+      title: $('#ed-title').value,
+      date: $('#ed-date').value,
+      categories: $('#ed-categories').value,
+      tags: $('#ed-tags').value,
+      desc: $('#ed-desc').value,
+      sticky: $('#ed-sticky').value,
+      body: $('#ed-body').value,
+      ts: Date.now()
+    }
+  }
+
+  function scheduleDraft() {
+    clearTimeout(draftTimer)
+    draftTimer = setTimeout(function () {
+      try { localStorage.setItem(DRAFT_STORE, JSON.stringify(snapshotEditor())) } catch (e) {}
+    }, 700)
+  }
+
+  function clearDraft() {
+    clearTimeout(draftTimer)
+    try { localStorage.removeItem(DRAFT_STORE) } catch (e) {}
+    var banner = $('#editor-draft')
+    if (banner) banner.style.display = 'none'
+  }
+
+  function relTime(ts) {
+    var m = Math.floor(Math.max(0, Date.now() - Number(ts || 0)) / 60000)
+    if (m < 1) return '刚刚'
+    if (m < 60) return m + ' 分钟前'
+    var h = Math.floor(m / 60)
+    if (h < 24) return h + ' 小时前'
+    return Math.floor(h / 24) + ' 天前'
+  }
+
+  // 打开编辑器后，检查有没有同一篇文章的本地草稿
+  function checkDraft() {
+    var banner = $('#editor-draft')
+    if (!banner) return
+    var raw = null
+    try { raw = JSON.parse(localStorage.getItem(DRAFT_STORE) || 'null') } catch (e) {}
+    if (!raw || raw.key !== draftKey()) { banner.style.display = 'none'; return }
+    // 与当前内容一致 → 没有可恢复的东西
+    if (String(raw.body || '') === $('#ed-body').value &&
+      String(raw.title || '') === $('#ed-title').value) {
+      banner.style.display = 'none'
+      return
+    }
+    banner.__draft = raw
+    banner.style.display = ''
+    $('#editor-draft-text').textContent = '发现本地草稿（' + relTime(raw.ts) + '自动保存）'
+  }
+
+  function restoreDraft() {
+    var banner = $('#editor-draft')
+    var raw = banner && banner.__draft
+    if (!raw) return
+    $('#ed-title').value = raw.title || ''
+    $('#ed-date').value = raw.date || ''
+    $('#ed-categories').value = raw.categories || ''
+    $('#ed-tags').value = raw.tags || ''
+    $('#ed-desc').value = raw.desc || ''
+    $('#ed-sticky').value = raw.sticky || '0'
+    $('#ed-body').value = raw.body || ''
+    banner.style.display = 'none'
+    markDirty(true)
+    syncEditorUI()
+    toast('已恢复本地草稿', 'ok')
+  }
+
+  // ---- 字数统计 ----
+  function updateStats() {
+    var v = $('#ed-body').value
+    var cn = (v.match(/[\u4e00-\u9fa5]/g) || []).length
+    var words = (v.replace(/[\u4e00-\u9fa5]/g, ' ').match(/[A-Za-z0-9_'-]+/g) || []).length
+    var lines = v ? v.split('\n').length : 0
+    var count = cn + words
+    var minutes = Math.max(1, Math.round(count / 400))
+    $('#ed-stats').textContent = count + ' 字 · ' + lines + ' 行 · 约 ' + minutes + ' 分钟'
+  }
+
+  // ---- 置顶权重：把"当前效果"直接写在旁边，不再云里雾里 ----
+  function updateStickyState() {
+    var el = $('#sticky-state')
+    if (!el) return
+    var n = Number($('#ed-sticky').value || 0)
+    var legacyTop = !!(state.editing && state.editing.data && state.editing.data.top)
+    if (n > 0) {
+      el.className = 'admin-sticky-state is-on'
+      el.textContent = '置顶 · 权重 ' + n
+    } else if (legacyTop) {
+      el.className = 'admin-sticky-state is-on'
+      el.textContent = '置顶（旧字段 top）'
+    } else {
+      el.className = 'admin-sticky-state'
+      el.textContent = '不置顶'
+    }
+  }
+
+  // ---- Markdown 预览（够用子集：先转义再替换，天然安全）----
+  function mdEscape(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]
+    })
+  }
+
+  function mdInline(text) {
+    return text
+      .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img src="$2" alt="$1">')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_\n]+)__/g, '<strong>$1</strong>')
+      .replace(/~~([^~\n]+)~~/g, '<del>$1</del>')
+      .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+      .replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>')
+  }
+
+  function mdToHtml(src) {
+    var blocks = []
+    var text = String(src || '').replace(/\r\n?/g, '\n')
+    // 1) 先摘出围栏代码块（内容整体转义，不再参与后面的行内替换）
+    text = text.replace(/```[^\n`]*\n([\s\S]*?)(?:\n?```|$)/g, function (m, code) {
+      blocks.push('<pre><code>' + mdEscape(code.replace(/\n$/, '')) + '</code></pre>')
+      return '\n\u0000B' + (blocks.length - 1) + '\u0000\n'
+    })
+    // 2) 其余内容统一转义（后面只做受控替换）
+    text = mdEscape(text)
+
+    var lines = text.split('\n')
+    var out = []
+    var para = []
+    function flush() {
+      if (para.length) { out.push('<p>' + para.map(mdInline).join('<br>') + '</p>'); para = [] }
+    }
+    function splitRow(line) {
+      return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|')
+        .map(function (c) { return c.trim() })
+    }
+    var i = 0
+    while (i < lines.length) {
+      var line = lines[i]
+      var bm = /^\u0000B(\d+)\u0000$/.exec(line.trim())
+      if (bm) { flush(); out.push(blocks[Number(bm[1])] || ''); i++; continue }
+      if (!line.trim()) { flush(); i++; continue }
+
+      var h = /^(#{1,4})\s+(.*)$/.exec(line)
+      if (h) {
+        flush()
+        var lv = h[1].length
+        out.push('<h' + lv + '>' + mdInline(h[2]) + '</h' + lv + '>')
+        i++; continue
+      }
+      if (/^\s*([-*_])\s*\1\s*\1[\s\-*_]*$/.test(line)) { flush(); out.push('<hr>'); i++; continue }
+
+      // 引用行：'&gt;' 是转义后的 '>'（转义发生在块级解析之前）
+      if (/^&gt;\s?/.test(line)) {
+        flush()
+        var qs = []
+        while (i < lines.length && /^&gt;\s?/.test(lines[i])) {
+          qs.push(lines[i].replace(/^&gt;\s?/, '')); i++
+        }
+        out.push('<blockquote>' + qs.map(mdInline).join('<br>') + '</blockquote>')
+        continue
+      }
+
+      if (/^\s*[-*+]\s+/.test(line)) {
+        flush()
+        var ul = []
+        while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) {
+          ul.push('<li>' + mdInline(lines[i].replace(/^\s*[-*+]\s+/, '')) + '</li>'); i++
+        }
+        out.push('<ul>' + ul.join('') + '</ul>')
+        continue
+      }
+
+      if (/^\s*\d+\.\s+/.test(line)) {
+        flush()
+        var ol = []
+        while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+          ol.push('<li>' + mdInline(lines[i].replace(/^\s*\d+\.\s+/, '')) + '</li>'); i++
+        }
+        out.push('<ol>' + ol.join('') + '</ol>')
+        continue
+      }
+
+      // 表格：本行有 |，下一行是 |---| 分隔行
+      if (line.indexOf('|') > -1 && i + 1 < lines.length &&
+        /^\s*\|?[\s:|-]*-[\s:|-]*\|[\s:|-]*$/.test(lines[i + 1])) {
+        flush()
+        var head = splitRow(line)
+        i += 2
+        var rows = []
+        while (i < lines.length && lines[i].indexOf('|') > -1 && lines[i].trim()) {
+          rows.push(splitRow(lines[i])); i++
+        }
+        out.push('<table><thead><tr>' +
+          head.map(function (c) { return '<th>' + mdInline(c) + '</th>' }).join('') +
+          '</tr></thead><tbody>' +
+          rows.map(function (r) {
+            return '<tr>' + r.map(function (c) { return '<td>' + mdInline(c) + '</td>' }).join('') + '</tr>'
+          }).join('') +
+          '</tbody></table>')
+        continue
+      }
+
+      para.push(line)
+      i++
+    }
+    flush()
+    return out.join('\n')
+  }
+
+  function updatePreview() {
+    var host = $('#editor-preview')
+    if (!host) return
+    host.innerHTML = mdToHtml($('#ed-body').value)
+  }
+
+  function schedulePreview() {
+    clearTimeout(previewTimer)
+    previewTimer = setTimeout(updatePreview, 180)
+  }
+
+  function setEditorMode(mode) {
+    editorMode = mode
+    var body = $('#editor-body')
+    if (body) body.className = 'editor-body mode-' + mode
+    $$('.editor-mode').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-mode') === mode)
+    })
+    if (mode !== 'edit') updatePreview()
+  }
+
+  // 编辑器内容变化后的统一收尾
+  function afterEdit() {
+    markDirty(true)
+    scheduleDraft()
+    updateStats()
+    updateStickyState()
+    if (editorMode !== 'edit') schedulePreview()
+  }
+
+  // 打开文章 / 新建文章后同步整块 UI
+  function syncEditorUI() {
+    updateStats()
+    updateStickyState()
+    if (editorMode !== 'edit') updatePreview()
+  }
+
+  // ---- Markdown 工具栏：在光标处插入 / 包裹选区 ----
+  function insertMarkdown(kind) {
+    var ta = $('#ed-body')
+    var val = ta.value
+    var start = ta.selectionStart
+    var end = ta.selectionEnd
+    var sel = val.slice(start, end)
+    var out = null, selStart = 0, selEnd = 0
+
+    function wrap(prefix, suffix, placeholder) {
+      var text = sel || placeholder || ''
+      out = val.slice(0, start) + prefix + text + suffix + val.slice(end)
+      selStart = start + prefix.length
+      selEnd = selStart + text.length
+    }
+    // 按行加/去前缀（列表、引用、标题）
+    function linePrefix(prefix, numbered) {
+      var ls = val.lastIndexOf('\n', start - 1) + 1
+      var le = val.indexOf('\n', end)
+      if (le < 0) le = val.length
+      var lines = val.slice(ls, le).split('\n')
+      var allHave = lines.every(function (l) {
+        return numbered ? /^\s*\d+\.\s/.test(l) : l.indexOf(prefix) === 0
+      })
+      var next = lines.map(function (l, i) {
+        if (allHave) return numbered ? l.replace(/^\s*\d+\.\s/, '') : l.slice(prefix.length)
+        return numbered ? (i + 1) + '. ' + l : prefix + l
+      })
+      out = val.slice(0, ls) + next.join('\n') + val.slice(le)
+      selStart = ls
+      selEnd = ls + next.join('\n').length
+    }
+
+    if (kind === 'bold') wrap('**', '**', '粗体文字')
+    else if (kind === 'italic') wrap('*', '*', '斜体文字')
+    else if (kind === 'strike') wrap('~~', '~~', '删除线')
+    else if (kind === 'code') wrap('`', '`', 'code')
+    else if (kind === 'h2') linePrefix('## ')
+    else if (kind === 'quote') linePrefix('> ')
+    else if (kind === 'ul') linePrefix('- ')
+    else if (kind === 'ol') linePrefix('', true)
+    else if (kind === 'hr') {
+      var pre = (start > 0 && val[start - 1] !== '\n') ? '\n\n' : ''
+      var post = (end < val.length && val[end] !== '\n') ? '\n\n' : ''
+      out = val.slice(0, start) + pre + '---' + post + val.slice(end)
+      selStart = selEnd = start + pre.length + 3
+    } else if (kind === 'codeblock') {
+      var pre2 = (start > 0 && val[start - 1] !== '\n') ? '\n' : ''
+      var text2 = sel || 'code'
+      out = val.slice(0, start) + pre2 + '```\n' + text2 + '\n```\n' + val.slice(end)
+      selStart = start + pre2.length + 4
+      selEnd = selStart + text2.length
+    } else if (kind === 'link' || kind === 'image') {
+      var label = sel || (kind === 'link' ? '链接文字' : '图片描述')
+      var s = (kind === 'link' ? '[' : '![') + label + ']()'
+      out = val.slice(0, start) + s + val.slice(end)
+      selStart = selEnd = start + s.length - 1
+    } else if (kind === 'table') {
+      var pre3 = (start > 0 && val[start - 1] !== '\n') ? '\n\n' : ''
+      var t = '| 列 1 | 列 2 |\n| --- | --- |\n| 内容 | 内容 |'
+      out = val.slice(0, start) + pre3 + t + val.slice(end)
+      selStart = selEnd = start + pre3.length + t.length
+    }
+
+    if (out === null) return
+    ta.value = out
+    ta.focus()
+    ta.setSelectionRange(selStart, selEnd)
+    afterEdit()
+  }
+
+  // 光标是否落在围栏代码块里（代码块内不做列表续行）
+  function insideFence(val, pos) {
+    var n = 0, idx = 0
+    for (;;) {
+      var i = val.indexOf('```', idx)
+      if (i < 0 || i >= pos) break
+      n++
+      idx = i + 3
+    }
+    return n % 2 === 1
+  }
+
+  // ---- 正文键盘行为：Tab 缩进 / Enter 续行 / 选区自动包裹 ----
+  function onBodyKeydown(e) {
+    var ta = $('#ed-body')
+    var val = ta.value
+    var start = ta.selectionStart
+    var end = ta.selectionEnd
+
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      var k = (e.key || '').toLowerCase()
+      if (k === 'b') { e.preventDefault(); insertMarkdown('bold'); return }
+      if (k === 'i') { e.preventDefault(); insertMarkdown('italic'); return }
+      if (k === 'k') { e.preventDefault(); insertMarkdown('link'); return }
+    }
+
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      if (start === end) {
+        if (e.shiftKey) {
+          var ls = val.lastIndexOf('\n', start - 1) + 1
+          if (val.slice(ls, ls + 2) === '  ') {
+            ta.value = val.slice(0, ls) + val.slice(ls + 2)
+            ta.setSelectionRange(Math.max(ls, start - 2), Math.max(ls, start - 2))
+          }
+        } else {
+          ta.value = val.slice(0, start) + '  ' + val.slice(end)
+          ta.setSelectionRange(start + 2, start + 2)
+        }
+      } else {
+        var ls2 = val.lastIndexOf('\n', start - 1) + 1
+        var block = val.slice(ls2, end)
+        var shifted = block.split('\n').map(function (l) {
+          return e.shiftKey ? l.replace(/^ {1,2}/, '') : '  ' + l
+        }).join('\n')
+        ta.value = val.slice(0, ls2) + shifted + val.slice(end)
+        ta.setSelectionRange(ls2, ls2 + shifted.length)
+      }
+      afterEdit()
+      return
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey && start === end && !insideFence(val, start)) {
+      var lsE = val.lastIndexOf('\n', start - 1) + 1
+      var line = val.slice(lsE, start)
+      var m = /^(\s*)([-*+]|\d+\.|>)\s+(.*)$/.exec(line)
+      if (m) {
+        e.preventDefault()
+        if (!m[3].trim()) {
+          // 空项回车 → 结束列表/引用，去掉标记
+          ta.value = val.slice(0, lsE) + val.slice(start)
+          ta.setSelectionRange(lsE, lsE)
+        } else {
+          var marker = /^\d+\.$/.test(m[2]) ? (parseInt(m[2], 10) + 1) + '.' : m[2]
+          var ins = '\n' + m[1] + marker + ' '
+          ta.value = val.slice(0, start) + ins + val.slice(end)
+          ta.setSelectionRange(start + ins.length, start + ins.length)
+        }
+        afterEdit()
+        return
+      }
+    }
+
+    // 选中文字后输入成对符号 → 直接包裹
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && (e.key || '').length === 1 && end > start) {
+      var pair = { '*': '*', _: '_', '`': '`', '~': '~', '[': ']', '(': ')' }[e.key]
+      if (pair) {
+        e.preventDefault()
+        var selected = val.slice(start, end)
+        var rep = e.key + selected + pair
+        ta.value = val.slice(0, start) + rep + val.slice(end)
+        ta.setSelectionRange(start + 1, start + 1 + selected.length)
+        afterEdit()
+      }
+    }
+  }
+
+  function initEditorUI() {
+    var fields = ['#ed-title', '#ed-date', '#ed-sticky', '#ed-categories', '#ed-tags', '#ed-desc']
+    fields.forEach(function (sel) {
+      var el = $(sel)
+      if (el) el.addEventListener('input', afterEdit)
+    })
+    $('#ed-body').addEventListener('input', afterEdit)
+    $('#ed-body').addEventListener('keydown', onBodyKeydown)
+
+    $$('.editor-tool').forEach(function (b) {
+      b.addEventListener('click', function () { insertMarkdown(b.getAttribute('data-md')) })
+    })
+    $$('.editor-mode').forEach(function (b) {
+      b.addEventListener('click', function () { setEditorMode(b.getAttribute('data-mode')) })
+    })
+    $('#btn-restore-draft').addEventListener('click', restoreDraft)
+    $('#btn-drop-draft').addEventListener('click', function () {
+      clearDraft()
+      toast('已忽略本地草稿')
+    })
+
+    // Ctrl/Cmd+S 保存（编辑器打开时）
+    document.addEventListener('keydown', function (e) {
+      if (!(e.ctrlKey || e.metaKey) || (e.key || '').toLowerCase() !== 's') return
+      var view = $('#post-editor-view')
+      if (!view || view.style.display === 'none') return
+      e.preventDefault()
+      savePost()
+    })
+    // 有未保存修改时，关页面/刷新给一次确认
+    window.addEventListener('beforeunload', function (e) {
+      if (!editorDirty) return
+      e.preventDefault()
+      e.returnValue = ''
+    })
+  }
+
   // ==================== 门禁 ====================
   function unlocked() {
     try { return sessionStorage.getItem(UNLOCK_STORE) === ADMIN_HASH } catch (e) { return false }
@@ -472,13 +946,23 @@
     var list = state.posts.filter(function (p) {
       if (!kw) return true
       return (p.title + ' ' + (p.tags || []).join(' ') + ' ' + (p.categories || []).join(' ')).toLowerCase().indexOf(kw) > -1
+    }).slice()
+    // 置顶的排在最前（和首页一致：数字越小越靠前，0 = 不置顶，同号按日期倒序）
+    list.sort(function (a, b) {
+      var sa = Number(a.sticky || 0), sb = Number(b.sticky || 0)
+      if (sa > 0 && sb > 0) {
+        return (sa - sb) || String(b.date || '').localeCompare(String(a.date || ''))
+      }
+      if (sa > 0) return -1
+      if (sb > 0) return 1
+      return String(b.date || '').localeCompare(String(a.date || ''))
     })
     var host = $('#posts-list')
     host.innerHTML = list.length ? list.map(function (p) {
       return '<div class="admin-item" data-open="' + esc(p.source) + '">' +
         '<div class="admin-item-main">' +
         '<div class="admin-item-title">' + esc(p.title || '(无标题)') +
-        (p.sticky ? ' <span class="admin-pill">置顶</span>' : '') + '</div>' +
+        (p.sticky ? ' <span class="admin-pill">置顶 ' + Number(p.sticky) + '</span>' : '') + '</div>' +
         '<div class="admin-item-meta">' + esc(p.date) + ' · ' +
         (p.categories || []).map(function (c) { return esc(c) }).join(' / ') + '</div>' +
         '</div>' +
@@ -513,6 +997,11 @@
     $('#btn-delete-post').style.display = 'none'
     $('#posts-list-view').style.display = 'none'
     $('#post-editor-view').style.display = ''
+    markDirty(false)
+    setEditorMode('edit')
+    syncEditorUI()
+    checkDraft()
+    $('#ed-title').focus()
   }
 
   function openEditor(source) {
@@ -536,6 +1025,9 @@
       $('#ed-tags').value = Array.isArray(fm.data.tags) ? fm.data.tags.join(', ') : (fm.data.tags || '')
       $('#ed-desc').value = fm.data.description || ''
       $('#ed-body').value = fm.body
+      markDirty(false)
+      syncEditorUI()
+      checkDraft()
     }).catch(function (e) {
       $('#editor-file').textContent = fullPath + ' · 读取失败'
       toast('读取失败：' + e.message, 'err')
@@ -550,8 +1042,11 @@
     data.tags = splitList($('#ed-tags').value)
     var desc = $('#ed-desc').value.trim()
     if (desc) data.description = desc; else delete data.description
+    // 置顶：统一用 sticky 表达（scripts/index-pin-order.js 按数字**升序**排，
+    // 1 = 最前、0 = 不置顶），顺手清掉旧的 top 布尔字段，避免两个字段打架
     var sticky = Number($('#ed-sticky').value || 0)
     if (sticky > 0) data.sticky = sticky; else delete data.sticky
+    delete data.top
     return { data: data, body: $('#ed-body').value }
   }
 
@@ -571,6 +1066,8 @@
     ghPutFile(path, content, msg, isNew ? null : ed.sha).then(function (res) {
       btn.disabled = false
       toast('已提交到仓库：' + path + '（站点重新构建后生效）', 'ok')
+      clearDraft()
+      markDirty(false, '✓ 已提交')
       if (res && res.content) {
         ed.mode = 'edit'; ed.path = path; ed.sha = res.content.sha
         $('#editor-file').textContent = path
@@ -819,6 +1316,7 @@
     $('#btn-clear-gh').addEventListener('click', clearCredentials)
     $('#btn-save-admin-key').addEventListener('click', changeAdminKey)
 
+    initEditorUI()
     decorateCards()
     observeCards()
     reloadManifest(true)

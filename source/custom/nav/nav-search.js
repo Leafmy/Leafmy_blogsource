@@ -402,11 +402,16 @@
       openBox()
     }
   })
-  // ---- 管理员密钥入口：在检索栏输入密钥 → 进入 /admin/ ----
+  // ---- 管理员密钥入口：在检索栏输入密钥 → **按回车**进入 /admin/ ----
   // 只比对 SHA-256（明文不落源码）；密钥形如 XXXXX-XXXXX-XXXXX-XXXXX
+  // 注意：输入过程中**不跳转**（打错一个字符就飞走很难受），只在回车时校验。
   var ADMIN_HASH = String(window.ADMIN_KEY_SHA256 || '').toLowerCase()
   var ADMIN_KEY_RE = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/
-  function tryAdminKey() {
+  function looksLikeAdminKey() {
+    return ADMIN_KEY_RE.test(input.value.trim().toUpperCase())
+  }
+  // 仅由回车调用：形如密钥才校验；命中跳转，不命中给提示（都不当检索词）
+  function submitAdminKey() {
     if (!ADMIN_HASH || !window.crypto || !crypto.subtle) return false
     var v = input.value.trim().toUpperCase()
     if (!ADMIN_KEY_RE.test(v)) return false
@@ -414,7 +419,12 @@
       var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
         return ('0' + b.toString(16)).slice(-2)
       }).join('')
-      if (hex !== ADMIN_HASH) return
+      if (hex !== ADMIN_HASH) {
+        // 形如密钥但不对：不跳转、不检索，只在面板里提示
+        renderStatus('nav-search-empty',
+          '<i class="fas fa-lock nav-s-ico"></i>管理员密钥不正确')
+        return
+      }
       // 命中：清空输入（别把密钥留在框里），直接进管理页
       input.value = ''
       lastQuery = ''
@@ -428,12 +438,21 @@
   // 输入
   input.addEventListener('input', function () {
     clearTimeout(searchTimer)
-    if (tryAdminKey()) return
+    // 形如管理员密钥 → 不检索、不跳转（等回车），只同步清除按钮状态
+    if (looksLikeAdminKey()) {
+      lastQuery = ''
+      hidePanel()
+      updateControls(input.value.trim())
+      return
+    }
     searchTimer = setTimeout(function () { runSearch(input.value) }, 80)
   })
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { e.preventDefault(); closeBox(); return }
-    if (e.key === 'Enter' && tryAdminKey()) e.preventDefault()
+    if (e.key === 'Enter' && looksLikeAdminKey()) {
+      e.preventDefault()
+      submitAdminKey()
+    }
   })
   // 自定义光标: 聚焦/失焦/输入/点击/移动光标时重定位
   input.addEventListener('focus', positionCaret)

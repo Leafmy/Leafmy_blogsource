@@ -262,6 +262,15 @@ body.admin-body {
   font-size: 13px;
 }
 
+/* 输入框与「进入」按钮之间留出呼吸感（之前贴在一起，容易误点） */
+.admin-gate-card .admin-input { margin-bottom: 18px; }
+
+.admin-gate-card .admin-btn {
+  width: 100%;
+  padding: 11px 18px;
+  font-size: 13.5px;
+}
+
 .admin-gate-msg {
   min-height: 20px;
   margin-top: 12px;
@@ -499,10 +508,20 @@ body.admin-body {
 
 .admin-stat-num {
   font-size: 30px;
-  font-weight: 500;
+  /* 数字加粗：字体只自带 Medium 一档，浏览器会合成粗体（字形明显更实） */
+  font-weight: 700;
   color: var(--adm-accent);
-  line-height: 1.1;
-  text-shadow: 0 0 26px var(--adm-glow);
+  line-height: 1.15;
+  letter-spacing: .01em;
+  /* 再"加粗"一档：合成粗体到 700 就封顶了（实测 900 与 700 渲染完全一样），
+     所以用**四向 0.4px 同色调阴影**把笔画再撑粗一圈——不破坏 background-clip
+     的流光渐变（阴影是单色，用接近渐变的浅蓝，视觉上就是更粗的字）。 */
+  text-shadow:
+    0 0 26px var(--adm-glow),
+    .4px 0 0 rgba(185, 228, 255, .85),
+    -.4px 0 0 rgba(185, 228, 255, .85),
+    0 .4px 0 rgba(185, 228, 255, .85),
+    0 -.4px 0 rgba(185, 228, 255, .85);
 }
 
 .admin-stat-label {
@@ -644,6 +663,317 @@ body.admin-body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ============================================================
+   写作页（文章编辑器）
+   ------------------------------------------------------------
+   - 容器用细边框 + 深色底，**不挂 .adm-card** → 没有指针光效环
+   - 输入框/按钮去掉 focus 光晕与外发光，长时间写作不刺眼
+   - 正文区：Markdown 工具栏 + 编辑/分栏/预览 + 字数统计 + 草稿
+   ============================================================ */
+.admin-editor {
+  padding: 20px 22px 22px;
+  border-radius: var(--adm-radius);
+  border: 1px solid rgba(140, 180, 240, .1);
+  background: rgba(8, 13, 24, .66);
+}
+
+/* --- 去掉写作页里所有边框炫光 --- */
+#post-editor-view .admin-input,
+#post-editor-view .admin-textarea {
+  background: rgba(0, 0, 0, .2);
+  border-color: rgba(140, 180, 240, .12);
+}
+
+#post-editor-view .admin-input:focus,
+#post-editor-view .admin-textarea:focus {
+  border-color: rgba(140, 180, 240, .3);
+  background: rgba(0, 0, 0, .3);
+  box-shadow: none;
+}
+
+#post-editor-view .admin-btn,
+#post-editor-view .admin-btn:hover,
+#post-editor-view .admin-btn-primary,
+#post-editor-view .admin-btn-primary:hover {
+  box-shadow: none;
+}
+
+#post-editor-view .admin-editor-file { flex: 1 1 auto; min-width: 0; }
+
+.admin-input-lg {
+  font-size: 17px;
+  padding: 12px 15px;
+  letter-spacing: .01em;
+}
+
+/* ---------- 置顶权重 ---------- */
+.admin-sticky-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-sticky-row .admin-input {
+  width: 104px;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.admin-sticky-state {
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--adm-line);
+  color: var(--adm-dim);
+  font-size: 11.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.admin-sticky-state.is-on {
+  border-color: rgba(120, 200, 255, .42);
+  background: rgba(98, 216, 255, .1);
+  color: #cdf1ff;
+}
+
+.admin-field-hint {
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--adm-dim);
+}
+
+.admin-field-hint b { color: #cfe6ff; font-weight: 500; }
+
+/* ---------- 编辑器状态 / 草稿条 ---------- */
+.admin-editor-state {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--adm-dim);
+  white-space: nowrap;
+}
+
+.admin-editor-state.is-dirty { color: #ffd48a; }
+.admin-editor-state.is-saved { color: #8fe0ac; }
+
+.editor-draft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: var(--adm-radius-sm);
+  border: 1px solid rgba(255, 212, 138, .32);
+  background: rgba(255, 190, 90, .07);
+  font-size: 12.5px;
+  color: #ffe2b0;
+}
+
+.editor-draft-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 212, 138, .42);
+  background: transparent;
+  color: #ffe2b0;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.editor-draft-btn:hover { background: rgba(255, 190, 90, .14); }
+
+/* ---------- 正文区 ---------- */
+.editor-body { display: flex; flex-direction: column; }
+
+.editor-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.editor-tools { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.editor-tool {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, .04);
+  color: var(--adm-dim);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.editor-tool:hover {
+  color: var(--adm-text);
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(140, 180, 240, .22);
+}
+
+.editor-tools-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  align-self: center;
+  background: var(--adm-line);
+}
+
+.editor-modes {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--adm-line);
+  background: rgba(0, 0, 0, .2);
+}
+
+.editor-mode {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--adm-dim);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease;
+}
+
+.editor-mode:hover { color: var(--adm-text); }
+.editor-mode.is-active { color: #fff; background: rgba(98, 216, 255, .14); }
+
+.editor-panes { display: grid; grid-template-columns: 1fr; }
+
+.editor-body.mode-split .editor-panes { grid-template-columns: 1fr 1fr; gap: 14px; }
+.editor-body.mode-edit .editor-preview { display: none; }
+.editor-body.mode-preview .admin-textarea { display: none; }
+
+#post-editor-view .admin-textarea { min-height: 380px; }
+
+.editor-preview {
+  min-height: 380px;
+  max-height: 660px;
+  overflow: auto;
+  padding: 14px 18px;
+  border-radius: var(--adm-radius-sm);
+  border: 1px solid rgba(140, 180, 240, .12);
+  background: rgba(0, 0, 0, .2);
+  font-size: 13.5px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.editor-preview:empty::before { content: '预览区 · 开始写点什么…'; color: var(--adm-dim); }
+
+.editor-preview > :first-child { margin-top: 0; }
+
+.editor-preview h1,
+.editor-preview h2,
+.editor-preview h3,
+.editor-preview h4 {
+  margin: 1.3em 0 .6em;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.editor-preview h1 { font-size: 20px; }
+.editor-preview h2 { font-size: 17px; }
+.editor-preview h3 { font-size: 15px; }
+.editor-preview p { margin: .8em 0; }
+
+.editor-preview ul,
+.editor-preview ol { margin: .8em 0; padding-left: 1.5em; }
+
+.editor-preview li { margin: .3em 0; }
+
+.editor-preview blockquote {
+  margin: .9em 0;
+  padding: .2em 0 .2em 14px;
+  border-left: 3px solid rgba(140, 180, 240, .3);
+  color: #cfe0f5;
+}
+
+.editor-preview code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, .4);
+  border: 1px solid rgba(140, 180, 240, .14);
+  font-family: var(--adm-mono);
+  font-size: 12px;
+}
+
+.editor-preview pre {
+  margin: .9em 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .42);
+  border: 1px solid rgba(140, 180, 240, .14);
+  overflow-x: auto;
+}
+
+.editor-preview pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.editor-preview hr {
+  margin: 1.4em 0;
+  border: 0;
+  border-top: 1px solid rgba(140, 180, 240, .18);
+}
+
+.editor-preview a {
+  color: var(--adm-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.editor-preview img { max-width: 100%; border-radius: 8px; }
+
+.editor-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: .9em 0;
+  font-size: 12.5px;
+}
+
+.editor-preview th,
+.editor-preview td {
+  padding: 6px 10px;
+  border: 1px solid rgba(140, 180, 240, .16);
+  text-align: left;
+}
+
+.editor-preview th { background: rgba(255, 255, 255, .04); font-weight: 500; }
+
+.editor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--adm-dim);
+}
+
+.editor-stats { font-family: var(--adm-mono); letter-spacing: .02em; }
+
+@media (max-width: 900px) {
+  .editor-body.mode-split .editor-panes { grid-template-columns: 1fr; }
+  .editor-modes { margin-left: 0; }
 }
 
 /* ============================================================

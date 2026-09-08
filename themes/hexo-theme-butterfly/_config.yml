@@ -1104,7 +1104,7 @@ inject:
     # 管理页密钥哈希需在 nav-search.js 之前加载（检索栏输入密钥进 /admin/）
     - <script src="/custom/admin/admin-key.js?v=20260908d"></script>
     - <script src="/custom/nav/nav-apple.js?v=20260908d"></script>
-    - <script src="/custom/nav/nav-search.js?v=20260908d"></script>
+    - <script src="/custom/nav/nav-search.js?v=20260909a"></script>
     - <script src="/custom/nav/darkmode-move.js"></script>
     # --- effects 背景/玻璃/光效 ---
     - <script src="/custom/effects/glass-bg.js"></script>
