@@ -10,6 +10,14 @@ html(lang='zh-CN')
     title 管理控制台
     link(rel='stylesheet' href=url_for('/custom/admin/admin.css'))
   body.admin-body
+    //- 宇宙背景（纯 CSS 多层星场 + 星云 + 流星，见 admin.css）
+    .admin-space(aria-hidden='true')
+      .admin-space-nebula
+      .admin-space-stars
+      .admin-space-stars.far
+      .admin-shooting-star(style='--x:6%; --y:8%; --delay:3s')
+      .admin-shooting-star(style='--x:58%; --y:4%; --delay:12s')
+
     //- ============ 门禁 ============
     #admin-gate.admin-gate
       .admin-gate-card
