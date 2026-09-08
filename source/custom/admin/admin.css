@@ -107,8 +107,9 @@ body.admin-body {
   pointer-events: none;
   background: radial-gradient(closest-side, var(--adm-glow), transparent 72%);
   transform: translate3d(calc(var(--gx, -999px) - 240px), calc(var(--gy, -999px) - 160px), 0);
-  opacity: 0;
-  transition: opacity .35s ease;
+  /* 透明度 = 光源强度（JS 按指针距离写入 0~1） */
+  opacity: var(--glow, 0);
+  transition: opacity .18s ease;
   z-index: 0;
 }
 
@@ -128,13 +129,10 @@ body.admin-body {
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
-  opacity: 0;
-  transition: opacity .35s ease;
+  opacity: var(--glow, 0);
+  transition: opacity .18s ease;
   z-index: 2;
 }
-
-.adm-card.glow-on::before,
-.adm-card.glow-on::after { opacity: 1; }
 
 /* ============================================================
    门禁

@@ -252,35 +252,61 @@
     })
   }
 
-  // ==================== 卡片光效（顶部导航栏同款）====================
-  // 指针跟随光斑 + 边缘高亮环：CSS 用 --gx/--gy 驱动，JS 只在 rAF 里写变量
-  var glowCard = null
+  // ==================== 卡片光效（一个光源照亮范围内所有卡片）====================
+  // 指针是一个"光源"：范围内每张卡片按到指针的距离衰减发光，
+  // 近的更亮、远的更淡；卡片内的光斑位置仍跟随指针。
+  // CSS 侧用 --glow(0~1) 控制 ::before/::after 的透明度，--gx/--gy 控制光心。
+  var GLOW_RADIUS = 460          // 影响半径（px）
+  var glowCards = []
+  var pointerX = -9999, pointerY = -9999
   var glowRaf = 0
-  var glowX = 0, glowY = 0
 
-  function writeGlow() {
+  function refreshGlowCards() {
+    glowCards = Array.prototype.slice.call(document.querySelectorAll('.adm-card'))
+  }
+
+  function updateGlow() {
     glowRaf = 0
-    if (!glowCard) return
-    var r = glowCard.getBoundingClientRect()
-    glowCard.style.setProperty('--gx', (glowX - r.left).toFixed(1) + 'px')
-    glowCard.style.setProperty('--gy', (glowY - r.top).toFixed(1) + 'px')
+    if (!glowCards.length) refreshGlowCards()
+    for (var i = 0; i < glowCards.length; i++) {
+      var el = glowCards[i]
+      var r = el.getBoundingClientRect()
+      // 指针到卡片矩形的最近点距离（指针在卡片内 → 0）
+      var nx = pointerX < r.left ? r.left : (pointerX > r.right ? r.right : pointerX)
+      var ny = pointerY < r.top ? r.top : (pointerY > r.bottom ? r.bottom : pointerY)
+      var dx = pointerX - nx, dy = pointerY - ny
+      var d = Math.sqrt(dx * dx + dy * dy)
+      var s = 1 - d / GLOW_RADIUS
+      if (s < 0) s = 0
+      else if (s > 1) s = 1
+      s = s * s                                  // 二次衰减：近处亮得明显
+      if (el.__glow !== undefined && Math.abs(s - el.__glow) < 0.004) continue
+      el.__glow = s
+      el.style.setProperty('--glow', s.toFixed(3))
+      el.style.setProperty('--gx', (pointerX - r.left).toFixed(1) + 'px')
+      el.style.setProperty('--gy', (pointerY - r.top).toFixed(1) + 'px')
+    }
+  }
+
+  function scheduleGlow() {
+    if (!glowRaf) glowRaf = requestAnimationFrame(updateGlow)
   }
 
   document.addEventListener('pointermove', function (e) {
-    glowX = e.clientX
-    glowY = e.clientY
-    var card = e.target && e.target.closest ? e.target.closest('.adm-card') : null
-    if (card !== glowCard) {
-      if (glowCard) glowCard.classList.remove('glow-on')
-      glowCard = card
-      if (card) card.classList.add('glow-on')
-    }
-    if (card && !glowRaf) glowRaf = requestAnimationFrame(writeGlow)
+    pointerX = e.clientX
+    pointerY = e.clientY
+    scheduleGlow()
   }, { passive: true })
 
-  document.addEventListener('pointerleave', function () {
-    if (glowCard) { glowCard.classList.remove('glow-on'); glowCard = null }
-  })
+  // 指针离开文档/窗口失焦 → 全部熄灭
+  function killGlow() {
+    pointerX = -9999
+    pointerY = -9999
+    scheduleGlow()
+  }
+  document.addEventListener('pointerleave', killGlow)
+  document.addEventListener('mouseleave', killGlow)
+  window.addEventListener('blur', killGlow)
 
   // 给卡片挂 .adm-card（光效）
   var CARD_SEL = '.admin-top, .admin-panel, .admin-stat, .admin-item, .admin-tab, .admin-gate-card'
@@ -288,6 +314,8 @@
     var host = scope || document
     var cards = host.querySelectorAll(CARD_SEL)
     Array.prototype.forEach.call(cards, function (el) { el.classList.add('adm-card') })
+    refreshGlowCards()
+    scheduleGlow()
   }
 
   // 列表是动态渲染的，用 MutationObserver 兜住所有新增卡片（防抖 60ms）
