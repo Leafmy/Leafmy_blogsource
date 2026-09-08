@@ -111,14 +111,25 @@ body.admin-body {
   z-index: 1;
 }
 
+/* 软光斑：正圆 + 强羽化（多层渐隐，边缘几乎无硬边） */
 .adm-glow-blob {
   position: absolute;
   left: 0;
   top: 0;
-  width: 480px;
-  height: 320px;
+  width: 620px;
+  height: 620px;
+  border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(closest-side, var(--adm-glow), transparent 72%);
+  background: radial-gradient(
+    circle closest-side,
+    rgba(96, 208, 255, .30) 0%,
+    rgba(96, 208, 255, .23) 16%,
+    rgba(96, 208, 255, .15) 32%,
+    rgba(96, 208, 255, .085) 50%,
+    rgba(96, 208, 255, .04) 68%,
+    rgba(96, 208, 255, .014) 84%,
+    rgba(96, 208, 255, 0) 100%
+  );
   transform: translate3d(-999px, -999px, 0);
   opacity: var(--glow, 0);
   transition: opacity .18s ease;
@@ -141,14 +152,67 @@ body.admin-body {
   z-index: 2;
 }
 
+/* 环上高光层：同样正圆 + 强羽化 */
 .adm-edge-light {
   position: absolute;
   left: 0;
   top: 0;
-  width: 520px;
-  height: 380px;
-  background: radial-gradient(closest-side, var(--adm-glow-hi), rgba(120, 200, 255, 0) 70%);
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle closest-side,
+    var(--adm-glow-hi) 0%,
+    rgba(140, 220, 255, .62) 22%,
+    rgba(130, 210, 255, .30) 44%,
+    rgba(120, 200, 255, .10) 66%,
+    rgba(120, 200, 255, 0) 100%
+  );
   transform: translate3d(-999px, -999px, 0);
+}
+
+/* ============================================================
+   流光文字：彩色文字用缓慢流动的渐变填充
+   （统计数字 / 选中的标签 / 置顶徽章）
+   ============================================================ */
+.adm-flow-text,
+.admin-stat-num,
+.admin-tab.is-active,
+.admin-pill {
+  background-image: linear-gradient(
+    100deg,
+    #62d8ff 0%,
+    #8b8bff 18%,
+    #c48cff 36%,
+    #62d8ff 54%,
+    #6fe3ff 72%,
+    #8b8bff 88%,
+    #62d8ff 100%
+  );
+  background-size: 260% 100%;
+  background-repeat: repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  animation: adm-flow 14s linear infinite;
+}
+
+@keyframes adm-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 260% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-flow-text,
+  .admin-stat-num,
+  .admin-tab.is-active,
+  .admin-pill {
+    animation: none;
+    -webkit-text-fill-color: currentColor;
+    color: var(--adm-accent);
+  }
 }
 
 /* ============================================================
@@ -417,7 +481,9 @@ body.admin-body {
 
 .admin-tab.is-active {
   color: #fff;
-  background: none;
+  /* 注意：这里只能用 background-color，不能用 background 简写 ——
+     简写会把流光文字的 background-image / background-clip 一起清掉 */
+  background-color: transparent;
   box-shadow: none;
 }
 

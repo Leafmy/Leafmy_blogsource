@@ -289,11 +289,12 @@
       // 强度锁死在 1，若同时跳过位置，光斑就会卡在进入点（用户报的"卡住"）。
       var lx = pointerX - r.left
       var ly = pointerY - r.top
+      // 光斑 620×620（正圆）、环高光 560×560（正圆）→ 位移偏移取各自半径
       if (el.__blob) {
-        el.__blob.style.transform = 'translate3d(' + (lx - 240).toFixed(1) + 'px,' + (ly - 160).toFixed(1) + 'px,0)'
+        el.__blob.style.transform = 'translate3d(' + (lx - 310).toFixed(1) + 'px,' + (ly - 310).toFixed(1) + 'px,0)'
       }
       if (el.__light) {
-        el.__light.style.transform = 'translate3d(' + (lx - 260).toFixed(1) + 'px,' + (ly - 190).toFixed(1) + 'px,0)'
+        el.__light.style.transform = 'translate3d(' + (lx - 280).toFixed(1) + 'px,' + (ly - 280).toFixed(1) + 'px,0)'
       }
 
       // 强度：只在变化超过阈值时写（避免无谓的样式重算）
