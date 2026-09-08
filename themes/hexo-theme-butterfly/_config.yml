@@ -1111,7 +1111,9 @@ inject:
     - <script src="/custom/effects/force-glow.js"></script>
     - <script src="/custom/effects/tab-visibility.js"></script>
     - <script src="/custom/effects/scroll-perf.js"></script>
-    - <script src="/custom/effects/anchor-offset.js"></script>
+    - <script src="/custom/effects/anchor-offset.js?v=20260908e"></script>
+    # --- 代码块：长行换行后对齐行号 ---
+    - <script src="/custom/effects/code-wrap-align.js?v=20260908e"></script>
     # --- widgets 卡片/挂件/页脚 ---
     - <script src="/custom/widgets/announce-hover.js"></script>
     - <script src="/custom/widgets/visit-card.js"></script>

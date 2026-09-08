@@ -50,7 +50,32 @@ body.admin-body {
   background: var(--adm-bg);
   font-size: 14px;
   line-height: 1.65;
+  /* 抗锯齿：字体 + 图层 */
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+
+/* 卡片/按钮等浮层走独立合成层 → 边缘由 GPU 做抗锯齿，圆角与高光更顺滑 */
+.adm-card,
+.admin-btn,
+.admin-input,
+.admin-textarea,
+.admin-tab {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* 图标与文字统一基线，保证内容真正居中 */
+.admin-btn i,
+.admin-brand i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  line-height: 1;
 }
 
 /* ============================================================

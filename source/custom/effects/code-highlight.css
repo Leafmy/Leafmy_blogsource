@@ -389,3 +389,58 @@ html[data-theme='dark'] #post .post-content :not(pre) > code {
     border-radius: 8px !important;
   }
 }
+
+/* ============================================================
+   v15: 代码完整显示 + Fira Code Regular 全覆盖
+   ------------------------------------------------------------
+   1) 字体：站点 custom-font.css 用 `span { font-family: PingFang !important }`
+      把每个 token 的 <span class="line"> 也盖成了苹方（实测 .line 的
+      computed font-family = PingFangMedium）。这里用更高特异度 + !important
+      把代码区钉回 Fira Code Regular（只作用于 .codeblock 内，不影响工具条图标）。
+   2) 完整显示：长行自动换行（pre-wrap + anywhere），不再横向滚动/裁切；
+      同时 _config.yml 的 highlight_height_limit 已置 0（不限高、不折叠）。
+   ============================================================ */
+#post .post-content figure.shiki .codeblock pre,
+#post .post-content figure.shiki .codeblock code,
+#post .post-content figure.shiki .codeblock .line,
+#post .post-content figure.shiki .codeblock .line *,
+#article-container figure.shiki .codeblock pre,
+#article-container figure.shiki .codeblock code,
+#article-container figure.shiki .codeblock .line,
+#article-container figure.shiki .codeblock .line * {
+  font-family: 'Fira Code', ui-monospace, SFMono-Regular, 'Cascadia Code',
+    Consolas, 'Courier New', monospace !important;
+  font-weight: 400 !important;
+  font-variant-ligatures: none;
+}
+
+#post .post-content figure.shiki .codeblock,
+#post .post-content figure.shiki .codeblock pre,
+#post .post-content figure.shiki .codeblock code,
+#post .post-content figure.shiki .codeblock .line,
+#article-container figure.shiki .codeblock,
+#article-container figure.shiki .codeblock pre,
+#article-container figure.shiki .codeblock code,
+#article-container figure.shiki .codeblock .line {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* 代码列允许收缩，换行才会真正生效 */
+#post .post-content figure.shiki .codeblock .code,
+#article-container figure.shiki .codeblock .code {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+/* 换行后由 code-wrap-align.js 重建的等高行号：数字顶部对齐首行 */
+figure.shiki .gutter pre .line-num {
+  display: block;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+

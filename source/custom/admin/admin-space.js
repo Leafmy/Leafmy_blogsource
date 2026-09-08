@@ -2,15 +2,15 @@
    管理页宇宙背景（canvas）
    ------------------------------------------------------------
    层次（从后到前）：
-   1. 银河带：斜向星尘带 + 柔光，沿带缓慢流动
+   1. 螺旋星系（银河）：3 条对数螺旋悬臂 + 核球 + 尘埃带 + 差速旋转
    2. 星场：按深度分层视差漂移 + 闪烁
    3. 星链：邻近星点连线（星座效果）
    4. 恒星：几颗大亮星，多层光晕 + 十字星芒，缓慢脉动
    5. 黑洞：吸积盘旋转 + 引力透镜弧 + 事件视界
    6. 流星：头在前、尾拖后，飞出画面才回收
 
-   说明：按用户要求"交给 GPU"，视觉优先，不做性能降级；
-   仅保留必要优化（静态渐变缓存、隐藏标签页暂停、DPR 上限 2）。
+   抗锯齿：canvas 按 DPR×1.5（上限 3）超采样 + imageSmoothing 高质量；
+   所有曲线/细线都落在亚像素精度上。
    ============================================================ */
 (function () {
   'use strict'
@@ -20,9 +20,9 @@
   var ctx = canvas.getContext('2d', { alpha: true })
   if (!ctx) return
 
-  var DPR = Math.min(window.devicePixelRatio || 1, 2)
+  var DPR = Math.min((window.devicePixelRatio || 1) * 1.5, 3)
   var W = 0, H = 0
-  var stars = [], suns = [], dust = []
+  var stars = [], suns = []
   var shooters = []
   var running = true
   var rafId = 0
@@ -33,8 +33,8 @@
 
   var LINK_DIST = 128
   var LINK_MAX = 3
-  var GALAXY_ANGLE = -0.34          // 银河带倾角
-  var BH = { x: 0, y: 0, r: 44 }    // 黑洞（随视口布局）
+  var BH = { x: 0, y: 0, r: 44 }
+  var GALAXY = { cx: 0, cy: 0, R: 0, flatten: 0.4, tilt: -0.26, parts: [] }
 
   function rgba(c, a) {
     return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a.toFixed(3) + ')'
@@ -49,10 +49,20 @@
     canvas.style.width = W + 'px'
     canvas.style.height = H + 'px'
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
-    BH.x = Math.round(W * 0.16)
-    BH.y = Math.round(H * 0.78)
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+
+    BH.x = Math.round(W * 0.14)
+    BH.y = Math.round(H * 0.74)
     BH.r = Math.max(34, Math.min(58, Math.round(Math.min(W, H) * 0.05)))
+
+    // 星系放右下角，悬臂向左上扫过画面
+    GALAXY.cx = W * 0.66
+    GALAXY.cy = H * 0.86
+    GALAXY.R = Math.max(W, H) * 0.46
+
     buildStars()
+    buildGalaxy()
     buildSuns()
   }
 
@@ -74,55 +84,63 @@
     }
   }
 
-  // 银河带星尘：沿带方向分布，垂直方向高斯衰减
-  function buildDust() {
-    var count = Math.round(Math.min(420, Math.max(160, (W * H) / 4200)))
-    var cx = W * 0.5, cy = H * 0.46
-    var dir = { x: Math.cos(GALAXY_ANGLE), y: Math.sin(GALAXY_ANGLE) }
-    var nor = { x: -dir.y, y: dir.x }
-    var halfLen = Math.max(W, H) * 0.72
-    var halfWid = Math.min(W, H) * 0.11
-    dust = []
+  // 螺旋星系：对数螺旋悬臂 + 高斯散布 + 盘厚 + 差速旋转
+  function buildGalaxy() {
+    var parts = []
+    var arms = 3
+    var count = 1500
+    var R = GALAXY.R
     for (var i = 0; i < count; i++) {
-      // 沿带均匀，垂直方向高斯
-      var t = (Math.random() * 2 - 1) * halfLen
-      var g = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5
-      var o = g * halfWid
-      var warm = Math.random() < 0.22
-      dust.push({
-        x: cx + dir.x * t + nor.x * o,
-        y: cy + dir.y * t + nor.y * o,
-        r: 0.5 + Math.random() * 1.1,
-        a: (1 - Math.abs(g)) * (0.35 + Math.random() * 0.5),
-        c: warm ? [255, 224, 188] : (Math.random() < 0.5 ? [205, 224, 255] : [255, 255, 255]),
-        ph: Math.random() * Math.PI * 2,
-        sp: 0.4 + Math.random() * 1.2,
-        flow: 3 + Math.random() * 9        // 沿带流动速度 px/s
+      // 半径分布：核球密、外缘稀
+      var t = Math.pow(Math.random(), 0.58)
+      var r = t * R
+      // 悬臂基准角 + 螺旋扭转
+      var baseAngle = (i % arms) / arms * Math.PI * 2 + t * 3.6
+      // 越靠外越散（核球几乎成团）
+      var spread = 0.1 + 0.42 * t
+      var angle = baseAngle + (Math.random() + Math.random() - 1) * spread
+      var rr = r * (0.93 + Math.random() * 0.14)
+      var thick = (Math.random() + Math.random() - 1) * (5 + 26 * t)
+      // 色温：核球暖白 → 中盘白 → 外缘冷蓝；悬臂里掺一点粉（电离氢区）
+      var warm = Math.random() < (1 - t) * 0.8
+      var col = warm ? [255, 228, 194] : [192, 216, 255]
+      if (t < 0.16) col = [255, 246, 228]
+      if (!warm && Math.random() < 0.05) col = [255, 190, 220]
+      parts.push({
+        r: rr,
+        a: angle,
+        z: thick,
+        size: 0.4 + Math.random() * 1.2 * (1.15 - t * 0.45),
+        alpha: (0.22 + Math.random() * 0.5) * (0.55 + 0.45 * (1 - t)),
+        col: col,
+        // 差速旋转：内圈角速度大 → 悬臂自然剪切成螺旋
+        om: 0.34 / (0.3 + Math.pow(rr / R, 0.7)),
+        bright: Math.random() < 0.022
       })
     }
+    GALAXY.parts = parts
   }
 
   // 恒星：几颗大亮星
   function buildSuns() {
     var palette = [
-      { c: [255, 246, 224], r: 0 },
-      { c: [190, 220, 255], r: 0 },
-      { c: [255, 214, 170], r: 0 },
-      { c: [220, 235, 255], r: 0 }
+      [255, 246, 224],
+      [190, 220, 255],
+      [255, 214, 170],
+      [220, 235, 255]
     ]
     var spots = [
       { x: 0.78, y: 0.16, s: 1.0 },
-      { x: 0.93, y: 0.62, s: 0.72 },
-      { x: 0.38, y: 0.09, s: 0.6 },
-      { x: 0.62, y: 0.86, s: 0.66 }
+      { x: 0.93, y: 0.6, s: 0.72 },
+      { x: 0.36, y: 0.08, s: 0.6 },
+      { x: 0.58, y: 0.9, s: 0.66 }
     ]
     suns = spots.map(function (sp, i) {
-      var p = palette[i % palette.length]
       return {
         x: sp.x * W,
         y: sp.y * H,
         r: (11 + Math.random() * 5) * sp.s,
-        c: p.c,
+        c: palette[i % palette.length],
         ph: Math.random() * Math.PI * 2,
         sp: 0.25 + Math.random() * 0.3
       }
@@ -146,51 +164,88 @@
   }
 
   // ---------- 绘制 ----------
+  // 螺旋星系：外发光 → 尘埃带 → 粒子（差速旋转）→ 核球
   function drawGalaxy(t) {
-    // 柔光带：沿垂直方向做线性渐变，填充一个旋转矩形
-    var cx = W * 0.5, cy = H * 0.46
-    var half = Math.max(W, H) * 0.95
-    var wid = Math.min(W, H) * 0.34
-    ctx.save()
-    ctx.translate(cx, cy)
-    ctx.rotate(GALAXY_ANGLE)
-    var g = ctx.createLinearGradient(0, -wid, 0, wid)
-    g.addColorStop(0, 'rgba(120,160,255,0)')
-    g.addColorStop(0.34, 'rgba(96,150,255,.075)')
-    g.addColorStop(0.44, 'rgba(150,175,255,.14)')
-    g.addColorStop(0.5, 'rgba(214,226,255,.20)')
-    g.addColorStop(0.56, 'rgba(190,150,255,.14)')
-    g.addColorStop(0.66, 'rgba(120,160,255,.075)')
-    g.addColorStop(1, 'rgba(120,160,255,0)')
-    ctx.fillStyle = g
-    ctx.fillRect(-half, -wid, half * 2, wid * 2)
-    ctx.restore()
+    var g = GALAXY
+    if (!g.parts.length) return
+    var cosT = Math.cos(g.tilt), sinT = Math.sin(g.tilt)
 
-    // 星尘：沿带缓慢流动（越界回绕）
-    var dir = { x: Math.cos(GALAXY_ANGLE), y: Math.sin(GALAXY_ANGLE) }
-    var span = half * 2
-    for (var i = 0; i < dust.length; i++) {
-      var d = dust[i]
-      if (!reduce) {
-        d.x += dir.x * d.flow / 60
-        d.y += dir.y * d.flow / 60
-      }
-      // 回绕：沿带方向超出范围就回到另一端
-      var rel = (d.x - cx) * dir.x + (d.y - cy) * dir.y
-      if (rel > half) { d.x -= dir.x * span; d.y -= dir.y * span }
-      var tw = 0.6 + 0.4 * Math.sin(t * d.sp + d.ph)
+    ctx.save()
+    ctx.globalCompositeOperation = 'lighter'
+
+    // 1) 星系整体外发光
+    var halo = ctx.createRadialGradient(g.cx, g.cy, 0, g.cx, g.cy, g.R * 1.3)
+    halo.addColorStop(0, 'rgba(255,242,220,.20)')
+    halo.addColorStop(0.16, 'rgba(196,205,255,.13)')
+    halo.addColorStop(0.46, 'rgba(120,148,255,.06)')
+    halo.addColorStop(1, 'rgba(70,96,220,0)')
+    ctx.fillStyle = halo
+    ctx.beginPath()
+    ctx.ellipse(g.cx, g.cy, g.R * 1.3, g.R * 1.3 * g.flatten, g.tilt, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 2) 尘埃带：悬臂之间压暗
+    ctx.globalCompositeOperation = 'source-over'
+    for (var d = 0; d < 3; d++) {
+      ctx.save()
+      ctx.translate(g.cx, g.cy)
+      ctx.rotate(g.tilt)
+      ctx.scale(1, g.flatten)
+      ctx.rotate(d / 3 * Math.PI * 2 + t * 0.06)
+      var dustG = ctx.createRadialGradient(0, 0, g.R * 0.22, 0, 0, g.R * 0.95)
+      dustG.addColorStop(0, 'rgba(0,0,0,0)')
+      dustG.addColorStop(0.55, 'rgba(2,4,12,.30)')
+      dustG.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.fillStyle = dustG
       ctx.beginPath()
-      ctx.fillStyle = rgba(d.c, d.a * tw)
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
+      ctx.ellipse(0, 0, g.R * 0.95, g.R * 0.3, 0.5, 0, Math.PI * 2)
       ctx.fill()
+      ctx.restore()
     }
+
+    // 3) 粒子
+    ctx.globalCompositeOperation = 'lighter'
+    for (var i = 0; i < g.parts.length; i++) {
+      var p = g.parts[i]
+      var ang = p.a + (reduce ? 0 : t * p.om)
+      var x = Math.cos(ang) * p.r
+      var y = Math.sin(ang) * p.r * g.flatten + p.z
+      var px = g.cx + (x * cosT - y * sinT)
+      var py = g.cy + (x * sinT + y * cosT)
+      if (px < -24 || px > W + 24 || py < -24 || py > H + 24) continue
+      ctx.beginPath()
+      ctx.fillStyle = rgba(p.col, p.alpha)
+      ctx.arc(px, py, p.size, 0, Math.PI * 2)
+      ctx.fill()
+      if (p.bright) {
+        var bg = ctx.createRadialGradient(px, py, 0, px, py, p.size * 7)
+        bg.addColorStop(0, rgba(p.col, .8))
+        bg.addColorStop(1, rgba(p.col, 0))
+        ctx.fillStyle = bg
+        ctx.beginPath()
+        ctx.arc(px, py, p.size * 7, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+
+    // 4) 核球
+    var core = ctx.createRadialGradient(g.cx, g.cy, 0, g.cx, g.cy, g.R * 0.17)
+    core.addColorStop(0, 'rgba(255,255,248,.95)')
+    core.addColorStop(0.3, 'rgba(255,240,206,.62)')
+    core.addColorStop(0.68, 'rgba(255,208,150,.20)')
+    core.addColorStop(1, 'rgba(255,180,120,0)')
+    ctx.fillStyle = core
+    ctx.beginPath()
+    ctx.ellipse(g.cx, g.cy, g.R * 0.17, g.R * 0.17 * (g.flatten + 0.22), g.tilt, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.restore()
   }
 
   function drawBlackHole(t) {
     var cx = BH.x, cy = BH.y, R = BH.r
     ctx.save()
 
-    // 外层光晕
     var glow = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R * 4.6)
     glow.addColorStop(0, 'rgba(120,170,255,.20)')
     glow.addColorStop(0.45, 'rgba(110,150,255,.07)')
@@ -200,7 +255,7 @@
     ctx.arc(cx, cy, R * 4.6, 0, Math.PI * 2)
     ctx.fill()
 
-    // 吸积盘（旋转椭圆环，加色混合）
+    // 吸积盘
     ctx.globalCompositeOperation = 'lighter'
     ctx.translate(cx, cy)
     ctx.rotate(-0.42 + t * 0.06)
@@ -221,7 +276,7 @@
     ctx.ellipse(0, 0, R * 2.5, R * 0.62, 0, 0, Math.PI * 2)
     ctx.stroke()
 
-    // 引力透镜弧（上下两道细亮弧）
+    // 引力透镜弧
     ctx.lineWidth = 1.6
     ctx.strokeStyle = 'rgba(220,235,255,.55)'
     ctx.beginPath()
@@ -250,7 +305,6 @@
   function drawSun(s, t) {
     var pulse = 1 + 0.12 * Math.sin(t * s.sp * 2 + s.ph)
     var r = s.r * pulse
-    // 光晕
     var g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 9)
     g.addColorStop(0, rgba(s.c, .95))
     g.addColorStop(0.14, rgba(s.c, .55))
@@ -260,18 +314,20 @@
     ctx.beginPath()
     ctx.arc(s.x, s.y, r * 9, 0, Math.PI * 2)
     ctx.fill()
-    // 核心
+
     ctx.beginPath()
     ctx.fillStyle = '#fff'
     ctx.arc(s.x, s.y, r * 0.5, 0, Math.PI * 2)
     ctx.fill()
-    // 十字星芒
+
     ctx.globalCompositeOperation = 'lighter'
     ctx.strokeStyle = rgba(s.c, .5)
     ctx.lineWidth = 1.1
     ctx.beginPath()
-    ctx.moveTo(s.x - r * 7, s.y); ctx.lineTo(s.x + r * 7, s.y)
-    ctx.moveTo(s.x, s.y - r * 7); ctx.lineTo(s.x, s.y + r * 7)
+    ctx.moveTo(s.x - r * 7, s.y)
+    ctx.lineTo(s.x + r * 7, s.y)
+    ctx.moveTo(s.x, s.y - r * 7)
+    ctx.lineTo(s.x, s.y + r * 7)
     ctx.stroke()
     ctx.globalCompositeOperation = 'source-over'
   }
@@ -280,10 +336,8 @@
     var t = now / 1000
     ctx.clearRect(0, 0, W, H)
 
-    // ---- 银河 ----
     drawGalaxy(t)
 
-    // ---- 星场漂移 ----
     for (var i = 0; i < stars.length; i++) {
       var s = stars[i]
       if (!reduce) {
@@ -294,8 +348,8 @@
       }
     }
 
-    // ---- 星链 ----
-    ctx.lineWidth = 1
+    // 星链
+    ctx.lineWidth = 1.1
     lastLinkCount = 0
     for (var a = 0; a < stars.length; a++) {
       var sa = stars[a], linked = 0
@@ -315,7 +369,7 @@
       }
     }
 
-    // ---- 星点 ----
+    // 星点
     for (var c = 0; c < stars.length; c++) {
       var st = stars[c]
       var tw = 0.55 + 0.45 * Math.sin(t * st.sp + st.ph)
@@ -325,13 +379,11 @@
       ctx.fill()
     }
 
-    // ---- 恒星 ----
-    for (var d2i = 0; d2i < suns.length; d2i++) drawSun(suns[d2i], t)
+    for (var si = 0; si < suns.length; si++) drawSun(suns[si], t)
 
-    // ---- 黑洞 ----
     drawBlackHole(t)
 
-    // ---- 流星 ----
+    // 流星
     if (!reduce) {
       nextShoot -= 1 / 60
       if (nextShoot <= 0) { spawnShooter(); nextShoot = 4 + Math.random() * 7 }
@@ -377,7 +429,6 @@
   // ---------- 事件 ----------
   window.addEventListener('resize', function () {
     layout()
-    buildDust()
     if (reduce) draw(performance.now())
   })
 
@@ -393,7 +444,6 @@
   })
 
   layout()
-  buildDust()
   if (reduce) {
     draw(performance.now())
   } else {
@@ -406,12 +456,14 @@
       var s = shooters[0]
       return {
         stars: stars.length,
-        dust: dust.length,
+        galaxyParts: GALAXY.parts.length,
         suns: suns.length,
         links: lastLinkCount,
         shooters: shooters.length,
         firstShooter: s ? { x: Math.round(s.x), y: Math.round(s.y), vx: Math.round(s.vx), vy: Math.round(s.vy), len: Math.round(s.len) } : null,
         blackHole: { x: BH.x, y: BH.y, r: BH.r },
+        galaxy: { cx: Math.round(GALAXY.cx), cy: Math.round(GALAXY.cy), R: Math.round(GALAXY.R) },
+        dpr: DPR,
         reduce: reduce
       }
     },

@@ -74,7 +74,7 @@ shiki:
   colorized_brackets: true   # 嵌套括号着色 (@shikijs/colorized-brackets)
   highlight_copy: true       # 显示复制按钮
   highlight_lang: true       # 显示代码语言
-  highlight_height_limit: 360 # 代码块最大高度(px), 超出显示折叠按钮
+  highlight_height_limit: 0 # 0 = 不限高，代码块完整显示(不折叠)
   is_highlight_shrink: false # false=默认展开
   # 本地化 CSS/JS, 避免依赖 jsdelivr CDN (博客可离线/自托管)
   css_cdn: /custom/effects/shiki-codeblock.css
