@@ -441,6 +441,11 @@ figure.shiki .gutter pre .line-num {
   display: block;
   line-height: 1.6;
   white-space: nowrap;
+  /* 行号块内绝不出现滚动条：
+     shiki-codeblock.css 的 `figure.shiki .codeblock pre * { overflow: auto }`
+     会命中行号 span，一旦内容比块高 1px 就画出 15px 宽的迷你纵向滚动条
+     （表现为每行右侧两个小三角）。这里用更高特异度 + !important 压掉。 */
+  overflow: hidden !important;
 }
 
 
