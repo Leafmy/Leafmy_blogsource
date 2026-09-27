@@ -57,3 +57,223 @@ body {
 #site-subtitle {
   font-weight: 500; /* 标题用 Medium 字重 */
 }
+
+/* ============================================================
+   站名「启明」：衬线族（hero 与导航两处，字形必须一致）
+   ------------------------------------------------------------
+   [为什么是衬线] 首页 hero 的背景是深空 + 木星，画面上唯一的文字应该是
+   "刻意写上去的"。衬线的高对比笔画在深底上读作文气，也与木星的暖色形成
+   暖／冷对位；无衬线在这块画面上会更像 UI 标签。两个字的名字本身干脆，
+   配衬线刚好。导航里同名的字必须一起换，否则同一个名字出现两种字形。
+
+   [为什么不下载 webfont —— 这条是硬账]
+   完整的 Noto Serif SC 是 5~8 MB。站内的 PingFang-Medium 当初特意从
+   10.7 MB 子集化到 32 KB（见上面 @font-face 的注释），就是为了不拖首屏。
+   **为两个字下载几 MB 字体不划算**，所以这条栈走系统字体、零下载：
+     · Windows：Noto Serif SC（本机已确认安装）
+     · macOS：Songti SC / STSong
+     · 老 Windows：SimSun / FangSong
+     · Linux：泛型 serif
+   保底一定是衬线族，跨平台不会退化成黑体。
+
+   [作用范围刻意收窄] 只覆盖 #site-title（hero 大字）、#site-subtitle 与
+   导航站名。不碰下面那条全站 !important —— 整站换衬线会让正文与代码块
+   的可读性变差，这不是本次要改的东西。 */
+:root {
+  --serif-cjk: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong',
+    'SimSun', 'FangSong', serif;
+}
+#site-title,
+#site-subtitle,
+#nav #blog-info .nav-site-title {
+  font-family: var(--serif-cjk) !important;
+}
+
+/* --- hero 大字 ---
+   字号用 clamp：桌面 1600px 宽时 9vw = 144px，触到 8rem(128px) 上界；
+   窄屏按 9vw 缩小，最小 3.4rem 兜底。
+   位置（左对齐 + 左内边距）由 theme-glass.css 负责 —— 那里才有
+   #page-header.full_page 上下文与那条方向性压暗的说明。
+
+   [为什么用实色而不是 background-clip 渐变]
+   原先用 `linear-gradient + -webkit-background-clip: text` 做暖白到淡金的渐变。
+   但主题给 #site-title 挂了 `titleScale` 入场动画（动的是元素 opacity），
+   而 Chrome 在 `background-clip: text` + 父元素 opacity 动画的组合下会渲染异常
+   （渐变字在动画期间发虚/闪断）。既然入场动画要重做成"启明"那套，
+   这里就退回实色 —— 颜色本身是暖白，暖度靠动画里的金色光晕给，
+   视觉结果一样，但不再有渲染层的坑。 */
+#page-header.full_page #site-title {
+  font-weight: 500;
+  font-size: clamp(3.4rem, 9vw, 8rem);
+  line-height: 1.06;
+  /* ============================================================
+     两字间隙（"启明"看着贴在一起的那个问题）
+     ------------------------------------------------------------
+     [为什么不能靠 letter-spacing]
+     站名换成内联 SVG 之后，两个字形是**相邻的 inline-block 盒子**，而
+     Chrome **不会**在相邻原子行内盒之间产生 letter-spacing 间距（受控实测：
+     容器 font-size 100px、letter-spacing 22px，两盒间隙仍是 0px；只有中间
+     夹了空白/文字字符才会加上）。纯文字时代看着正常，是因为字体自带字距
+     （CJK 每字 1em 字身、墨迹只占 ~0.857em，天然间隙 ≈0.184em）；换成
+     SVG 后盒子就是墨迹框，那份天然间隙没了 ⇒ 两字墨迹直接贴住（gap = 0px，
+     实测见 .perf/probe-title-gap.js 与 .perf/shots/_spacing.png）。
+     [做法] 显式给第二个字形 margin-left，走自定义属性以便窄屏收档；
+     letter-spacing 只留给纯文字兜底：字体天然 0.184em + 0.04em ≈ 0.22em，
+     两种形态的间隙因此一致。
+     ============================================================ */
+  --qm-gap: .22em;
+  letter-spacing: .04em;
+  color: #f4eee2;
+}
+#page-header.full_page #site-title svg.qm + svg.qm {
+  margin-left: var(--qm-gap, .22em);
+}
+/* 副标题只需继承衬线族（字号/字距由主题的 head.styl 与下面的窄屏档管）。
+   [现状] 主题配置里 subtitle.enable = false，所以首页其实**不渲染**副标题，
+   这一段目前是"备着"的：一旦打开副标题，它会自动用上衬线而不是黑体。
+   不为它写更多样式 —— 没有节点的美化是无用代码。 */
+/* 窄屏：字号与字距各收一档，避免两字撑满屏宽 */
+@media (max-width: 768px) {
+  #page-header.full_page #site-title {
+    font-size: clamp(2.8rem, 15vw, 4.6rem);
+    --qm-gap: .18em;
+  }
+}
+/* 导航站名随 hero 一起换字形，但字号/字距保持导航原样（由 nav-apple.css 管） */
+#nav #blog-info .nav-site-title {
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+
+/* ============================================================
+   站名「启明」的入场：**先逐笔描出轮廓，再整体浮出填充**
+   ------------------------------------------------------------
+   [为什么是 SVG 路径而不是 text-stroke]
+   纯 CSS 的 `-webkit-text-stroke` 只能整条淡入淡出 —— 它没有"路径长度"这个量，
+   做不了 dash 动画。要"画出来"就必须是真路径：字形轮廓由
+   tools/gen-title-svg.js 从系统字体（Noto Serif SC 的 glyf 表）提取并烘焙成
+   source/custom/theme/title-paths.js，再由 split-title.js 组装成内联 SVG，
+   **每条轮廓一个 <path>**，各自带一点延迟。
+
+   [为什么每条轮廓要单独一个 path]
+   SVG 的 stroke-dasharray/dashoffset 对一条 path 里的多条子路径是**连续**计算的：
+   把 18 条轮廓合成一条 path，它们会被当成一根长线依次描出 —— 视觉上是
+   "绕着字一路画"。拆开才能"每一笔各自出现"。
+
+   [时序]（单条 0.55s、错峰 0.075s、18 条 ⇒ 描边约 1.9s）
+     · 轮廓：stroke-dashoffset 从全长回到 0
+     · 填充：2.0s 起、0.8s 淡入 ⇒ 读作"先把字写出来，再让它亮起来"
+   字体里没有真实笔顺信息，顺序按"先上后下、再左后右"排（见 title-paths.js），
+   所以这是"看起来在写字"，不是严格笔顺 —— 这里不假装。
+   ============================================================ */
+@keyframes qmDraw {
+  from { stroke-dashoffset: var(--qm-len); }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes qmFillIn {
+  from { fill-opacity: 0; }
+  to { fill-opacity: 1; }
+}
+/* 纯文字兜底（没有 title-paths.js 时）：描边先亮，填充后到 */
+@keyframes qmTextFallback {
+  0% {
+    color: rgba(255, 246, 226, 0);
+    -webkit-text-stroke-width: 2.6px;
+    -webkit-text-stroke-color: rgba(244, 250, 255, .96);
+    text-shadow: none;
+  }
+  55% {
+    color: rgba(255, 246, 226, .05);
+    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color: rgba(240, 248, 255, .85);
+    text-shadow: 0 0 12px rgba(226, 238, 255, .45);
+  }
+  100% {
+    color: #f4eee2;
+    -webkit-text-stroke-width: .5px;
+    -webkit-text-stroke-color: rgba(228, 236, 250, .14);
+    text-shadow: 0 0 26px rgba(255, 236, 200, .18);
+  }
+}
+
+#page-header.full_page #site-title {
+  position: relative;
+  /* [为什么是 inline-block]
+     #site-title 是 h1，默认块级：盒子宽 1328px（撑满 #site-info）。这会让
+     任何"相对文字"的定位落到页面中心而不是字上（实际踩过）。改成
+     inline-block 后盒子 = 文字宽（实测 273px）；max-width 兜住窄屏换行。 */
+  display: inline-block;
+  max-width: 100%;
+  /* 覆盖主题的 titleScale（_global/function.styl 的
+     `#site-title { animation: titleScale 1s }` = opacity 0→1 + scale(.7→1)，
+     一个与"启明"无关的机械缩放）。!important 必须有：同特异性下靠顺序不可靠。
+     SVG 就位后这里只负责**外发光**，描边与填充由路径自己动。 */
+}
+#page-header.full_page #site-title svg.qm {
+  display: inline-block;
+  vertical-align: baseline;
+  overflow: visible;
+  /* 显示尺寸按 em 比例（--qm-w/--qm-h 由 split-title.js 按字形给出）：
+     SVG 的 width 若是无单位数会被当成 px（与 viewBox 无关），
+     实测标题因此从文字宽 273px 被撑到 938px。 */
+  width: calc(var(--qm-w, 1) * 1em);
+  height: calc(var(--qm-h, 1) * 1em);
+  /* 外发光挂在这一层：由整字承载，避免逐条 path 各投一次阴影叠得发脏 */
+  filter: drop-shadow(0 0 18px rgba(255, 236, 200, .22));
+}
+/* 一个字里的每条轮廓：描边逐条画出，填充随后整体浮出 */
+#page-header.full_page #site-title svg.qm path {
+  fill: #f4eee2;
+  stroke: #eef4ff;
+  /* viewBox 是字体单位（1 em = 1000 单位），所以 stroke-width 用 em 表达，
+     随字号等比缩放；.075em 在字号 128px 下约 9.6 单位 ≈ 字形笔画的合理粗细。 */
+  stroke-width: .075em;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 偶奇规则：字形里"口"这类内轮廓必须挖空，不能被 nonzero 填实。
+     [2026-09-27 实测记录] 轮廓生成器修好后（见 tools/gen-title-svg.js），这 18 条
+     子路径彼此不重叠 —— evenodd 与 nonzero 的填充面积完全相同（启 54240、
+     明 67526 px，逐像素差只出现在边缘 AA 上）。也就是说这条规则现在是"保险"：
+     真正决定形状的是轮廓数据本身，规则选错不会再有可见后果。 */
+  fill-rule: evenodd;
+  fill-opacity: 0;
+  animation: qmDraw .55s cubic-bezier(.32, .72, .28, 1) var(--qm-delay, 0s) both,
+             qmFillIn .8s ease-out 2s both;
+}
+/* 纯文字兜底：只有 qmTextFallback 一套 */
+#page-header.full_page #site-title:not([data-qm]) {
+  color: #f4eee2;
+  animation: qmTextFallback 1.9s cubic-bezier(.22, .68, .2, 1) both !important;
+}
+
+/* ============================================================
+   「进站先闪一下完整轮廓」的补丁
+   ------------------------------------------------------------
+   现象：每次进首页，hero 站名先完整亮出轮廓（无填充）约一秒，然后消失、
+   换成 SVG 从零逐笔描 —— 也就是上面那条兜底动画真的跑了一遍。
+   原因：<h1> 的文字在 HTML 解析到 hero 时就存在，而 split-title.js 排在
+   文档靠后（additional-js 里），中间那几十到上千毫秒浏览器会先画纯文字，
+   `:not([data-qm])` 的兜底动画立刻开始（0% = 填充透明 + 2.6px 描边）。
+   实测（.perf/probe-title-fouc.js，无头冷启动）：文字带描边可见 132~480ms。
+
+   做法：inject_head_js.js 在 <head> 里最早给 html 打上 qm-pending，
+   split-title.js（不论成功还是兜底）在同一个任务里摘掉它 —— 同一任务内的
+   类名加/删不产生中间帧，所以纯文字**一帧都不会被画出来**。
+   visibility（而不是 display）是为了保住盒子尺寸：换进 SVG 时不引起跳动。
+   JS 关闭时这条规则永不生效（类名没人加），标题照常显示 —— 渐进增强。 */
+html.qm-pending #page-header.full_page #site-title:not([data-qm]) {
+  visibility: hidden;
+}
+/* 减少动效偏好：不画，直接以最终态出现 */
+@media (prefers-reduced-motion: reduce) {
+  #page-header.full_page #site-title svg.qm path {
+    animation: none !important;
+    fill-opacity: 1 !important;
+    stroke-width: 0 !important;
+  }
+  #page-header.full_page #site-title:not([data-qm]) {
+    animation: none !important;
+    color: #f4eee2 !important;
+    -webkit-text-stroke-width: 0 !important;
+  }
+}

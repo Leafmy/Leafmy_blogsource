@@ -39,8 +39,10 @@
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, .60);
-  /* 强制 GPU 加速: backdrop-filter 必须走 GPU 合成层 */
-  will-change: transform;
+  /* [性能] 这里原本写 will-change: transform「强制 GPU 加速」——
+     实际上 backdrop-filter 已经让 #nav 自动升为独立合成层，
+     再挂一个长期不释放的 will-change 只会让它永久占一个层，
+     并对子树施加额外合成约束。删除。 */
 }
 
 /* 跟随指针的局部光晕层：改为独立合成层(元素) + transform 平移。
@@ -100,12 +102,17 @@
   opacity: 0; /* JS 直写(与光斑同步) */
   overflow: hidden;
 }
+/* [性能] 原尺寸 1600x400 —— 仅为"让渐变光心能平移"而开的巨型画布，
+   实际可见光斑只有 340x120；DPR=2 时这张纹理要 3.2M 像素，
+   而它每帧都会被 transform 平移。缩到 480x240(含 340x120 光斑 +
+   周边衰减)，纹理面积降到约 1/6，视觉效果不变。
+   光心常量同步改为 (240,120)，见 nav-apple.js writePos()。 */
 #nav .nav-edge-light {
   position: absolute;
   left: 0;
   top: 0;
-  width: 1600px;
-  height: 400px;
+  width: 480px;
+  height: 240px;
   background: radial-gradient(
     340px 120px at 50% 50%,
     rgba(140, 195, 255, .55),
@@ -114,7 +121,7 @@
     transparent 90%
   );
   /* JS 直写 transform 使渐变光心落在指针(clamp)处；初始移到不可见位 */
-  transform: translate3d(-800px, -200px, 0);
+  transform: translate3d(-240px, -120px, 0);
   will-change: transform;
 }
 /* 悬停兜底（纯 CSS，JS 未启用时鼠标进入导航栏仍会点亮）。
@@ -627,7 +634,7 @@ html[data-theme='dark'] #nav .nav-drop {
     border-color: rgba(255, 255, 255, .16);
     color: var(--theme-color, #49b1f5);
   }
-  /* 功能按钮布局: 首页+黑白切换在左, 搜索+汉堡在右 */
+  /* 功能按钮布局: 首页在左, 搜索+汉堡在右 */
   #nav #menus {
     display: flex !important;
     align-items: center !important;
@@ -639,12 +646,8 @@ html[data-theme='dark'] #nav .nav-drop {
     margin-left: 6px !important;
     flex: 0 0 auto !important;
   }
-  /* 黑白切换按钮紧挨首页键右侧 */
-  #nav #darkmode {
-    order: 1 !important;  /* 紧跟首页(order:0)之后 */
-    margin: 0 !important;  /* 无额外间距, 由首页的 margin-right:6px 控制 */
-    flex: 0 0 auto !important;
-  }
+  /* [本站定制] 黑白切换按钮已下线（亮色模式取消），原先 order:1 的
+     #nav #darkmode 规则随之删除，移动端左侧只剩首页键。 */
   /* 搜索胶囊在汉堡左侧 */
   #nav #menus .nav-search {
     order: 3 !important;

@@ -11,6 +11,7 @@
 'use strict'
 
 const pad2 = n => String(n).padStart(2, '0')
+const siteText = require('./site-text-lib')
 
 hexo.extend.generator.register('admin', function (locals) {
   const posts = locals.posts.sort('-date')
@@ -60,13 +61,40 @@ hexo.extend.generator.register('admin', function (locals) {
   const categories = (locals.categories ? locals.categories.toArray() : []).map(c => ({ name: c.name, count: c.length }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 
+  // 独立页面（关于、友链、404…）清单：管理页「文章 / 页面」里可以像文章一样编辑正文。
+  // 注意 locals.pages 里**也混着静态资源**（custom/**.js、**.css，Hexo 给它们也建了 Page），
+  // 所以只收 md / markdown / html 这类真正的页面文件，下划线开头的跳过。
+  const PAGE_EXT = /\.(md|markdown|html?)$/i
+  const pageManifest = (locals.pages ? locals.pages.toArray() : [])
+    .filter(page => page.source && PAGE_EXT.test(page.source) && !/^_/.test(page.source))
+    .map(page => {
+      let excerpt = ''
+      try {
+        excerpt = String(page.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140)
+      } catch (e) { excerpt = '' }
+      return {
+        source: page.source,
+        path: page.path || '',
+        title: page.title || '',
+        date: page.date ? page.date.format('YYYY-MM-DD HH:mm:ss') : '',
+        updated: page.updated ? page.updated.format('YYYY-MM-DD HH:mm:ss') : '',
+        layout: page.layout || '',
+        type: page.type || '',
+        excerpt
+      }
+    })
+    .sort((a, b) => a.source.localeCompare(b.source))
+
   const meta = {
     generatedAt: new Date().toISOString(),
     repo: { owner: 'Leafmy', name: 'Leafmy_blogsource', branch: 'main' },
     postsDir: 'source/_posts',
+    pagesDir: 'source',
     announceFile: 'source/_data/announcement.yml',
     keyFile: 'source/custom/admin/admin-key.js',
-    totals: { posts: posts.length, tags: tags.length, categories: categories.length },
+    // 「文字」标签页的清单：分组 + 每条的默认值与当前生效值（键的说明见 scripts/site-text-catalog.js）
+    texts: siteText.meta(this),
+    totals: { posts: posts.length, tags: tags.length, categories: categories.length, pages: pageManifest.length },
     tags,
     categories,
     archives,
@@ -87,6 +115,10 @@ hexo.extend.generator.register('admin', function (locals) {
     {
       path: 'admin/posts.json',
       data: JSON.stringify({ generatedAt: meta.generatedAt, posts: manifest })
+    },
+    {
+      path: 'admin/pages.json',
+      data: JSON.stringify({ generatedAt: meta.generatedAt, pages: pageManifest })
     },
     {
       path: 'admin/meta.json',

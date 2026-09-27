@@ -39,8 +39,26 @@ html(lang=config.language data-theme=theme.display_mode class=htmlClassHideAside
 
     !=partial('includes/sidebar', {}, {cache: true})
 
+    //- 太空场景层（星云 / 木星与木星环 / 流星画布）。
+    //- 放在 #body-wrap 之前：它是 body 的靠前子元素，z-index 由
+    //- space-scene.css 控制为 0，内容层 #body-wrap 抬到 3 之上。
+    !=partial('includes/space-scene', {}, {cache: true})
+
     #body-wrap(class=pageType)
       include ./header/index.pug
+
+      //- 站名「启明」的 SVG 组装：**必须紧跟在 hero 之后**。
+      //- 为什么不能放在文档底部（additional-js 的 inject.bottom）：
+      //-   <h1> 的文字在解析到 hero 时就存在，而底部脚本要等前面十几个脚本
+      //-   跑完才轮到；中间这段时间浏览器会先画一帧纯文字，custom-font.css 里
+      //-   `:not([data-qm])` 的兜底动画（0% = 无填充 + 2.6px 描边）立刻开始，
+      //-   用户看到的就是"进站先完整亮一下轮廓，然后消失、重新逐笔描"。
+      //-   实测无头冷启动 132~480ms，真机更慢时约一秒（.perf/probe-title-fouc.js）。
+      //-   挪到这里执行 ⇒ 首帧之前就换成 SVG，动画从零开始，不再有那一帧。
+      //- 顺序要紧：title-paths.js（烘焙好的字形路径）必须先于 split-title.js。
+      //- 改完这两个文件请同步提升 ?v=，否则线上吃旧缓存。
+      script(src='/custom/theme/title-paths.js?v=20260927b')
+      script(src='/custom/theme/split-title.js?v=20260927c')
 
       main#content-inner.layout(class=hideAside)
         if body

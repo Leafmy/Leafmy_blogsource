@@ -4,7 +4,9 @@ nav#nav
       if theme.nav.logo
         img.site-icon(src=url_for(theme.nav.logo) alt='Logo')
       if theme.nav.display_title
-        span.site-name=config.title
+        //- 站名：默认取站点 title（启明）；管理页「文字」标签页可单独改显示名，
+        //- 首页 hero 大标题仍走 config.title + SVG 描边动画，两者互不影响。
+        span.site-name= st('nav.title', config.title)
     if globalPageType === 'post' && theme.nav.display_post_title
       a.nav-page-title(href=url_for('/'))
         span.site-name=(page.title || config.title)

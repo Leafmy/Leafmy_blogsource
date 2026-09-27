@@ -1,0 +1,61 @@
+//- ============================================================
+//-  太空场景层 (space-scene.pug)
+//-  ------------------------------------------------------------
+//-  结构：
+//-    .space-nebula         【仅无 WebGL 时】深空底色 + 星云 + 暗角
+//-    .space-globe-glow     【仅无 WebGL 时】木星大气外辉光
+//-    .space-globe          【仅无 WebGL 时】木星 2D 照片退路
+//-    canvas.space-scene-canvas   唯一的渲染层（全屏 WebGL，见下）
+//-
+//-  【这一层画的是什么】
+//-  整个场景由 space-globe.js 在一块全屏画布里渲染，全部几何来自
+//-  space-system.js 的真实天文数据：
+//-    · 天空：ESO 实拍银河全景（真实银道结构）+ 真实恒星表（5044 颗
+//-      亮于 6.0 等的恒星，位置/星等/B−V 色指数都是实测值）+ 暗星颗粒
+//-      （按真实星等幂律生成，密度由真实银河亮度调制）；
+//-    · 木星：经纬球 + 实测扁率 0.935 + 逐像素椭球法线 + 差速自转 +
+//-      域扭曲云带 + 临边昏暗，贴图由 tools/opal-composite.js 从 Hubble
+//-      OPAL 三个窄带全球图合成自然色（3072×1536）；
+//-    · 伽利略四卫：真实轨道半径/周期/半径，圆轨道共面（e、i 极小），
+//-      因此凌木、掩食、影凌都是几何的自然结果；
+//-    · 七颗远景行星：真实日心方位决定画面次序、真实太阳方向决定相位、
+//-      真实角直径决定相对大小、真实反照率决定亮度。
+//-
+//-  【必须诚实说明的一件事：这是合成图】
+//-  在"木星圆面 = --globe、可见纵向约 11°"的取景下 1px ≈ 39 角秒：
+//-  从木星看，土星真实角直径 38″ ≈ 0.96px，地球 4.18″ ≈ 0.11px。
+//-  所以"在木星处真实拍摄"在物理上只能是合成：
+//-    · 位置：真实离角被压缩进画面（真实离角下水/金/地/火永远挤在
+//-      太阳 ±11.5° 内，不可能同框）；画面次序保留真实黄经次序；
+//-    · 大小：按真实角直径做 0.55 次幂压缩（保留次序与近似比例）；
+//-    · 相位 / 光照 / 反照率 / 亮度层级：完全真实，由真实太阳方向与
+//-      实测几何反照率逐体计算；
+//-    · 取景历元 2024-06-15：使画面中心落在银纬 +10.6°（银河以大角度
+//-      斜穿画面），同时阳光来自画面左侧（窄屏只露木星左弧面时仍被照亮）。
+//-
+//-  照片来源与署名（重要）：
+//-  · 木星：ESA/Hubble & NASA，OPAL 计划 2024-01-05 观测（heic2404b），
+//-    CC BY 4.0
+//-  · 银河：ESO/S. Brunier，"The Milky Way panorama"（eso0932a），CC BY 4.0
+//-  · 行星贴图（金/地/火/土/天/海）：Solar System Scope，CC BY 4.0
+//-  · 水星与伽利略四卫：USGS Astrogeology / NASA（MESSENGER、Galileo、
+//-    Voyager 全球拼接图），公有领域
+//-  · 恒星表：Yale Bright Star Catalogue (BSC5) 数据，经 d3-celestial 整理
+//-  以上署名同时列在 /about/ 的「第三方资源声明」里。
+//-
+//-  换图流程：
+//-    node tools/planet-map-prep.js      # 水星 + 四卫（USGS WMS + 空洞填补）
+//-    node tools/planet-resize.js        # 六颗行星 + 土星环剖面
+//-    node tools/build-sky.js            # ESO 全景 → 银道坐标标准像
+//-    node tools/build-star-catalog.js   # 真实星表 → stars.bin
+//-    node tools/opal-composite.js ...   # 木星贴图（见 tools/ 下各脚本头部）
+//-
+//-  为什么 markup 放在模板而不是 JS 注入：场景是首屏主体，随 HTML 一起
+//-  到达可以少一帧黑屏，也利于贴图尽早开始下载。
+//- ============================================================
+.space-bg(aria-hidden="true")
+  .space-nebula
+  .space-globe-glow
+  .space-globe
+    img.space-globe-fallback(src="/img/jupiter-760.jpg" alt="" width="760" height="760" decoding="async")
+  canvas.space-scene-canvas

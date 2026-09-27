@@ -13,6 +13,8 @@
    ============================================================ */
 (function () {
   'use strict'
+  // 站点文字表（管理页 /admin/「文字」标签页写的）；window.st 由 <head> 内联脚本提供
+  var st = window.st || function (key, fallback) { return fallback }
   var nav = document.querySelector('#nav')
   if (!nav) return
   var menus = nav.querySelector('#menus')
@@ -54,7 +56,7 @@
   marquee.className = 'nav-search-marquee'
   marquee.setAttribute('aria-hidden', 'true')
   var marqueeInner = document.createElement('span')
-  marqueeInner.textContent = '搜索文章、标签、分类'
+  marqueeInner.textContent = st('nav.search.placeholder', '搜索文章、标签、分类')
   marquee.appendChild(marqueeInner)
   bar.appendChild(marquee)
 
@@ -287,13 +289,13 @@
     if (!indexCache) {
       renderStatus('nav-search-loading',
         '<span class="dot"></span><span class="dot"></span><span class="dot"></span>' +
-        '<span class="ns-text">正在搜索…</span>')
+        '<span class="ns-text">' + st('nav.search.loading', '正在搜索…') + '</span>')
       loadIndex()
         .then(function () {
           if (isOpen && input.value.trim() === query) { lastQuery = ''; runSearch(query) }
         })
         .catch(function () {
-          if (isOpen) renderStatus('nav-search-error', '<i class="fas fa-exclamation-triangle nav-s-ico"></i>检索索引加载失败，请刷新后重试')
+          if (isOpen) renderStatus('nav-search-error', '<i class="fas fa-exclamation-triangle nav-s-ico"></i>' + st('nav.search.error', '检索索引加载失败，请刷新后重试'))
         })
       return
     }
@@ -310,8 +312,12 @@
     var top = scored.slice(0, MAX)
 
     if (!top.length) {
-      renderStatus('nav-search-empty', '<i class="fas fa-inbox nav-s-ico"></i>未找到与「<b></b>」相关的内容，换个关键词试试')
-      statusEl.querySelector('b').textContent = query
+      // {query} 处塞一个空的 <b>，关键词随后用 textContent 写入（天然转义）
+      var emptyHtml = String(st('nav.search.empty', '未找到与「{query}」相关的内容，换个关键词试试'))
+        .replace(/\{query\}/g, '<b></b>')
+      renderStatus('nav-search-empty', '<i class="fas fa-inbox nav-s-ico"></i>' + emptyHtml)
+      var bEl = statusEl.querySelector('b')
+      if (bEl) bEl.textContent = query
       return
     }
     renderList()
@@ -422,7 +428,7 @@
       if (hex !== ADMIN_HASH) {
         // 形如密钥但不对：不跳转、不检索，只在面板里提示
         renderStatus('nav-search-empty',
-          '<i class="fas fa-lock nav-s-ico"></i>管理员密钥不正确')
+          '<i class="fas fa-lock nav-s-ico"></i>' + st('nav.search.adminKeyError', '管理员密钥不正确'))
         return
       }
       // 命中：清空输入（别把密钥留在框里），直接进管理页

@@ -569,6 +569,10 @@ body.admin-body {
 
 .admin-hint a { color: var(--adm-accent); }
 
+/* 凭证体检报告：一行一条，标红的那条就是问题所在 */
+#gh-status { line-height: 1.9; }
+#gh-status .is-bad { color: #ffb4ae; }
+
 /* ============================================================
    列表项
    ============================================================ */
@@ -797,6 +801,11 @@ body.admin-body {
 
 .editor-draft-btn:hover { background: rgba(255, 190, 90, .14); }
 
+/* 打开编辑器时把外壳放宽一档：1200px 的壳在分栏下把每侧压到 ~530px，
+   一行放不下几个字。列表面板与其它标签页不受影响（类名由
+   admin.js 的 setEditorWide() 加在 #admin-app 上）。 */
+.admin-app.is-editing { max-width: 1680px; }
+
 /* ---------- 正文区 ---------- */
 .editor-body { display: flex; flex-direction: column; }
 
@@ -869,6 +878,33 @@ body.admin-body {
 .editor-body.mode-split .editor-panes { grid-template-columns: 1fr 1fr; gap: 14px; }
 .editor-body.mode-edit .editor-preview { display: none; }
 .editor-body.mode-preview .admin-textarea { display: none; }
+
+/* ---------- 分栏：两侧同高、各自内部滚动 ----------
+   滚动同步（admin.js 的 syncFromEditor / syncFromPreview）是按「源码行 ↔
+   预览块」换算的，前提是两边的高度一致 —— 高度不同的话同一行在两侧的
+   可见位置就不一样，怎么算都对不上。所以分栏时给两侧钉同一个高度。 */
+.editor-body { --ed-pane-h: clamp(380px, 58vh, 720px); }
+
+.editor-body.mode-split .editor-panes > * {
+  height: var(--ed-pane-h);
+  min-height: var(--ed-pane-h);
+  max-height: var(--ed-pane-h);
+}
+
+.editor-body.mode-split .admin-textarea { resize: none; }
+
+/* 量折行用的隐藏镜像（只用来读高度，见 admin.js measureEditorRows）：
+   必须与 textarea 的字体/行高/宽度一致，所以尺寸由 JS 逐条抄过去。 */
+.ed-mirror {
+  position: absolute;
+  top: 0;
+  left: -99999px;
+  z-index: -1;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.ed-mirror > div { margin: 0; padding: 0; }
 
 #post-editor-view .admin-textarea { min-height: 380px; }
 
@@ -1042,6 +1078,119 @@ body.admin-body {
 .admin-toast.err { border-color: rgba(255, 123, 114, .5); color: #ffc0bb; }
 
 /* ============================================================
+   「文字」标签页
+   ------------------------------------------------------------
+   118 条文字要能一眼扫过去：每条 = 标题 + 键名 + 徽标 + 输入框 + 一句说明。
+   状态用左边框颜色区分：已覆盖（蓝）/ 未保存（橙）。
+   ============================================================ */
+.admin-group-hint {
+  margin-top: -4px;
+  font-size: 12.5px;
+  color: var(--adm-dim);
+}
+
+.admin-text-group { padding-bottom: 6px; }
+
+.admin-text-row {
+  padding: 10px 12px 12px;
+  margin-top: 10px;
+  border-radius: var(--adm-radius-sm);
+  border: 1px solid var(--adm-line);
+  border-left: 2px solid transparent;
+  background: rgba(8, 14, 26, .5);
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.admin-text-row.is-overridden {
+  border-left-color: var(--adm-accent);
+  background: rgba(14, 30, 48, .55);
+}
+
+.admin-text-row.is-unsaved {
+  border-left-color: #ffc46b;
+  background: rgba(40, 30, 12, .5);
+}
+
+.admin-text-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 7px;
+}
+
+.admin-text-label {
+  font-size: 13px;
+  color: var(--adm-text);
+}
+
+.admin-text-key {
+  font-family: var(--adm-mono);
+  font-size: 11px;
+  color: var(--adm-dim);
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--adm-line);
+  background: rgba(0, 0, 0, .28);
+}
+
+.admin-text-badge {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.admin-text-badge.is-overridden {
+  color: #bfe9ff;
+  border-color: rgba(98, 216, 255, .45);
+  background: rgba(98, 216, 255, .1);
+}
+
+.admin-text-badge.is-unsaved {
+  color: #ffdda6;
+  border-color: rgba(255, 196, 107, .5);
+  background: rgba(255, 196, 107, .1);
+}
+
+.admin-text-reset {
+  margin-left: auto;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  opacity: .7;
+}
+
+.admin-text-reset:hover { opacity: 1; }
+
+.admin-text-row .admin-text-input {
+  width: 100%;
+  text-align: left;
+}
+
+.admin-text-row .admin-textarea {
+  min-height: 62px;
+  line-height: 1.55;
+}
+
+.admin-text-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--adm-dim);
+  line-height: 1.5;
+}
+
+#texts-summary { margin-bottom: 14px; }
+#texts-summary b { color: #cfe6ff; font-weight: 500; }
+#texts-summary code {
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .3);
+  border: 1px solid var(--adm-line);
+  font-family: var(--adm-mono);
+  font-size: 11.5px;
+}
+
+/* ============================================================
    移动端
    ============================================================ */
 @media (max-width: 720px) {
@@ -1051,4 +1200,5 @@ body.admin-body {
   .admin-tabs { overflow-x: auto; flex-wrap: nowrap; width: 100%; }
   .admin-tab { flex-shrink: 0; }
   .admin-item { flex-wrap: wrap; }
+  .admin-text-reset { margin-left: 0; }
 }

@@ -16,6 +16,8 @@
    ============================================================ */
 (function () {
   'use strict'
+  // 站点文字表（管理页 /admin/「文字」标签页写的）；window.st 由 <head> 内联脚本提供
+  var st = window.st || function (key, fallback) { return fallback }
   var nav = document.querySelector('#nav')
   if (!nav) return
 
@@ -104,8 +106,10 @@
       var px = cx - rect.left
       var py = cy - rect.top
       spot.style.transform = 'translate3d(' + (px - 96).toFixed(2) + 'px,' + (py - 76).toFixed(2) + 'px,0)'
-      // 边缘环光心：edgeLight 中心(800,200) 平移到 (px,py)
-      edgeLight.style.transform = 'translate3d(' + (px - 800).toFixed(2) + 'px,' + (py - 200).toFixed(2) + 'px,0)'
+      // 边缘环光心：edgeLight 中心(240,120) 平移到 (px,py)。
+      // 注意与 nav-apple.css 的 .nav-edge-light 尺寸保持一致
+      // (已由 1600x400 缩到 480x240, 减小合成层纹理面积)。
+      edgeLight.style.transform = 'translate3d(' + (px - 240).toFixed(2) + 'px,' + (py - 120).toFixed(2) + 'px,0)'
     }
     // 常态跟手：一次 rAF 内位置+亮度直写目标值（无滞后，合成器动画）
     function writeGlow() {
@@ -324,7 +328,7 @@
     if (!articles.length) {
       var empty = document.createElement('li')
       empty.className = 'nav-drop-empty'
-      empty.textContent = '暂无文章'
+      empty.textContent = st('nav.drop.empty', '暂无文章')
       list.appendChild(empty)
     } else {
       articles.slice(0, 12).forEach(function (a) {
@@ -365,9 +369,10 @@
 
   // 菜单 href → 下拉配置
   // 文章：/articles/ 列表页的卡片标题；归档：归档页侧栏的"月度归档"入口(如 九月 2026 → /archives/2026/09/)
+  // label 跟着管理页「顶部导航栏」里的菜单名走（没改过就是默认名）
   var config = [
-    { href: '/articles/', label: '文章', selector: '.recent-post-items a.article-title' },
-    { href: '/archives/', label: '归档', selector: '.card-archive-list-link', titleSel: '.card-archive-list-date' }
+    { href: '/articles/', label: st('nav.menu.articles', '文章'), selector: '.recent-post-items a.article-title' },
+    { href: '/archives/', label: st('nav.menu.archives', '归档'), selector: '.card-archive-list-link', titleSel: '.card-archive-list-date' }
   ]
 
   menus.forEach(function (item) {

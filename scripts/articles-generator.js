@@ -11,6 +11,7 @@
 'use strict'
 
 const pagination = require('hexo-pagination')
+const siteText = require('./site-text-lib')
 
 hexo.extend.generator.register('articles', function (locals) {
   const config = this.config
@@ -25,7 +26,8 @@ hexo.extend.generator.register('articles', function (locals) {
     layout: ['articles'],
     format: paginationDir + '/%d/',
     data: {
-      title: '文章',
+      // 页面标题可在管理页「文字」标签页改（键 page.articlesTitle）
+      title: siteText.value(this, 'page.articlesTitle', '文章'),
       type: 'articles'
     }
   })

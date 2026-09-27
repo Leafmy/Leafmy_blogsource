@@ -84,6 +84,9 @@
     this.pressed = false              // 是否按压中
     this.holdStart = 0                // 按住起始时间(降级模拟用)
     this.active = false               // 是否在 ticker 中
+    this._rect = null                 // host 矩形缓存(见 _move)
+    this._rectEpoch = -1              // 缓存对应的失效计数
+    this._lastCore = -1               // 上次写入的核心冷暖权重(-1=未写过)
     this._build()
   }
 
@@ -158,15 +161,33 @@
     }
   }
 
+  /* ---------- host 矩形缓存 ----------
+     原实现每次 pointermove 都 getBoundingClientRect()：这是强制同步布局，
+     而同一帧里 _paint() 又刚写过 style.transform / 自定义属性 →
+     "读-写-读"交替，每帧触发一次 layout flush(mousemove 频率可远高于
+     刷新率，反复 flush 非常伤主线程)。
+     这些 host 都是导航栏菜单项，矩形只在滚动/尺寸变化时才变，
+     因此缓存它，并在可能失效的时机整体作废。 */
+  var rectEpoch = 0
+  function invalidateRects() { rectEpoch++ }
+  window.addEventListener('scroll', invalidateRects, { passive: true })
+  window.addEventListener('resize', invalidateRects, { passive: true })
+  window.addEventListener('orientationchange', invalidateRects, { passive: true })
+
   /* 触点坐标 → host 局部 */
   ForceGlowHost.prototype._move = function (e) {
-    var r = this.host.getBoundingClientRect()
     var x, y
     if (e.touches && e.touches.length) {
       x = e.touches[0].clientX; y = e.touches[0].clientY
     } else {
       x = e.clientX; y = e.clientY
     }
+    // 位置未变过(epoch 相同)就直接用缓存, 否则重测一次
+    if (this._rectEpoch !== rectEpoch || !this._rect) {
+      this._rect = this.host.getBoundingClientRect()
+      this._rectEpoch = rectEpoch
+    }
+    var r = this._rect
     this.tx = x - r.left
     this.ty = y - r.top
   }
@@ -267,7 +288,11 @@
       'px,0) scale(' + s.toFixed(3) + ')'
     // 核心冷暖渐变权重: 力度小偏冷蓝, 大时核心暖白显形
     var core = 0.10 + this.curForce * 0.85
-    g.style.setProperty('--fg-core-alpha', core.toFixed(3))
+    // 自定义属性写入会触发样式失效与重算, 变化不足 1% 时不写
+    if (Math.abs(core - this._lastCore) > 0.01) {
+      this._lastCore = core
+      g.style.setProperty('--fg-core-alpha', core.toFixed(3))
+    }
   }
 
   /* ---------- 对外 API ---------- */

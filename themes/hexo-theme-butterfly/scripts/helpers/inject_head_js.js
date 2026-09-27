@@ -2,8 +2,8 @@
 
 hexo.extend.helper.register('inject_head_js', function () {
   const { darkmode, aside, pjax } = this.theme
-  const start = darkmode.start || 6
-  const end = darkmode.end || 18
+  // [本站定制] darkmode.start / darkmode.end（按小时自动切换）已不再使用：
+  // 亮色模式取消后启动主题恒为 dark，无需时段判断。
   const { theme_color: themeColor } = hexo.theme.config
   const themeColorLight = themeColor && themeColor.enable ? themeColor.meta_theme_color_light : '#ffffff'
   const themeColorDark = themeColor && themeColor.enable ? themeColor.meta_theme_color_dark : '#0d0d0d'
@@ -123,56 +123,14 @@ hexo.extend.helper.register('inject_head_js', function () {
       btf.activateDarkMode = activateDarkMode
       btf.activateLightMode = activateLightMode
 
-      const theme = saveToLocal.get('theme')
+      /* [本站定制] 亮色模式已取消：背景是太空场景（木星 + 木星环 + 流星），
+         毛玻璃只作用在文字面板上，这两种外观都只对深色成立。
+         因此这里不再读 saveToLocal 里的 'theme'，也不再跟随系统/时段，
+         永远激活 dark —— 老旧浏览器里残留的 'theme: light' 不会再让页面
+         闪一下亮色。activateLightMode 仍保留（第三方部件可能引用），
+         但站点内已无任何调用路径。 */
+      activateDarkMode()
     `
-
-    switch (darkmode.autoChangeMode) {
-      case 1:
-        darkmodeJs += `
-          const mediaQueryDark = window.matchMedia('(prefers-color-scheme: dark)')
-          const mediaQueryLight = window.matchMedia('(prefers-color-scheme: light)')
-
-          if (theme === undefined) {
-            if (mediaQueryLight.matches) activateLightMode()
-            else if (mediaQueryDark.matches) activateDarkMode()
-            else {
-              const hour = new Date().getHours()
-              const start = ${start}
-              const end = ${end}
-              const isNight =
-                start < end
-                    ? hour < start || hour >= end
-                    : hour >= start || hour < end
-              isNight ? activateDarkMode() : activateLightMode()
-            }
-            mediaQueryDark.addEventListener('change', e => {
-              if (saveToLocal.get('theme') === undefined) {
-                e.matches ? activateDarkMode() : activateLightMode()
-              }
-            })
-          } else {
-            theme === 'light' ? activateLightMode() : activateDarkMode()
-          }
-        `
-        break
-      case 2:
-        darkmodeJs += `
-          const hour = new Date().getHours()
-          const start = ${start}
-          const end = ${end}
-          const isNight =
-            start < end
-                ? hour < start || hour >= end
-                : hour >= start || hour < end
-          if (theme === undefined) isNight ? activateDarkMode() : activateLightMode()
-          else theme === 'light' ? activateLightMode() : activateDarkMode()
-        `
-        break
-      default:
-        darkmodeJs += `
-          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
-        `
-    }
 
     return darkmodeJs
   }
@@ -196,12 +154,31 @@ hexo.extend.helper.register('inject_head_js', function () {
     detectApple()
   `
 
+  /* [本站定制] hero 站名的"组装期间先藏住"标记
+     ------------------------------------------------------------
+     这是 <head> 里最早能执行的位置，必须在这里打标记：<h1> 的文字在文档解析到
+     hero 时就存在，而 split-title.js 要等它自己被加载才执行。中间那段时间
+     custom-font.css 里 `#site-title:not([data-qm])` 的兜底动画会立刻跑起来
+     （0% = 填充透明 + 2.6px 描边），用户看到"完整轮廓亮一下再重来"。
+     标记一打，CSS 就把 hero 站名 visibility:hidden；split-title.js 组装完
+     （成功或兜底）在同一个任务里摘掉它，因此纯文字一帧都不会上屏。
+
+     setTimeout 是保命用的：拆分脚本万一 404 或抛错，标记会一直挂着、首页
+     连站名都没有。3 秒后无条件放出来 —— 那时宁可让它闪一下，也不能空着。 */
+  const createTitlePendingJs = () => `
+    document.documentElement.classList.add('qm-pending')
+    setTimeout(() => {
+      document.documentElement.classList.remove('qm-pending')
+    }, 3000)
+  `
+
   return `<script>
     (() => {
       ${createCustomJs()}
       ${createDarkmodeJs()}
       ${createAsideStatusJs()}
       ${createDetectAppleJs()}
+      ${createTitlePendingJs()}
     })()
   </script>`
 })

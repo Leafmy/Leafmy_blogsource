@@ -31,9 +31,10 @@ html.js body {
   /* box-shadow 只保留 inset 高光, 外阴影由 ::after 伪元素预渲染 */
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
   position: relative;
-  /* 强制 GPU 加速: backdrop-filter 必须走 GPU 合成层 */
-  will-change: transform;
-  transform: translateZ(0);
+  /* [性能] 原来这里写 will-change: transform + transform: translateZ(0)
+     「强制 GPU 加速」。#footer 已经是整宽元素且自带 backdrop-filter，
+     本来就独立成层；再永久挂一层 will-change 等于让它永远不能降级，
+     而且这个大层里的模糊无法与页面瓦片共享。删除。 */
 }
 /* 阴影预渲染: ::after 伪元素始终在 DOM 中, 消除快速滚动时阴影延迟 */
 #footer::after {

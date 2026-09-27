@@ -11,7 +11,7 @@ html(lang='zh-CN' data-theme='dark')
     link(rel='stylesheet' href=url_for('/custom/assets/fontawesome/all.min.css'))
     link(rel='stylesheet' href=url_for('/custom/cursor/site-cursor.css'))
     //- 带版本号：静态托管对自定义资源无 cache-control，不加版本号浏览器会长期跑旧文件
-    link(rel='stylesheet' href=url_for('/custom/admin/admin.css') + '?v=20260909c')
+    link(rel='stylesheet' href=url_for('/custom/admin/admin.css') + '?v=20260927g')
   body.admin-body
     //- ============ 背景：canvas 液态玻璃 + 星链 + 流星 ============
     canvas#admin-space(aria-hidden='true')
@@ -48,7 +48,8 @@ html(lang='zh-CN' data-theme='dark')
 
       nav#admin-tabs.admin-tabs
         button.admin-tab.is-active(type='button' data-tab='overview') 概览
-        button.admin-tab(type='button' data-tab='posts') 文章
+        button.admin-tab(type='button' data-tab='posts') 文章 / 页面
+        button.admin-tab(type='button' data-tab='texts') 文字
         button.admin-tab(type='button' data-tab='announce') 公告
         button.admin-tab(type='button' data-tab='taxonomy') 标签 / 分类
         button.admin-tab(type='button' data-tab='archives') 归档
@@ -74,9 +75,13 @@ html(lang='zh-CN' data-theme='dark')
             .admin-panel-title 最近更新
             #overview-recent.admin-list
 
-        //- ---------- 文章 ----------
+        //- ---------- 文章 / 页面 ----------
         section#tab-posts.admin-pane
           #posts-list-view
+            #pages-panel.admin-panel(style='display:none')
+              .admin-panel-title 页面
+              .admin-hint 独立页面（如「关于」）的正文也在这里改。页面没有分类/标签/置顶，删除请去 GitHub。
+              #pages-list.admin-list
             .admin-toolbar
               input#posts-filter.admin-input(type='text' placeholder='筛选标题 / 标签 / 分类…')
               button#btn-new-post.admin-btn.admin-btn-primary(type='button')
@@ -104,7 +109,7 @@ html(lang='zh-CN' data-theme='dark')
                   .admin-field
                     label 日期（YYYY-MM-DD HH:mm:ss）
                     input#ed-date.admin-input(type='text')
-                  .admin-field
+                  .admin-field#field-sticky
                     label 置顶权重
                     .admin-sticky-row
                       input#ed-sticky.admin-input(type='number' min='0' step='1')
@@ -113,13 +118,13 @@ html(lang='zh-CN' data-theme='dark')
                       | 数字<b>越小越靠前</b>（<b>1 = 最前</b>）；<b>0 = 不置顶</b>，按日期倒序排在普通文章里。
                       | 数字相同的置顶文章之间再按日期倒序。
                 .admin-row
-                  .admin-field
+                  .admin-field#field-categories
                     label 分类（逗号分隔）
                     input#ed-categories.admin-input(type='text' placeholder='如：教程, Hexo')
-                  .admin-field
+                  .admin-field#field-tags
                     label 标签（逗号分隔）
                     input#ed-tags.admin-input(type='text' placeholder='如：Terraria, 模组')
-                .admin-field
+                .admin-field#field-desc
                   label 摘要 / description（可空，用于列表页与搜索引擎）
                   input#ed-desc.admin-input(type='text')
                 .admin-field
@@ -174,6 +179,30 @@ html(lang='zh-CN' data-theme='dark')
                     span 删除文章
                   button#btn-cancel-edit.admin-btn(type='button') 取消
 
+        //- ---------- 文字 ----------
+        section#tab-texts.admin-pane
+          .admin-panel
+            .admin-panel-title 站点文字
+            .admin-hint
+              | 这里改的是<b>访客能看到的文字</b>（导航、侧栏卡片、文章页、页脚、各类提示…）。
+              | 不在这里的两样：<b>按钮上的字</b>，以及首页正中那个大标题「启明」（它是逐笔描边动画，单独维护）。
+              | 侧栏公告正文请去「公告」标签页，文章/页面正文请去「文章」标签页。
+            .admin-hint
+              | 每条都有<b>默认值</b>（灰字占位）：不动它 = 跟着站点/主题配置走，以后改配置这里会自动跟上；
+              | 改过 = 固定成你写的值，并写进 <code>source/_data/site_text.yml</code>。
+            .admin-hint
+              | <b>省构建额度</b>：不管改多少条，点一次「保存修改」只写这一个文件、只提交一次 = 只让 Cloudflare 重新构建一次。
+          .admin-toolbar
+            input#texts-filter.admin-input(type='text' placeholder='筛选：输标题 / 键名 / 当前内容…')
+            button#btn-texts-reload.admin-btn(type='button')
+              i.fas.fa-rotate
+              span 重新拉取
+            button#btn-save-texts.admin-btn.admin-btn-primary(type='button')
+              i.fas.fa-floppy-disk
+              span#btn-save-texts-label 保存修改
+          #texts-summary.admin-hint 正在读取…
+          #texts-groups
+
         //- ---------- 公告 ----------
         section#tab-announce.admin-pane
           .admin-panel
@@ -206,9 +235,22 @@ html(lang='zh-CN' data-theme='dark')
             .admin-panel-title GitHub 写入凭证
             .admin-hint
               | 管理页的增删改都通过 GitHub Contents API 完成，需要一枚
-              a(href='https://github.com/settings/personal-access-tokens/new' target='_blank' rel='noopener') 细粒度 PAT
-              | ：仅授权本仓库，权限只需 <b>Contents: Read and write</b>。
+              a(href='https://github.com/settings/personal-access-tokens/new?name=leafmy-top%20admin&description=leafmy.top%20admin%20panel%20write%20token&target_name=Leafmy&expires_in=365&contents=write' target='_blank' rel='noopener') 细粒度 PAT
+              | （这行字就是申请入口，点开时名字 / 有效期 / 权限已经预填好了）。
               | Token 用可逆混淆编码后只存在本机浏览器，不会写进源码。
+            .admin-hint
+              | 申请就三步：① 点上面的链接，确认最上面的
+              b Resource owner
+              | 是 <b>Leafmy</b>、底部 <b>Contents</b> 是 <b>Read and write</b>；
+              | ② 在 <b>Repository access</b> 选 <b>Only select repositories</b> 并勾选 <b>Leafmy_blogsource</b>；
+              | ③ 点 <b>Generate token</b>，把只显示一次的 <code>github_pat_…</code> 复制到上面的 Token 输入框。
+              | 365 天后过期；嫌麻烦可以在申请页把 Expiration 改成 <b>No expiration</b>。
+            .admin-hint
+              | 报 401 / 403 / 404 时先查三件事：PAT 是否已过期或撤销、<b>Repository access</b> 是否勾选了本仓库、
+              | 分支名是否与仓库默认分支一致。点「测试连接」会逐条列出哪一步不通。
+            .admin-hint
+              | 省构建额度：管理页每次提交（存文章 / 改公告 / 改标签）都会让 Cloudflare 重新构建一次；
+              | 标签重命名目前是逐篇提交，改到 N 篇就是 N 次构建——批量改标签前请先斟酌。
             .admin-row
               .admin-field
                 label 仓库所有者
@@ -250,4 +292,4 @@ html(lang='zh-CN' data-theme='dark')
     script(src=url_for('/custom/cursor/site-cursor.js'))
     script(src=url_for('/custom/admin/admin-key.js'))
     script(src=url_for('/custom/admin/admin-space.js'))
-    script(src=url_for('/custom/admin/admin.js') + '?v=20260909b')
+    script(src=url_for('/custom/admin/admin.js') + '?v=20260927g')

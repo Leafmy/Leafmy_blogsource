@@ -19,6 +19,15 @@
 (function () {
   'use strict'
 
+  // 站点文字表（管理页 /admin/「文字」标签页写的）；window.st 由 <head> 内联脚本提供
+  var st = window.st || function (key, fallback) { return fallback }
+  /* 译文角标：CSS 伪元素的 content 只能读 var()，所以把文字当自定义属性挂到 :root。
+     （引号必须保留 —— content 要的是 CSS 字符串字面量。） */
+  ;(function () {
+    var badge = String(st('translate.badge', 'AI 翻译')).replace(/["\\]/g, '')
+    document.documentElement.style.setProperty('--translate-badge', '"' + badge + '"')
+  })()
+
   // ==================== 通用工具 ====================
   function utf8ToBytes(str) {
     return new TextEncoder().encode(str)
@@ -117,7 +126,7 @@
   btnWrap.innerHTML =
     '<button class="translate-btn" title="翻译本文">' +
       '<i class="fas fa-language"></i>' +
-      '<span class="translate-text">翻译</span>' +
+      '<span class="translate-text">' + st('translate.btn', '翻译') + '</span>' +
     '</button>' +
     '<button class="translate-settings-btn" title="设置 DeepSeek API">' +
       '<i class="fas fa-cog"></i>' +
@@ -147,10 +156,9 @@
     overlay.className = 'translate-modal-overlay'
     overlay.innerHTML =
       '<div class="translate-modal">' +
-        '<div class="translate-modal-title">设置 DeepSeek API Key</div>' +
+        '<div class="translate-modal-title">' + st('translate.modal.title', '设置 DeepSeek API Key') + '</div>' +
         '<div class="translate-modal-desc">' +
-          '填入你自己的 DeepSeek API Key（在 platform.deepseek.com 申请）。' +
-          'Key 经混淆编码后只存入你浏览器的 localStorage，不会写入源码或上传服务器。' +
+          st('translate.modal.desc', '填入你自己的 DeepSeek API Key（在 platform.deepseek.com 申请）。Key 经混淆编码后只存入你浏览器的 localStorage，不会写入源码或上传服务器。') +
         '</div>' +
         '<input type="password" class="translate-key-input" placeholder="sk-..." spellcheck="false" autocomplete="off">' +
         '<div class="translate-modal-status"></div>' +
@@ -177,11 +185,11 @@
     function refreshStatus() {
       if (deepseekKey) {
         status.className = 'translate-modal-status ok'
-        status.textContent = '已保存（sk-****' + deepseekKey.slice(-4) + '）'
+        status.textContent = st('translate.status.saved', '已保存（sk-****{tail}）', { tail: deepseekKey.slice(-4) })
         input.value = deepseekKey
       } else {
         status.className = 'translate-modal-status'
-        status.textContent = '尚未配置'
+        status.textContent = st('translate.status.empty', '尚未配置')
         input.value = ''
       }
     }
@@ -190,19 +198,19 @@
       var val = input.value && input.value.trim()
       if (!val) {
         status.className = 'translate-modal-status err'
-        status.textContent = '请输入 API Key'
+        status.textContent = st('translate.status.needKey', '请输入 API Key')
         return
       }
       var enc = encodeKey(val)
       if (!enc) {
         status.className = 'translate-modal-status err'
-        status.textContent = '编码失败'
+        status.textContent = st('translate.status.encodeFail', '编码失败')
         return
       }
       localStorage.setItem(KEY_STORE, enc)
       deepseekKey = decodeKey(localStorage.getItem(KEY_STORE))
       status.className = 'translate-modal-status ok'
-      status.textContent = '已保存'
+      status.textContent = st('translate.status.savedOk', '已保存')
       setTimeout(close, 800)
     })
 
@@ -211,7 +219,7 @@
       deepseekKey = ''
       refreshStatus()
       status.className = 'translate-modal-status'
-      status.textContent = '已清除'
+      status.textContent = st('translate.status.cleared', '已清除')
     })
 
     cancelBtn.addEventListener('click', close)
@@ -286,7 +294,7 @@
     var cached = readTranslationCache()
     if (cached) {
       translationData = cached
-      translateText.textContent = '显示原文'
+      translateText.textContent = st('translate.btnOriginal', '显示原文')
       btn.classList.add('expanded')
       isTranslated = true
       // 命中缓存且未替换过：立即把正文翻成中文，刷新后直接是中文，无需再调 AI
@@ -306,7 +314,7 @@
         if (data.segments && isHealthySegments(data.segments)) {
           translationData = data
           localStorage.setItem(cacheKey, JSON.stringify({ segments: data.segments }))
-          translateText.textContent = '显示原文'
+          translateText.textContent = st('translate.btnOriginal', '显示原文')
           btn.classList.add('expanded')
           isTranslated = true
           if (!postContent.classList.contains('translated-content')) {
@@ -354,12 +362,12 @@
       var segResults = out && out.segments
       var stats = (out && out.stats) || { total: 0, ok: 0 }
       if (!segResults || !segResults.length) {
-        throw new Error('没有可翻译的内容')
+        throw new Error(st('translate.error.noContent', '没有可翻译的内容'))
       }
       // 健康门禁：译文达标才允许切换状态/写缓存，绝不"假装翻译完成"
       var ratio = stats.total ? stats.ok / stats.total : 0
       if (ratio < HEALTH_MIN_RATIO) {
-        throw new Error('模型返回异常（有效译文 ' + stats.ok + '/' + stats.total + '）')
+        throw new Error(st('translate.error.badModel', '模型返回异常（有效译文 {ok}/{total}）', { ok: stats.ok, total: stats.total }))
       }
       translationData = { segments: segResults }
       writeTranslationCache(segResults)
@@ -371,7 +379,7 @@
       btn.classList.remove('loading')
       btn.classList.remove('busy')
       isBusy = false
-      showError(err && err.message ? err.message : '翻译失败')
+      showError(err && err.message ? err.message : st('translate.error.failed', '翻译失败'))
     })
   }
 
@@ -386,7 +394,7 @@
       btn.classList.add('expanded')
       translateText.style.opacity = '0'
       setTimeout(function () {
-        translateText.textContent = '显示原文'
+        translateText.textContent = st('translate.btnOriginal', '显示原文')
         translateText.style.opacity = '1'
         // ③ 内容渐隐 → 替换 → 渐显
         setTimeout(function () {
@@ -401,7 +409,7 @@
               if (postContent.dataset.original) postContent.innerHTML = postContent.dataset.original
               postContent.classList.remove('translated-content')
               isTranslated = false
-              showError('翻译应用失败：' + (e && e.message ? e.message : e))
+              showError(st('translate.error.apply', '翻译应用失败：{msg}', { msg: (e && e.message ? e.message : e) }))
             }
             postContent.style.opacity = '1'
             isAnimating = false
@@ -498,10 +506,10 @@
       body: JSON.stringify(body)
     }).then(function (res) {
       if (!res.ok) {
-        if (res.status === 401) throw new Error('API Key 无效或已过期')
-        if (res.status === 402) throw new Error('账户余额不足')
-        if (res.status === 429) throw new Error('请求过频，请稍后再试')
-        if (res.status === 400) throw new Error('请求被拒绝（HTTP 400，可能文本过长）')
+        if (res.status === 401) throw new Error(st('translate.error.key', 'API Key 无效或已过期'))
+        if (res.status === 402) throw new Error(st('translate.error.balance', '账户余额不足'))
+        if (res.status === 429) throw new Error(st('translate.error.rate', '请求过频，请稍后再试'))
+        if (res.status === 400) throw new Error(st('translate.error.badRequest', '请求被拒绝（HTTP 400，可能文本过长）'))
         throw new Error('DeepSeek HTTP ' + res.status)
       }
       return res.json()
@@ -721,11 +729,11 @@
     void t.offsetWidth
     t.classList.add('show')
 
-    translateText.textContent = '重试'
+    translateText.textContent = st('translate.btnRetry', '重试')
     setTimeout(function () {
       t.classList.remove('show')
       setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t) }, 300)
-      if (!isTranslated) translateText.textContent = '翻译'
+      if (!isTranslated) translateText.textContent = st('translate.btn', '翻译')
     }, 4200)
   }
 
@@ -774,7 +782,7 @@
     btn.classList.remove('expanded')
 
     void translateText.offsetWidth
-    translateText.textContent = '翻译'
+    translateText.textContent = st('translate.btn', '翻译')
     translateText.style.opacity = '1'
 
     postContent.style.opacity = '0'

@@ -1,6 +1,7 @@
 footer:
   framework: Framework
   theme: Theme
+  by: By
 
 copy:
   success: Copy Successful

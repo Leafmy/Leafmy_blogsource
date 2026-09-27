@@ -1,6 +1,8 @@
 footer:
   framework: 框架
   theme: 主题
+  # 版权行里作者名前面那个词（© 2025 - 2026 By xxx）
+  by: By
 
 copy:
   success: 复制成功

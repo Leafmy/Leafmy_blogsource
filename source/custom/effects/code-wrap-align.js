@@ -65,11 +65,20 @@
     // 比真实行高小 5.4px，会让行号逐行向上漂移，并让行号块内容溢出
     // 触发迷你滚动条。
     var lh = parseFloat(getComputedStyle(codeLines[0]).lineHeight)
+
+    // [性能] 两阶段写法：先把所有行的视觉行数【读完】，再统一写高度。
+    // 原实现在同一个循环里 visualLines()(读 Range rects) 与
+    // rows[j].style.height = …(写) 交替，每行都会强制一次同步布局；
+    // 长文页 22 个代码块 × 几十行 = 上百次 layout flush，
+    // resize 拖拽时直接变成主线程长任务。
+    var heights = new Array(n)
     for (var j = 0; j < n; j++) {
-      var h = lh
+      heights[j] = lh
         ? visualLines(codeLines[j], lh) * lh
         : codeLines[j].getBoundingClientRect().height
-      rows[j].style.height = h + 'px'
+    }
+    for (var k = 0; k < n; k++) {
+      rows[k].style.height = heights[k] + 'px'
     }
   }
 
@@ -81,7 +90,9 @@
   var timer = 0
   function schedule() {
     clearTimeout(timer)
-    timer = setTimeout(alignAll, 120)
+    // [性能] 120ms → 200ms: resize 拖拽期间布局抖动更少,
+    // 停止缩放后 200ms 内仍会完成对齐, 感知无差别。
+    timer = setTimeout(alignAll, 200)
   }
 
   if (document.readyState === 'loading') {

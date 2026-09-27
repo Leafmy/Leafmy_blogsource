@@ -203,8 +203,9 @@ html[data-theme='dark'] .translate-toast {
 }
 
 /* 翻译后的内容样式 */
+/* 角标文字由 translate-btn.js 从管理页「文字」表（translate.badge）写进 --translate-badge */
 .translated-content::before {
-  content: 'AI 翻译';
+  content: var(--translate-badge, 'AI 翻译');
   position: absolute;
   top: -24px;
   left: 0;

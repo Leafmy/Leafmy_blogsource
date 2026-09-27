@@ -44,7 +44,10 @@ html.js .card-info .swap-text {
 html.js .card-info .swap-text {
   transition: filter 0.28s ease,
               opacity 0.28s ease;
-  will-change: filter, opacity;
+  /* [性能] 原来写 will-change: filter, opacity —— 长期挂 will-change:filter
+     会让这段文字永久被光栅化成独立纹理（而且只在 hover 换字那 0.28s 才用得上）。
+     只提示 opacity（合成器属性），filter 交给浏览器按需提升。 */
+  will-change: opacity;
 }
 
 /* 切换瞬间的模糊态（配合 JS 在换字前后短暂应用） */

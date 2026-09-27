@@ -21,6 +21,8 @@
   if (card.querySelector('.swap-text')) return
 
   // ---------- 两人信息 ----------
+  // 名片态的名字 / 简介可在管理页「文字」标签页改（visit.name / visit.desc）
+  const st = window.st || function (key, fallback) { return fallback }
   const config = {
     owner: {
       name: 'l3AFovxs',
@@ -28,9 +30,9 @@
       desc: ''   // 站主默认不显示额外简介（用主题默认 description）
     },
     visit: {
-      name: 'HexShane',
+      name: st('visit.name', 'HexShane'),
       avatar: '/img/hexshane.jpg',
-      desc: '卡密'   // 名片简介
+      desc: st('visit.desc', '卡密')   // 名片简介
     }
   }
 

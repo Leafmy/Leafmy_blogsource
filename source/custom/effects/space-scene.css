@@ -1,0 +1,209 @@
+/* ============================================================
+   太空场景 (space-scene.css)
+   ------------------------------------------------------------
+   层次结构（markup 在 themes/.../layout/includes/space-scene.pug）：
+
+     .space-bg                        固定满屏容器（pointer-events:none）
+       ├─ .space-nebula       z:0     【仅无 WebGL 时显示】深空底色 + 星云 + 暗角
+       ├─ .space-globe-glow   z:0     【仅无 WebGL 时显示】木星大气外辉光
+       ├─ .space-globe        z:0     【仅无 WebGL 时显示】木星 2D 照片退路
+       │    └─ img.space-globe-fallback
+       └─ canvas.space-scene-canvas   z:1  唯一的渲染层（全屏 WebGL）
+
+   内容层 #body-wrap 抬到 z:3 之上，所以场景只在文字面板的缝隙可见。
+
+   === 为什么只剩一块画布 ===
+   旧版是四层各自为政：CSS 渐变当星云 + canvas2d 画随机星点 + 另一块
+   260% 画布画木星 + CSS 径向渐变当"大气辉光"。四层没有共同投影，
+   行星所在的黄道带与银河所在的银道带之间没有任何几何关系，星点是均匀
+   随机撒的，辉光是"画上去"的一圈 —— 放大看就散。
+   现在整个场景由 space-globe.js 在一块**全屏画布**里渲染：天空（真实
+   银河 + 真实星表 + 暗星颗粒）、木星、木星环、伽利略四卫、七颗远景行星、
+   流星，共享同一个相机、同一个太阳方向、同一条曝光曲线。CSS 里留下的
+   三个层只在 WebGL 不可用时兜底（.space-gl-off）。
+
+   === 构图仍然写在 CSS 里 ===
+   JS 只读取下面这些变量，不改写它们 —— 断点调整仍然只改 CSS：
+     --globe        木星圆面的投影直径
+     --globe-cx/cy  木星圆心的位置（像素，从视口左上角算）
+     --sky-band-*   远景行星所在的黄道带（屏幕坐标的两端点）
+   注意：自定义属性用 getComputedStyle 拿到的是**未解析的 token**
+   （--globe 会返回 "min(64vw, 86vh)"），所以 space-globe.js 用一个探针
+   元素把变量用在 width/left/top 上再读回像素值。
+   ============================================================ */
+
+.space-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  /* ---- 木星几何：跨断点只改这几个量 ---- */
+  /* 球体直径。桌面取 min(64vw, 86vh)：横屏按高度算、竖屏按宽度算，
+     保证球体始终"大到装不下"。 */
+  --globe: min(64vw, 86vh);
+  /* 球心位置。桌面放在右侧偏外（74vw / 63vh），于是球体同时从【右侧】
+     和【下方】溢出视口 —— 这是"巨物感"的来源。 */
+  --globe-cx: 74vw;
+  --globe-cy: 63vh;
+
+  /* ---- 黄道带（远景行星的排布路径）----
+     这是一条【二次贝塞尔】弧，三个点在下面给出（A 起点 / M 控制点 / B 终点）。
+     space-globe.js 只求值、不改写：形状完全由 CSS 决定，断点调整只改这里。
+
+     [为什么从直线改成弧] 旧版是一条 (6vw,72vh)→(41vw,79vh) 的直斜线：横向只
+     用了 6%~41%，水/金/地/火挤成左下角一团（彼此 40~65px），土星孤零零挂在
+     24vw，整个左上半区空无一物 —— 读起来是"几粒灰尘"而不是"一行编排"。
+     现在的浅弧压在标题块上方、顺着木星左缘收上去，7 颗天体读成一个整体。
+
+     [约束] 三个硬边界（换断点时必须重新核对，见 tools/report-bodies.js 的断言）：
+       · 标题块：内容层 #page-header 满屏，标题在 43% 高处（var.styl 的
+         $index_site_info_top），所以弧整体压在 30vh 以上；
+       · 木星可见左缘：--globe-cx − --globe/2（桌面 1600×900 ≈ 42vw），
+         弧的右端必须留出 --sky-band-b-x + 土星环展宽（目标直径 × 2.32）的余量；
+       · 内容卡片：100vh 起，弧离它足够远。
+     旧注释里"贴合真实黄道投影（<1°）"这条约束已按设计决定放弃 —— 真实黄道
+     投影在画面中线附近（≈55% 视口高），与标题块冲突，且这个取景下 1px≈39″，
+     远景天体本来就是合成排布，贴合黄道带不带来任何可辨识的正确性。 */
+  --sky-band-a-x: 4vw;
+  --sky-band-a-y: 26vh;
+  /* M 是【控制点】不是弧顶：曲线 t=0.5 处只走到 A、B 中点再被 M 拉走一半，
+     实际弧顶 ≈ (A+2M+B)/4 —— 所以 M 要比期望的弧顶更靠外。 */
+  --sky-band-m-x: 16vw;
+  --sky-band-m-y: 16vh;
+  --sky-band-b-x: 30vw;
+  --sky-band-b-y: 20vh;
+  /* 远景天体的整体尺寸系数。取景放大（--globe 变大）时天体本来会等比放大，
+     但窄屏可用天区只有 ~150px 宽，按 1.0 放大的话土星环(≈170px)会把邻居
+     全压住。所以窄屏另给一个更小的系数（见下面的断点）。 */
+  --sky-body-scale: 1;
+}
+
+/* ---------- 唯一的渲染层：全屏画布 ---------- */
+.space-scene-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* WebGL 不可用 / 着色器失败 / 贴图失败 → 由 space-globe.js 挂上 .space-gl-off */
+.space-bg.space-gl-off .space-scene-canvas {
+  display: none;
+}
+
+/* ---------- 无 WebGL 退路（三件套，平时 display:none）---------- */
+.space-nebula,
+.space-globe-glow,
+.space-globe {
+  display: none;
+}
+.space-bg.space-gl-off .space-nebula,
+.space-bg.space-gl-off .space-globe-glow,
+.space-bg.space-gl-off .space-globe {
+  display: block;
+}
+
+/* 深空底色 + 星云 + 暗角。
+   no-repeat 是必须的：径向渐变的默认尺寸小于盒子时会平铺，表现为一片
+   斜向明暗条带（曾经踩过的 bug）。 */
+.space-nebula {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-image:
+    radial-gradient(1200px 900px at 84% 12%, rgba(126, 88, 214, .26), transparent 68%),
+    radial-gradient(1000px 820px at 8% 78%, rgba(52, 96, 200, .22), transparent 70%),
+    radial-gradient(900px 700px at 56% 96%, rgba(38, 150, 176, .16), transparent 72%),
+    linear-gradient(112deg, transparent 34%, rgba(150, 175, 255, .055) 47%, rgba(190, 200, 255, .07) 52%, rgba(150, 175, 255, .05) 57%, transparent 70%),
+    radial-gradient(140% 120% at 50% 0%, #0a0d1c 0%, #06070f 46%, #03040a 100%);
+  background-color: #03040a;
+}
+
+/* 暗角：四角压黑，把视线收拢到中央 */
+.space-nebula::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 95% at 50% 45%, transparent 42%, rgba(0, 0, 0, .40) 82%, rgba(0, 0, 0, .62) 100%);
+  pointer-events: none;
+}
+
+/* 两层共用的定位（退路用）：
+   球体与辉光用同一套中心点公式，保证严格同心。 */
+.space-globe-glow,
+.space-globe {
+  position: absolute;
+  top: calc(var(--globe-cy) - var(--globe) / 2);
+  right: calc(100vw - var(--globe-cx) - var(--globe) / 2);
+  width: var(--globe);
+  height: var(--globe);
+  pointer-events: none;
+}
+
+/* 大气外辉光：只在退路里出现。范围收到 62%~74%、alpha 0.06/0.03 ——
+   真实的大气辉光只是贴着球缘极窄的一圈，给大了会像套了个半透明罩子。 */
+.space-globe-glow {
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(255, 222, 182, 0) 60%,
+    rgba(255, 224, 186, .055) 66%,
+    rgba(238, 196, 150, .028) 71%,
+    rgba(210, 170, 140, .012) 75%,
+    transparent 80%);
+}
+
+.space-globe-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ---------- 移动端 ----------
+   只改 --globe 与球心：竖屏时 vmin 退化为屏宽，若沿用桌面的 64vw
+   球体会偏小；这里放大到约 2.36 倍屏宽，并把球心推到画面右上之外，
+   只留左下弧面切进画面 —— 与桌面同样的构图语言。
+   （相机方位偏移取 +46° 正是为了让阳光落在画面左侧：窄屏只露左弧面，
+   若阳光从右侧来，可见弧面会整块落在暗面里。） */
+@media (max-width: 768px) {
+  .space-bg {
+    --globe: 236vmin;
+    --globe-cx: 158vw;
+    --globe-cy: 44vh;
+    /* 窄屏另给一套弧：竖屏下木星的可见圆面在球心左侧，而球心在 158vw ——
+       于是"可见天区"边界是 y ≈ 44vh ± √(r²−(158vw−x)²)，在 y=50~66vh
+       之间只到 x ≈ 31~13vw，**越往下越窄**。天体必须留在这条边界左侧，
+       否则会被球体挡住（urdoc 实测：38vw/58vh 的端点正好压在球面上）。
+       所以这条弧是"贴着球缘往下走"的形状，竖直跨度 20vh→66vh
+       （≈64px/颗）是间距的主要来源，不是横向。 */
+    --sky-band-a-x: 6vw;
+    --sky-band-a-y: 20vh;
+    --sky-band-m-x: 12vw;
+    --sky-band-m-y: 42vh;
+    --sky-band-b-x: 17vw;
+    --sky-band-b-y: 66vh;
+    /* 窄屏天体整体缩小：可用天区只有 ~150px 宽，按 1.0 放大的话土星环
+       (目标直径 ×2.32) 会把邻居全压住。 */
+    --sky-body-scale: 0.42;
+  }
+}
+
+/* 极窄屏（小手机竖屏）：球体再放大一档，弧面压得更满 */
+@media (max-width: 560px) {
+  .space-bg {
+    --globe: 250vmin;
+  }
+}
+
+/* ---------- 减少动效偏好 ----------
+   时钟在 space-globe.js 里按同一偏好冻结（只画一帧、不启动 rAF）；
+   WebGL 画面不是 CSS 动画，因此这里无需额外处理。 */

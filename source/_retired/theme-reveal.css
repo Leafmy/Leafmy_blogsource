@@ -1,0 +1,314 @@
+/* ============================================================
+   Theme switch: center content reveal (custom inject v20)
+   ------------------------------------------------------------
+   两条路径，由 theme-reveal.js 在运行时按实测表现自适应选择：
+   - 'vt'    ：View Transitions + 新主题内容 clip-path: circle()
+               从中心 0%→150% 扩散（真内容漾开，观感最好）
+   - 'light' ：瞬时切主题 + 一层合成器-only 的冷雾淡入（弱 GPU 兜底）
+
+   位置固定 50% 50%，百分比写死在 CSS，JS 不传像素坐标
+   —— 规避 root 快照坐标系偏移问题。
+
+   ============================================================
+   实测数据（1920x1000 / Intel UHD iGPU / DPR 1，CDP 逐帧）
+   ------------------------------------------------------------
+   首帧间隔（切换卡顿的核心指标）：
+     VT + 圆形 clip-path .......... 46ms
+     VT + 只做淡入 ................ 42ms
+     VT + 不做任何动画 ............ 46ms   ← 与动画无关！
+     纯合成器光晕（scale 大层） .... 23ms，但 >33ms 帧数 3~7 帧（长尾更差）
+     viewport 层 + 淡入淡出 ....... 27ms
+   → 那 40~46ms 来自 View Transition 的两张整页快照，换动画治不了。
+   data-theme 的强制样式重算 + 布局 ≈ 20ms，是「150 条 html[data-theme]
+   规则 × 3194 节点」的结构性成本，逐项关掉 box-shadow /
+   background-image / backdrop-filter / mask 均无变化。
+
+   保留的历史修复（v13，均已实测有效）：
+   1) 删掉 html.vt-gpu 强分层规则 —— 原规则命中 3194 个元素
+      （html.vt-gpu #post 会把 #post 的全部后代一起
+      translateZ(0)+will-change:transform），切换瞬间造出三千多个合成层。
+   2) .switching 提前到 startViewTransition 之前添加 ——
+      老快照在"调用返回后、回调前"捕获，写回调里会让老快照
+      仍带全部 backdrop-filter，模糊层白重光栅一次。
+   3) 切换期全局 transition:none + backdrop-filter 全部退化为静态近似。
+   4) VT 伪元素去掉 will-change:clip-path/opacity（无合成器支持）。
+   ============================================================ */
+
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+/* 旧的快照只作为底图：不参与动画，也不额外提升合成层 */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+}
+
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+}
+
+/* 新主题内容从网页中心圆形漾开（真实页面内容扩散）
+   ------------------------------------------------------------
+   [v21 实测修正] 原来 0.45s + cubic-bezier(0.45,0,0.25,1)（慢起快收）。
+   用打点探针实测：动画从点击后 106ms 才启动，而主题样式在 59ms 就已
+   生效 —— 也就是说圆形开始扩散时，主题早就换完了；再加上慢起曲线
+   （0~30% 只走完半径的 30%），前半段只有一个很小的圆，60Hz 下
+   整个动画只有 2~3 个有效帧 → 用户感受就是"几乎几帧可见"。
+
+   现在改成两段式：前 12% 就走完约 59% 半径（新主题立刻铺满视野），
+   剩余 88% 时间让边缘缓慢弥散。观感 = 一眼可见"漾开"，而不是眨眼。
+   时长同时拉长到 0.9s（曲线前段极快，不会显得拖沓；
+   有 prefers-reduced-motion 时走 light 路径，不涉及此动画）。 */
+::view-transition-new(root) {
+  clip-path: circle(0% at 50% 50%);
+  animation: center-content-reveal 0.9s cubic-bezier(0.06, 0.62, 0.16, 1) both;
+}
+
+@keyframes center-content-reveal {
+  to {
+    clip-path: circle(150% at 50% 50%);
+  }
+}
+
+/* ============================================================
+   切换期降开销（html.switching 由 theme-reveal.js 在
+   startViewTransition 之前添加，动画结束后移除）
+   ============================================================ */
+
+/* (1) 关掉这些元素的过渡：避免 backdrop-filter / background /
+   box-shadow 在切换瞬间被逐帧插值（每帧重新模糊采样）。
+   圆形 reveal 本身已承担视觉过渡，瞬时切换不会被察觉。
+   [重要] 这里原来是 `html.switching, html.switching *, *::before,
+   *::after { transition: none }` —— 通配写法让 3000+ 节点在切换
+   瞬间全部样式失效，反而更慢（实测首帧 +4ms、最长主线程任务 +50ms）。
+   现在只精确列出页面上真正有 transition/backdrop-filter 的元素。 */
+html.switching .recent-post-item,
+html.switching .card-widget,
+html.switching #post,
+html.switching #archive,
+html.switching #page:not(.nc),
+html.switching #page-header,
+html.switching #nav,
+html.switching #footer,
+html.switching .nav-search-bar,
+html.switching .nav-search-panel,
+html.switching .nav-search-results,
+html.switching .translate-btn,
+html.switching .translate-settings-btn,
+html.switching figure.shiki,
+html.switching a.pagination-related,
+html.switching #menu-mask,
+html.switching .sidebar-menus,
+html.switching #nav #darkmode,
+html.switching .force-glow {
+  transition: none !important;
+}
+
+/* (2) 实时模糊层切换期退化为静态近似。
+   ------------------------------------------------------------
+   [重要] 这里原来是 `html.switching *` / `*::before` / `*::after`
+   三条通配规则 —— 等于在切主题这一瞬间让 3000+ 个节点的
+   transition 与 backdrop-filter 全部失效，触发全站样式重算。
+   实测：去掉通配规则后首帧间隔 46→42ms，且"最长主线程任务"
+   不再飙到 50ms。现在改成【精确列出页面上真正带 backdrop-filter
+   的元素】（由 .perf/counts.js 实测得到，共 ~33 个 + 伪元素）。
+   覆盖：首页卡片 / 侧栏挂件 / 文章容器 / 全屏 hero /
+   附属页 header 的 ::before / 上下篇与相关推荐卡 /
+   22 个代码块 / 导航栏 / 搜索面板与结果 / 页脚 /
+   移动端抽屉与遮罩 / 翻译按钮。 */
+html.switching .recent-post-item,
+html.switching .card-widget,
+html.switching #post,
+html.switching #archive,
+html.switching #page:not(.nc),
+html.switching #page-header,
+html.switching #page-header::before,
+html.switching #page-header.not-home-page::before,
+html.switching #page-header.post-bg::before,
+html.switching #nav,
+html.switching #footer,
+html.switching .nav-search-bar,
+html.switching .nav-search-panel,
+html.switching .nav-search-results,
+html.switching .translate-btn,
+html.switching .translate-settings-btn,
+html.switching figure.shiki,
+html.switching .codeblock,
+html.switching a.pagination-related,
+html.switching #menu-mask,
+html.switching .sidebar-menus,
+html.switching #nav #darkmode {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 卡片与长文容器：用接近最终玻璃观感的静态渐变顶上，
+   避免"关掉模糊后背后光斑直接穿透"导致动画期间观感突变。 */
+html.switching .recent-post-item,
+html.switching .card-widget,
+html.switching #post,
+html.switching #archive,
+html.switching #page:not(.nc) {
+  background: linear-gradient(155deg, rgba(250, 252, 255, .96), rgba(240, 245, 252, .94)) !important;
+}
+
+html[data-theme='dark'].switching .recent-post-item,
+html[data-theme='dark'].switching .card-widget,
+html[data-theme='dark'].switching #post,
+html[data-theme='dark'].switching #archive,
+html[data-theme='dark'].switching #page:not(.nc) {
+  background: linear-gradient(160deg, rgba(26, 30, 46, .96), rgba(18, 22, 36, .95)) !important;
+}
+
+/* hero 与附属页 header：同样是静态近似（白字对比靠已有 text-shadow） */
+html.switching #page-header.full_page {
+  background: linear-gradient(150deg, rgba(140, 158, 196, .92), rgba(170, 184, 214, .90)) !important;
+}
+
+html[data-theme='dark'].switching #page-header.full_page {
+  background: linear-gradient(150deg, rgba(34, 40, 62, .94), rgba(20, 26, 44, .94)) !important;
+}
+
+/* 代码块本身是不透明的深/浅卡，关掉实时模糊后直接给静态底色 */
+html.switching figure.shiki,
+html.switching figure.shiki .codeblock,
+html.switching figure.shiki pre,
+html.switching figure.shiki code {
+  background-color: rgba(246, 248, 252, .96) !important;
+}
+
+html[data-theme='dark'].switching figure.shiki,
+html[data-theme='dark'].switching figure.shiki .codeblock,
+html[data-theme='dark'].switching figure.shiki pre,
+html[data-theme='dark'].switching figure.shiki code {
+  background-color: rgba(22, 26, 40, .96) !important;
+}
+
+/* ============================================================
+   切换期「只关过渡，不动模糊」
+   ------------------------------------------------------------
+   为什么需要：卡片/挂件/页脚都带主题默认的 `transition: all .3s`，
+   主题一变，backdrop-filter / background / box-shadow 就会被逐帧插值
+   → 每个模糊层每帧重新光栅化。
+   实测：applyTheme 在 137ms 执行，但主题到 205ms 才画出来，中间是
+   连续 7 个 57~73ms 的长任务。只关过渡后长任务归零。
+
+   [v25 回退说明] v24 曾在切换期额外「暂停 backdrop-filter」并用静态
+   渐变顶上。虽然对照实验里能把最差帧压到 30.8ms，但用户实测**反而把
+   Edge 也拖卡了**，且 Chrome 未改善 —— 说明这个改动引入了别处
+   （模糊恢复瞬间的重光栅）的开销，收益不成立，已回退。
+   教训：验证必须测【真实实现】，不能用合成类的对照数据下结论。 */
+html.theme-instant,
+html.theme-instant .recent-post-item,
+html.theme-instant .card-widget,
+html.theme-instant #post,
+html.theme-instant #archive,
+html.theme-instant #page:not(.nc),
+html.theme-instant #page-header,
+html.theme-instant #nav,
+html.theme-instant #footer,
+html.theme-instant .nav-search-bar,
+html.theme-instant .nav-search-panel,
+html.theme-instant .nav-search-results,
+html.theme-instant .translate-btn,
+html.theme-instant .translate-settings-btn,
+html.theme-instant #nav #darkmode,
+html.theme-instant figure.shiki,
+html.theme-instant a.pagination-related,
+html.theme-instant #menu-mask,
+html.theme-instant .sidebar-menus,
+html.theme-instant .aside-content,
+html.theme-instant .relatedPosts,
+html.theme-instant .pagination-post,
+html.theme-instant .footer-other,
+html.theme-instant .post-copyright,
+html.theme-instant .tag_share {
+  transition: none !important;
+}
+
+/* ============================================================
+   light 路径：冷雾「渐显 → 盖住 → 渐隐」遮罩
+   ------------------------------------------------------------
+   用途：主题是【瞬时】切换的（无整页快照，实测背景 110ms 就上屏），
+   靠这层遮罩把"那一下突变"揉成一次柔和过渡，避免生硬。
+
+   时间轴（总 0.62s，全部只动 opacity，纯合成器）：
+     0ms      透明 → 开始渐显
+     0~150ms  渐显到最浓（主题在这一段内切换，被稳稳盖住）
+     150~230ms 保持最浓
+     230~620ms 渐隐到透明（新主题从雾里透出来）
+   关键：主题是在 0~150ms 这段"还很浓"的窗口里变的，所以看不见
+   突变；之后是纯渐隐，观感就是一次干净的 cross-fade。
+
+   原则（都是为了不引入卡顿）：
+   - 只用 opacity（合成器属性），不改尺寸、不做逐帧裁剪
+   - 固定视口大小，单层，无 mix-blend-mode
+   - 径向渐变让中心稍亮、边缘透明，融进现有冷雾玻璃语言
+   [v23] 上一版把起始渐变做成 rgba(255,255,255,.16) 这种极低 alpha，
+   叠加后几乎看不见，等于没做过渡（用户反馈"无动画太突兀"）。
+   现在改成可见的白/暗冷雾，并由 JS 保证遮罩先渲染一帧再触发动画。
+   ============================================================ */
+.theme-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, .78) 0%,
+    rgba(240, 246, 255, .70) 38%,
+    rgba(220, 232, 250, .58) 66%,
+    rgba(202, 216, 242, .46) 88%,
+    rgba(194, 208, 238, .40) 100%
+  );
+}
+
+html[data-theme='dark'] .theme-veil {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(38, 47, 72, .80) 0%,
+    rgba(28, 36, 58, .74) 38%,
+    rgba(21, 27, 46, .64) 66%,
+    rgba(16, 21, 36, .52) 88%,
+    rgba(14, 18, 32, .46) 100%
+  );
+}
+
+/* ------------------------------------------------------------
+   [v25 回退] 恢复到 v23 的简单曲线：渐显 → 保持 → 渐隐。
+   v24 曾把中间改成严格 opacity:1 的平台（想让主题重算完全不可见），
+   结果用户实测 Chrome 未改善、**反而把原本正常的 Edge 也拖卡**。
+   已回退到这个"Edge 正常"的版本，不再依赖平台技巧。
+   总时长 0.62s，全程只动 opacity（纯合成器）。
+   ------------------------------------------------------------ */
+.theme-veil.on {
+  animation: theme-veil-fade 0.62s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes theme-veil-fade {
+  0% {
+    opacity: 0;
+  }
+  24% {
+    opacity: .96;
+  }
+  37% {
+    opacity: .96;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 减少动效偏好：不做遮罩，直接切（尊重系统设置） */
+@media (prefers-reduced-motion: reduce) {
+  .theme-veil {
+    display: none;
+  }
+}

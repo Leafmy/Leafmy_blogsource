@@ -1,0 +1,137 @@
+/* ============================================================
+   性能模式 UI (source/custom/effects/space-mode.css)
+   ------------------------------------------------------------
+   两块：导航栏的切换按钮（复用主题 .menus_item 的既有外观，
+   只补"低配"时的状态色）与右下角的提示条。
+
+   为什么不给按钮自造一套外观：导航栏的宽度、间距、hover 效果都由主题与
+   nav-apple.css 管着，重画一遍只会让它在某个断点下错位。所以这里只加
+   必要的状态标记，其余交给既有样式。
+   ============================================================ */
+
+/* ---- 切换按钮：与邻居严格同尺寸 ----
+   [实测的邻居值（导航 1600px 下）]
+     字号 14.196px / 行高 28.392px / 上下内边距 7px / 左右 0 / 图标宽 18px
+     / 行高盒子 42px / 图标字宽 17.7344px
+   [两次踩坑记录]
+     ① 只写 `font-size: inherit` 不够：本项是 JS 插入的 `<li>`，继承链上拿到的是
+        另一处的字号，实测 18.2px = 14 × 1.3（一个 rem/em 基准差）。
+     ② 更糟的是我随后写了 `padding: inherit` 与图标 `width: 1em`：
+        `inherit` 取的是**父元素 li** 的内边距（0），而 `1em` = 14.196px，
+        于是按钮变成"内边距 0、左右 11px、图标 14px、行高盒子 20px"，
+        与邻居的"7px 0 / 18px / 42px"完全不同 —— 按钮没有变大，而是被压扁了。
+     结论：这里不再用 inherit 或 em，直接钉住**实测到的邻居值**。
+     它可验证（verify-perf-mode 有字号/行高/图标宽三条断言），也不会随
+     主题内部规则顺序变化而漂移。 */
+.space-mode-item > a {
+  font-size: 14.196px;
+  font-weight: 400;
+  letter-spacing: inherit;
+  line-height: 28.392px;
+  /* 上下内边距：邻居的盒子高 42px。14.196 字号 + 28.392 行高只到 28.4，
+     所以那 42 里有约 11px 的上下内边距（不是主题写死的 7px —— 实测
+     7px 只能得到 34px 盒子）。这里按**实测盒高**对齐，而不是照抄某个值。 */
+  padding: 11px 0;
+}
+/* 图标：宽度与邻居一致（主题给 .fas 的是 17.73px 内容宽、18px 盒子宽） */
+.space-mode-item > a i {
+  font-size: 14.196px;
+  width: 1.267em;
+  line-height: 1;
+  text-align: center;
+  vertical-align: -0.06em;
+}
+/* 文字不需要额外外边距：实测邻居的"图标→文字"间距是 **0**
+   （主题把图标做成 18px 盒子、内容宽 17.73，右边那点空隙就是它的间隔）。
+   我先前加的 `margin-left: 4px` 反而让本项比邻居多出 4px，
+   在 4 项并排的导航里看得出来。去掉即严格一致。 */
+.space-mode-item .space-mode-label {
+  margin-left: 0;
+}
+/* 低配模式：图标与文字取提示色，让用户一眼看出"现在不是完整画质" */
+.space-mode-item.is-low > a {
+  color: var(--btn-hover-color, #49b1f5);
+}
+
+/* ---- 提示条 ----
+   右下角固定、可关闭、不拦截点击（除关闭按钮外 pointer-events 放开）。
+   层级压在内容层（#body-wrap z:3）之上，否则会被卡片盖住。 */
+#space-mode-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 90;
+  max-width: min(420px, calc(100vw - 36px));
+  padding: 12px 34px 12px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #eef2f8;
+  background: rgba(18, 22, 34, .92);
+  border: 1px solid rgba(140, 170, 220, .28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity .28s ease, transform .28s ease;
+}
+#space-mode-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+#space-mode-toast strong {
+  color: #ffd9a0;
+  font-weight: 600;
+}
+.space-mode-close {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  line-height: 20px;
+  text-align: center;
+  font-size: 17px;
+  color: rgba(220, 228, 240, .65);
+  cursor: pointer;
+  user-select: none;
+  border-radius: 50%;
+}
+.space-mode-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .1);
+}
+
+/* 亮色主题下把底色反过来，别在浅色页面上糊一块黑 */
+[data-theme="light"] #space-mode-toast {
+  color: #22303f;
+  background: rgba(255, 255, 255, .95);
+  border-color: rgba(60, 90, 130, .22);
+  box-shadow: 0 10px 30px rgba(30, 45, 70, .22);
+}
+[data-theme="light"] #space-mode-toast strong {
+  color: #b06000;
+}
+
+/* 窄屏：贴满宽度、字号略小，避免盖住正文太多 */
+@media (max-width: 768px) {
+  #space-mode-toast {
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    max-width: none;
+    font-size: 12.5px;
+    padding: 10px 32px 10px 14px;
+  }
+}
+
+/* 用户要求减少动效：不做位移与渐隐，直接出现/消失 */
+@media (prefers-reduced-motion: reduce) {
+  #space-mode-toast {
+    transition: none;
+    transform: none;
+  }
+}

@@ -56,7 +56,8 @@ social:
 # Image Settings
 # --------------------------------------
 
-favicon: /img/favicon.png
+# 主题自带 source/img/favicon.ico；以前写的是 favicon.png（不存在）→ 每个页面都 404 一次
+favicon: /img/favicon.ico
 
 avatar:
   img: /img/l3afovxs.jpg
@@ -66,6 +67,14 @@ avatar:
 disable_top_img: false
 
 # If the banner of page not setting, it will show the default_top_img
+# [本站定制] 这些 banner 图现在【完全看不到】——背景已换成太空场景，
+# theme-glass.css 的 `background: none !important` 把 #page-header 的
+# 背景（含 pug 写进 style 的行内 background-image）全部抹掉。
+# 之所以不改成 disable_top_img: true：那会让 header 丢掉
+# full_page / post-bg / not-home-page 这些页面类型类，从而连带
+# #site-info / #post-info / #page-site-info 三块标题一起不渲染
+# （见 layout/includes/header/index.pug 的分支），归档页与独立页会
+# 直接失去标题。保留这些字段只是为了维持页面类型判定，不加载图片。
 default_top_img:
 
 # The banner image of index page
@@ -301,7 +310,7 @@ aside:
     content: |
       <p>👋 <b>欢迎来到我的小站</b></p>
       <p>这里记录技术、折腾与生活，内容随缘更新，主题还在持续装修中——要是看到什么奇怪的效果，别慌，多半是 Leaf 和我在折腾新玩法。</p>
-      <blockquote>「受命于天，既寿永昌」？不，只是个爱折腾的小博客。</blockquote>
+      <blockquote>「启明」？不，只是个爱折腾的小博客。</blockquote>
       <p><b>这条公告是拿来测试悬浮全文效果的</b>：鼠标悬停在「公告」卡片上，这段长文会以一块毛玻璃浮层展开，移开鼠标就自动收起。浮层支持长段落、列表、引用和链接混排。</p>
       <ul>
         <li>🔧 技术踩坑笔记 · 不定期更新</li>
@@ -398,7 +407,10 @@ readmode: true
 darkmode:
   enable: true
   # Toggle Button to switch dark/light mode
-  button: true
+  # [本站定制] 已取消亮色模式（背景改为太空场景 + 文字毛玻璃）。
+  # 因此不再需要黑白切换按钮：置 false 后主题不渲染 #rightside 里的
+  # #darkmode，导航栏里的迁移脚本 darkmode-move.js 也一并下线。
+  button: false
   # Switch dark/light mode automatically
   # autoChangeMode: 1  Following System Settings, if the system doesn't support dark mode, it will switch dark mode between 6 pm to 6 am
   # autoChangeMode: 2  Switch dark mode between 6 pm to 6 am
@@ -825,7 +837,10 @@ preloader:
 enter_transitions: true
 
 # Default display mode - light (default) / dark
-display_mode: light
+# [本站定制] 固定为 dark：亮色模式已取消，深空背景 + 深色玻璃文字面板
+# 是唯一外观。同时让深色变量集在构建期就生效（CSS 的
+# darkmode.styl 只在 darkmode.enable 与 display_mode == 'dark' 时输出）。
+display_mode: dark
 
 # Configuration for beautifying the content of the article
 beautify:
@@ -1074,57 +1089,90 @@ css_prefix: true
 inject:
   head:
     # - <link rel="stylesheet" href="/xxx.css">
+    # 带版本号：hexo/静态托管对自定义资源无 cache-control，不加版本号浏览器会长期跑旧文件。
+    # 改动这些文件后请同步提升 ?v= 的值，否则线上看到的还是旧样式/旧脚本。
     # --- nav 顶部导航栏 + 检索 ---
-    - <link rel="stylesheet" href="/custom/nav/nav-apple.css">
-    - <link rel="stylesheet" href="/custom/nav/nav-search.css">
-    - <link rel="stylesheet" href="/custom/nav/nav-darkmode.css">
-    # --- effects 背景/玻璃/光效 ---
-    - <link rel="stylesheet" href="/custom/effects/theme-glass.css">
-    - <link rel="stylesheet" href="/custom/effects/code-highlight.css">
-    - <link rel="stylesheet" href="/custom/effects/force-glow.css">
+    - <link rel="stylesheet" href="/custom/nav/nav-apple.css?v=20260912e">
+    - <link rel="stylesheet" href="/custom/nav/nav-search.css?v=20260912e">
+    # --- effects 太空场景/玻璃/光效 ---
+    # 顺序要紧：space-scene.css 定义场景层（星野/木星/木星环/流星），
+    # theme-glass.css 负责内容层叠放与文字面板玻璃，必须排在场景之后。
+    - <link rel="stylesheet" href="/custom/effects/space-scene.css?v=20260916c">
+    - <link rel="stylesheet" href="/custom/effects/space-mode.css?v=20260916j">
+    - <link rel="stylesheet" href="/custom/effects/theme-glass.css?v=20260916k">
+    - <link rel="stylesheet" href="/custom/effects/code-highlight.css?v=20260912e">
+    - <link rel="stylesheet" href="/custom/effects/force-glow.css?v=20260912e">
     # --- widgets 卡片/挂件/页脚 ---
-    - <link rel="stylesheet" href="/custom/widgets/announce-hover.css">
-    - <link rel="stylesheet" href="/custom/widgets/visit-card.css">
-    - <link rel="stylesheet" href="/custom/widgets/footer-reveal.css">
-    - <link rel="stylesheet" href="/custom/widgets/light-text-contrast.css">
-    - <link rel="stylesheet" href="/custom/widgets/mobile-fix.css">
-    # --- theme 主题切换动画/字体 ---
-    - <link rel="stylesheet" href="/custom/theme/theme-reveal.css">
-    - <link rel="stylesheet" href="/custom/theme/custom-font.css">
-    - <link rel="stylesheet" href="/custom/theme/read-mode.css">
-    - <link rel="stylesheet" href="/custom/theme/toc.css">
+    - <link rel="stylesheet" href="/custom/widgets/announce-hover.css?v=20260912e">
+    - <link rel="stylesheet" href="/custom/widgets/visit-card.css?v=20260912e">
+    - <link rel="stylesheet" href="/custom/widgets/footer-reveal.css?v=20260912e">
+    - <link rel="stylesheet" href="/custom/widgets/mobile-fix.css?v=20260912e">
+    # --- theme 字体/阅读模式/目录 ---
+    - <link rel="stylesheet" href="/custom/theme/custom-font.css?v=20260927b">
+    - <link rel="stylesheet" href="/custom/theme/read-mode.css?v=20260912e">
+    - <link rel="stylesheet" href="/custom/theme/toc.css?v=20260912e">
     # --- cursor 自定义光标 ---
-    - <link rel="stylesheet" href="/custom/cursor/site-cursor.css">
+    - <link rel="stylesheet" href="/custom/cursor/site-cursor.css?v=20260912e">
     # --- widgets 翻译按钮 ---
-    # 带版本号：hexo/静态托管对自定义资源无 cache-control，不加版本号浏览器会长期跑旧 JS
-    - <link rel="stylesheet" href="/custom/widgets/translate-btn.css?v=20260908b">
+    - <link rel="stylesheet" href="/custom/widgets/translate-btn.css?v=20260927c">
   bottom:
     # - <script src="xxxx"></script>
+    # 同上：改动后请提升 ?v=
     # --- nav 顶部导航栏 + 检索 ---
-    # 管理页密钥哈希需在 nav-search.js 之前加载（检索栏输入密钥进 /admin/）
-    - <script src="/custom/admin/admin-key.js?v=20260908d"></script>
-    - <script src="/custom/nav/nav-apple.js?v=20260908d"></script>
-    - <script src="/custom/nav/nav-search.js?v=20260909a"></script>
-    - <script src="/custom/nav/darkmode-move.js"></script>
-    # --- effects 背景/玻璃/光效 ---
-    - <script src="/custom/effects/glass-bg.js"></script>
-    - <script src="/custom/effects/force-glow.js"></script>
-    - <script src="/custom/effects/tab-visibility.js"></script>
-    - <script src="/custom/effects/scroll-perf.js"></script>
-    - <script src="/custom/effects/anchor-offset.js?v=20260908e"></script>
+    # 管理页密钥哈希需要在 nav-search.js 之前加载（检索栏输入密钥进 /admin/）
+    - <script src="/custom/admin/admin-key.js?v=20260912e"></script>
+    - <script src="/custom/nav/nav-apple.js?v=20260927c"></script>
+    # 站名「启明」的 title-paths.js + split-title.js **已从这里移走**：
+    # 它们必须紧跟 hero 执行（放在底部会先画出一帧"纯文字兜底"的描边动画，
+    # 表现为"进站先闪一下完整轮廓"）。新位置：
+    #   themes/hexo-theme-butterfly/layout/includes/layout.pug（include header 之后）
+    - <script src="/custom/nav/nav-search.js?v=20260927c"></script>
+    # --- effects 太空场景/玻璃/光效 ---
+    # space-system.js 是场景的"事实来源"：真实轨道要素 → 位置/相位/大小/取景角
+    # 必须排在 space-globe.js 之前（后者只负责把它画出来）。
+    - <script src="/custom/effects/space-system.js?v=20260914a"></script>
+    # space-globe.js 是唯一渲染层：全屏画布 = 天空（真实银河 + 真实星表）
+    # + 木星 + 环 + 伽利略四卫 + 七颗远景行星 + 流星。
+    # 旧的 space-scene.js（canvas2d 星野/流星）已退役，见 source/_retired/。
+    # 20260916a：木星贴图换成 Solar System Scope 自然色源（并入 hi 档）。
+    # 渲染器改成 WebGL2 + mipmap + 各向异性，修掉云带上的彩噪与沙沙横纹。
+    # 20260916b：成像链路重构——HDR(RGBA16F) + bloom + **ACES 色调映射**
+    # （替换原来的 Reinhard：它把中间调压平，实测整颗星只有参考照度 30% 的亮度）。
+    # 同时补回在 HDR 路径下会丢掉的 MSAA（多重采样到浮点再 resolve）。
+    # 20260916c：远景天体排布从"左下一条直斜线"改成贝塞尔浅弧（压在标题上方，
+    # 收向木星左缘）；土星环面透明度与环阴影拆成两个参数；逐体曝光压缩动态范围。
+    # 20260916d：修掉 finishFrame 被写在 drawMeteors 内部导致的无条件全黑
+    # （原实现下只在画面上有流星的那 2% 时间"后处理合成才会执行）。
+    # 新增 ?fake= 合成卫星（默认关闭）、?planets=0、?elev=、?bloom=、?contrast=、?gamma=。
+    # 20260916e：木星贴图档位改成屏幕实际需要的纹素来选（1920x1080@100% 缩放原先
+    # 拿到的是 2048 小图，实测 detail 比 3072 低 11%）；合成卫星默认不再出现。
+    # 定影改为"关 rAF + 同步重画一次"，截图从此可复现（原先同参数连拍亮度差近一倍）。
+    # 20260916f：去掉全盘暖雾（haze 默认 0）与过低的 bloom 阈值（1.0→0.6）：球面
+    # detail +11.7%、对比度 2.55→2.49，星野反而更亮更密；曝光 2.9→3.3 补回亮度。
+    # 20260916g：各向异性取设备上限（原钳在 8，球缘实测 +22.7% detail）；新增
+    # ?sharpen= 细节还原（默认 0.20:2，线性 HDR 下 unsharp +15.6%，可 ?sharpen=0 关）。
+    # 20260916h：木星贴图改成"水平环绕"重采样（源先左右环绕加宽、再按像素中心采样）。
+    # 修掉球体转到那条经线时可见的接缝裂痕（边缘/内部失配 2.82x → 1.09x）。
+    # 20260916i：新增性能模式（?perf=high|low + GPU 计时检测 + 导航栏切换按钮 + 提示条）。
+    # 见 space-mode.js / space-mode.css。
+    - <script src="/custom/effects/space-globe.js?v=20260916j"></script>
+    # 性能模式：必须在 space-globe.js 之后（它是 window.__spaceGlobe 的接口）
+    - <script src="/custom/effects/space-mode.js?v=20260927c"></script>
+    - <script src="/custom/effects/force-glow.js?v=20260912e"></script>
+    - <script src="/custom/effects/tab-visibility.js?v=20260912e"></script>
+    - <script src="/custom/effects/scroll-perf.js?v=20260912e"></script>
+    - <script src="/custom/effects/anchor-offset.js?v=20260912e"></script>
     # --- 代码块：长行换行后对齐行号 ---
-    - <script src="/custom/effects/code-wrap-align.js?v=20260908e"></script>
+    - <script src="/custom/effects/code-wrap-align.js?v=20260912e"></script>
     # --- widgets 卡片/挂件/页脚 ---
-    - <script src="/custom/widgets/announce-hover.js"></script>
-    - <script src="/custom/widgets/visit-card.js"></script>
-    - <script src="/custom/widgets/footer-reveal.js"></script>
-    - <script src="/custom/widgets/sidebar-mask.js"></script>
-    # --- theme 主题切换动画 ---
-    - <script src="/custom/theme/theme-reveal.js"></script>
+    - <script src="/custom/widgets/announce-hover.js?v=20260912e"></script>
+    - <script src="/custom/widgets/visit-card.js?v=20260927c"></script>
+    - <script src="/custom/widgets/footer-reveal.js?v=20260912e"></script>
+    - <script src="/custom/widgets/sidebar-mask.js?v=20260912e"></script>
     # --- cursor 自定义光标 ---
-    - <script src="/custom/cursor/site-cursor.js"></script>
+    - <script src="/custom/cursor/site-cursor.js?v=20260912e"></script>
     # --- widgets 翻译按钮 ---
-    - <script src="/custom/widgets/translate-btn.js?v=20260908b"></script>
+    - <script src="/custom/widgets/translate-btn.js?v=20260927c"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work
@@ -1196,3 +1244,4 @@ CDN:
     # valine:
     # waline_css:
     # waline_js:
+
