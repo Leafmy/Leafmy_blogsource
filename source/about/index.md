@@ -7,8 +7,7 @@ comments: false
 
 ## 关于本站
 
-「启明」是一个个人技术博客，记录折腾 Terraria / tModLoader 模组开发、
-Web 前端与其它技术杂谈，偶尔也写点生活。全站由 **l3AFovxs** 独立编写与维护。
+「启明」是一个个人博客，由HexShane和l3AFovxs共同维护。
 
 - **站长**：l3AFovxs
 - **建站时间**：2025 年
