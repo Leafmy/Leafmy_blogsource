@@ -312,6 +312,8 @@
     var top = scored.slice(0, MAX)
 
     if (!top.length) {
+      // 这个词刚才是"回车没命中的密钥"？那空态换成密钥提示更贴近用户意图
+      if (query === keyMissQuery) { showKeyMiss(); return }
       // {query} 处塞一个空的 <b>，关键词随后用 textContent 写入（天然转义）
       var emptyHtml = String(st('nav.search.empty', '未找到与「{query}」相关的内容，换个关键词试试'))
         .replace(/\{query\}/g, '<b></b>')
@@ -409,26 +411,35 @@
     }
   })
   // ---- 管理员密钥入口：在检索栏输入密钥 → **按回车**进入 /admin/ ----
-  // 只比对 SHA-256（明文不落源码）；密钥形如 XXXXX-XXXXX-XXXXX-XXXXX
-  // 注意：输入过程中**不跳转**（打错一个字符就飞走很难受），只在回车时校验。
+  // 只比对 SHA-256（明文不落源码）；密钥是**普通密码**（8–64 位、大小写敏感、
+  // 字母/数字/符号皆可），没有固定形态 —— 所以这里不再靠"长得像密钥"来判断：
+  //   · 回车时先算哈希：命中 → 跳 /admin/
+  //   · 没命中 → 不当成密钥（检索该出什么就出什么），只在检索也一无所获时
+  //     把空态换成"密钥不正确"，免得输错密码的人以为是检索坏了
+  // 输入过程中**不跳转**（打错一个字符就飞走很难受），校验只发生在回车。
   var ADMIN_HASH = String(window.ADMIN_KEY_SHA256 || '').toLowerCase()
-  var ADMIN_KEY_RE = /^[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/
-  function looksLikeAdminKey() {
-    return ADMIN_KEY_RE.test(input.value.trim().toUpperCase())
+  // 回车校验没命中时先记下这个词：等检索也确认"一无所获"再把空态换成密钥提示。
+  // （不能只在回车那一刻看状态：输入快的人按回车时检索可能还在 loading，
+  //   那一刻状态是"正在搜索…"，提示就丢了 —— 实测踩到。）
+  var keyMissQuery = ''
+  function showKeyMiss() {
+    keyMissQuery = ''
+    renderStatus('nav-search-empty',
+      '<i class="fas fa-lock nav-s-ico"></i>' + st('nav.search.adminKeyError', '管理员密钥不正确'))
   }
-  // 仅由回车调用：形如密钥才校验；命中跳转，不命中给提示（都不当检索词）
   function submitAdminKey() {
-    if (!ADMIN_HASH || !window.crypto || !crypto.subtle) return false
-    var v = input.value.trim().toUpperCase()
-    if (!ADMIN_KEY_RE.test(v)) return false
+    if (!ADMIN_HASH || !window.crypto || !crypto.subtle) return
+    var v = input.value.trim()
+    if (!v) return
     crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)).then(function (buf) {
       var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) {
         return ('0' + b.toString(16)).slice(-2)
       }).join('')
       if (hex !== ADMIN_HASH) {
-        // 形如密钥但不对：不跳转、不检索，只在面板里提示
-        renderStatus('nav-search-empty',
-          '<i class="fas fa-lock nav-s-ico"></i>' + st('nav.search.adminKeyError', '管理员密钥不正确'))
+        // 没命中：不当密钥（检索该出什么就出什么）；只有检索也没结果时才提示。
+        // 两条路都堵住：检索已落定 → 现在换；检索还在跑 → 交给 runSearch 的空态分支。
+        keyMissQuery = v
+        if (statusEl.className.indexOf('nav-search-empty') >= 0) showKeyMiss()
         return
       }
       // 命中：清空输入（别把密钥留在框里），直接进管理页
@@ -438,27 +449,17 @@
       try { sessionStorage.setItem('admin_unlocked', hex) } catch (e) {}
       location.href = '/admin/'
     }).catch(function () {})
-    return true // 形如密钥 → 不再当普通检索词
   }
 
   // 输入
   input.addEventListener('input', function () {
     clearTimeout(searchTimer)
-    // 形如管理员密钥 → 不检索、不跳转（等回车），只同步清除按钮状态
-    if (looksLikeAdminKey()) {
-      lastQuery = ''
-      hidePanel()
-      updateControls(input.value.trim())
-      return
-    }
+    keyMissQuery = ''   // 改了内容，上一次"没命中的密钥"作废
     searchTimer = setTimeout(function () { runSearch(input.value) }, 80)
   })
   input.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { e.preventDefault(); closeBox(); return }
-    if (e.key === 'Enter' && looksLikeAdminKey()) {
-      e.preventDefault()
-      submitAdminKey()
-    }
+    if (e.key === 'Enter') submitAdminKey()
   })
   // 自定义光标: 聚焦/失焦/输入/点击/移动光标时重定位
   input.addEventListener('focus', positionCaret)

@@ -1346,7 +1346,8 @@
   function initGate() {
     var input = $('#gate-key'), btn = $('#gate-btn'), msg = $('#gate-msg')
     function tryUnlock() {
-      var v = input.value.trim().toUpperCase()
+      // 密钥=普通密码：大小写敏感，不做大写化、不做格式裁剪
+      var v = input.value.trim()
       if (!v) { msg.textContent = '请输入密钥'; return }
       msg.textContent = '校验中…'
       sha256hex(v).then(function (hex) {
@@ -3589,9 +3590,17 @@
     $('#gh-status').innerHTML = esc('凭证已清除')
   }
 
+  // 密钥=普通密码：8–64 位、大小写敏感、字母/数字/符号都行，不要求固定格式
+  // （旧版是 XXXXX-XXXXX-XXXXX-XXXXX 激活码样式 + 强制大写，已废弃）
+  var KEY_MIN = 8
+  var KEY_MAX = 64
   function changeAdminKey() {
-    var raw = $('#new-admin-key').value.trim().toUpperCase()
-    if (raw.length < 12) { toast('密钥太短，建议至少 12 位', 'err'); return }
+    var raw = $('#new-admin-key').value.trim()
+    if (raw.length < KEY_MIN) { toast('密钥太短：至少 ' + KEY_MIN + ' 位', 'err'); return }
+    if (raw.length > KEY_MAX) { toast('密钥太长：最多 ' + KEY_MAX + ' 位', 'err'); return }
+    if (/^[0-9]+$/.test(raw) || /^[A-Za-z]+$/.test(raw)) {
+      toast('密钥太弱：纯数字或纯字母容易被猜到，掺上另一类字符', 'err'); return
+    }
     var keyFile = (state.meta && state.meta.keyFile) || 'source/custom/admin/admin-key.js'
     sha256hex(raw).then(function (hex) {
       return ghGetFile(keyFile).then(function (f) {

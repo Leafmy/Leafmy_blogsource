@@ -23,7 +23,7 @@ html(lang='zh-CN' data-theme='dark')
           i.fas.fa-shield-halved
         h1 管理控制台
         p.admin-gate-desc 输入管理员密钥进入。也可以在站点检索栏输入密钥后<b>按回车</b>直接跳转。
-        input#gate-key.admin-input(type='password' placeholder='XXXXX-XXXXX-XXXXX-XXXXX' autocomplete='off' spellcheck='false')
+        input#gate-key.admin-input(type='password' placeholder='请输入管理员密码（8 位以上，大小写敏感）' autocomplete='current-password' spellcheck='false')
         button#gate-btn.admin-btn.admin-btn-primary(type='button') 进入
         #gate-msg.admin-gate-msg
 
@@ -318,12 +318,13 @@ html(lang='zh-CN' data-theme='dark')
           .admin-panel
             .admin-panel-title 修改管理员密钥
             .admin-hint
-              | 新密钥会以 SHA-256 哈希写入 <code>source/custom/admin/admin-key.js</code>，
+              | 新密钥是<b>普通密码</b>：8–64 位、大小写敏感，字母/数字/符号都可以，不要求固定格式。
+              | 会以 SHA-256 哈希写入 <code>source/custom/admin/admin-key.js</code>，
               | 提交后需重新构建站点；旧密钥立即失效。
             .admin-row
               .admin-field
-                label 新密钥（建议 4 组 5 位，如 XXXXX-XXXXX-XXXXX-XXXXX）
-                input#new-admin-key.admin-input(type='password' autocomplete='off' spellcheck='false')
+                label 新密钥（8–64 位，如 l3af-my2026!）
+                input#new-admin-key.admin-input(type='password' autocomplete='new-password' spellcheck='false')
             .admin-actions
               button#btn-save-admin-key.admin-btn.admin-btn-primary(type='button')
                 i.fas.fa-key
@@ -334,4 +335,4 @@ html(lang='zh-CN' data-theme='dark')
     script(src=url_for('/custom/cursor/site-cursor.js'))
     script(src=url_for('/custom/admin/admin-key.js'))
     script(src=url_for('/custom/admin/admin-space.js'))
-    script(src=url_for('/custom/admin/admin.js') + '?v=20260928a')
+    script(src=url_for('/custom/admin/admin.js') + '?v=20260928b')

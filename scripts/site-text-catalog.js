@@ -155,7 +155,7 @@ module.exports = {
         {
           key: 'nav.search.adminKeyError',
           label: '管理员密钥错误提示',
-          hint: '在检索栏输错管理员密钥时的提示',
+          hint: '在检索栏输错管理员密钥时的提示（只在检索也没命中时才会顶掉"未找到"空态）',
           type: 'text',
           target: 'browser',
           browser: true,

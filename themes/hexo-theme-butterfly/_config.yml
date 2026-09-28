@@ -1120,13 +1120,13 @@ inject:
     # 同上：改动后请提升 ?v=
     # --- nav 顶部导航栏 + 检索 ---
     # 管理页密钥哈希需要在 nav-search.js 之前加载（检索栏输入密钥进 /admin/）
-    - <script src="/custom/admin/admin-key.js?v=20260912e"></script>
+    - <script src="/custom/admin/admin-key.js?v=20260928a"></script>
     - <script src="/custom/nav/nav-apple.js?v=20260927c"></script>
     # 站名「启明」的 title-paths.js + split-title.js **已从这里移走**：
     # 它们必须紧跟 hero 执行（放在底部会先画出一帧"纯文字兜底"的描边动画，
     # 表现为"进站先闪一下完整轮廓"）。新位置：
     #   themes/hexo-theme-butterfly/layout/includes/layout.pug（include header 之后）
-    - <script src="/custom/nav/nav-search.js?v=20260927c"></script>
+    - <script src="/custom/nav/nav-search.js?v=20260928a"></script>
     # --- effects 太空场景/玻璃/光效 ---
     # space-system.js 是场景的"事实来源"：真实轨道要素 → 位置/相位/大小/取景角
     # 必须排在 space-globe.js 之前（后者只负责把它画出来）。
