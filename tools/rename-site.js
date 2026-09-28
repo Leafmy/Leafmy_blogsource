@@ -29,6 +29,7 @@ const FILES = [
   '_config.yml',
   'source/about/index.md',
   'source/_data/announcement.yml',
+  'source/_data/site_text.yml',
   'themes/hexo-theme-butterfly/_config.yml'
 ]
 

@@ -8,7 +8,7 @@
      key      —— 写进 source/_data/site_text.yml 的键名（也是 i18n 键 / 配置路径）
      label    —— 管理页里的名字
      hint     —— 管理页里的一句说明（这话出现在哪儿）
-     type     —— 'text'（单行 input）或 'textarea'（多行）
+     type     —— 'text'（单行 input）/ 'textarea'（多行）/ 'html'（多行，值是 HTML）
      target   —— 覆盖方式：
                  'config'  改 hexo.config[...]            （站点 _config.yml）
                  'theme'   改 hexo.theme.config[...]      （主题 _config.yml）
@@ -19,9 +19,22 @@
      path     —— 目标路径，默认等于 key（menu 除外）
      default  —— 兜底默认值（配置/i18n 里读不到时用；管理页也用它算"有没有改过"）
      source   —— 仅 target='text' 用：默认值从哪读（{target,path}），没有就用 default
+                 source.target 除 config/theme/i18n 外还支持 'data'（source/_data/*.yml）
      browser  —— 额外把"生效值"注入 window.__SITE_TEXT__（menu 项自动注入）
 
    新增条目只需在这里加一行；scripts/site-text.js 与管理页会自动跟上。
+
+   样式（字形 / 位置）不在这个清单里登记，而是存在 site_text.yml 的 styles 段：
+     styles:
+       - sel: "#nav #blog-info .nav-site-title"   # CSS 选择器（作用目标）
+         note: "左上角站名"                        # 人看的名字
+         css: "font-size: 18px; letter-spacing: .06em"
+   由管理页「可视化」标签页生成（在真页面上点元素 → 调字形/位置 → 保存）；
+   构建时 scripts/site-text.js 把它注入 <style id="site-text-style"> 到 head 末尾
+   —— 排在主题注入的样式之后，所以能盖住它们。字形那块只有 font-family 带
+   !important（必须：/custom/theme/custom-font.css 用 !important 统一了全站字体），
+   或者单条规则里勾了「强制 !important」。
+   首页大标题「启明」是 SVG 逐笔描边动画，不在可视化调整范围内。
    ============================================================ */
 'use strict'
 
@@ -182,7 +195,7 @@ module.exports = {
     {
       id: 'home',
       title: '首页',
-      hint: '首页 hero 区。大标题「启明」是 SVG 描边动画，不在这里改；侧栏公告请用「公告」标签页。',
+      hint: '首页 hero 区。大标题「启明」是 SVG 描边动画，不在这里改；侧栏公告正文请用「可视化」标签页（点那张公告卡）或下面「侧栏卡片」组里的公告正文条目。',
       items: [
         {
           key: 'theme.subtitle.sub',
@@ -208,9 +221,18 @@ module.exports = {
     {
       id: 'aside',
       title: '侧栏卡片',
-      hint: '首页与文章页右侧那些卡片上的标题与字段名。',
+      hint: '首页与文章页右侧那些卡片上的标题与字段名（含公告卡正文）。',
       items: [
         { key: 'aside.card_announcement', label: '公告卡片标题', hint: '侧栏公告卡的标题', type: 'text', target: 'i18n', default: '公告' },
+        {
+          key: 'aside.announcement.content',
+          label: '公告正文（HTML）',
+          hint: '侧栏公告卡的正文。建议去「可视化」标签页点侧栏那张公告卡所见即所得地改；这里改的是源码（支持 HTML）。没改过时，默认值取 source/_data/announcement.yml（再退回主题配置）。',
+          type: 'html',
+          target: 'text',
+          source: { target: 'data', path: 'announcement.content' },
+          default: ''
+        },
         { key: 'aside.card_recent_post', label: '最新文章卡片标题', hint: '侧栏最新文章卡', type: 'text', target: 'i18n', default: '最新文章' },
         { key: 'aside.card_categories', label: '分类卡片标题', hint: '侧栏分类卡', type: 'text', target: 'i18n', default: '分类' },
         { key: 'aside.card_tags', label: '标签卡片标题', hint: '侧栏标签卡', type: 'text', target: 'i18n', default: '标签' },

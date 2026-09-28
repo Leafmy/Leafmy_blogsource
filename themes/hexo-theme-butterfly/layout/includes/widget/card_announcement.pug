@@ -1,7 +1,11 @@
 if theme.aside.card_announcement.enable
-  //- 公告内容优先读 source/_data/announcement.yml（管理页 /admin/ 可写），
-  //- 没有该文件时回落到主题 _config.yml，保持兼容
-  - const announcementContent = (site.data.announcement && site.data.announcement.content) || theme.aside.card_announcement.content
+  //- 公告正文三级取值：
+  //-   ① source/_data/site_text.yml 的 aside.announcement.content（管理页「可视化」/「文字」页写它）
+  //-   ② source/_data/announcement.yml（老位置，仍然是"默认值"）
+  //-   ③ 主题 _config.yml 的 aside.card_announcement.content
+  //- st() 在"没被覆盖"时会返回 ②/③ 的解析结果，所以三级顺序天然成立。
+  - const announcementFallback = (site.data.announcement && site.data.announcement.content) || theme.aside.card_announcement.content
+  - const announcementContent = st('aside.announcement.content', announcementFallback)
   .card-widget.card-announcement
     .item-headline
       i.fas.fa-bullhorn.fa-shake

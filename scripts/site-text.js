@@ -1,11 +1,12 @@
 /* ============================================================
    站点文字覆盖层（插件入口）
    ------------------------------------------------------------
-   一份数据源：source/_data/site_text.yml（管理页 /admin/「文字」标签页写它）
-   三处生效：
+   一份数据源：source/_data/site_text.yml（管理页 /admin/「文字」「可视化」标签页写它）
+   四处生效：
      ① 站点/主题配置、主题语言表（i18n）—— 构建期直接改对象，模板无感
      ② 模板里取自定义文字 —— st('key', 默认值) helper
      ③ 浏览器端脚本 —— 往 <head> 注入 window.__SITE_TEXT__ / window.st()
+     ④ 字形/位置规则（styles 段）—— 往 </head> 前注入 <style id="site-text-style">
    清单与字段说明见 scripts/site-text-catalog.js。
    ============================================================ */
 'use strict'
@@ -35,5 +36,10 @@ hexo.extend.filter.register('after_render:html', function (str, data) {
   if (src === 'layout/admin.pug' || /(^|\/)admin\//.test(src)) return str
   if (typeof str !== 'string' || str.indexOf('</head>') === -1) return str
   if (str.indexOf('id="site-text-data"') !== -1) return str
-  return str.replace(/<head([^>]*)>/i, function (m) { return m + lib.browserScript(hexo) })
+  let out = str.replace(/<head([^>]*)>/i, function (m) { return m + lib.browserScript(hexo) })
+  // ④ 字形/位置规则：注入 <style>，位置在 </head> 之前 —— 必须排在主题
+  //    inject.head 那一串样式链接之后，否则同特异性下会被它们盖回去。
+  const style = lib.styleScript(hexo)
+  if (style) out = out.replace(/<\/head>/i, style + '\n</head>')
+  return out
 }, 20)

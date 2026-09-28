@@ -11,7 +11,7 @@ html(lang='zh-CN' data-theme='dark')
     link(rel='stylesheet' href=url_for('/custom/assets/fontawesome/all.min.css'))
     link(rel='stylesheet' href=url_for('/custom/cursor/site-cursor.css'))
     //- 带版本号：静态托管对自定义资源无 cache-control，不加版本号浏览器会长期跑旧文件
-    link(rel='stylesheet' href=url_for('/custom/admin/admin.css') + '?v=20260927g')
+    link(rel='stylesheet' href=url_for('/custom/admin/admin.css') + '?v=20260928a')
   body.admin-body
     //- ============ 背景：canvas 液态玻璃 + 星链 + 流星 ============
     canvas#admin-space(aria-hidden='true')
@@ -50,7 +50,7 @@ html(lang='zh-CN' data-theme='dark')
         button.admin-tab.is-active(type='button' data-tab='overview') 概览
         button.admin-tab(type='button' data-tab='posts') 文章 / 页面
         button.admin-tab(type='button' data-tab='texts') 文字
-        button.admin-tab(type='button' data-tab='announce') 公告
+        button.admin-tab(type='button' data-tab='visual') 可视化
         button.admin-tab(type='button' data-tab='taxonomy') 标签 / 分类
         button.admin-tab(type='button' data-tab='archives') 归档
         button.admin-tab(type='button' data-tab='settings') 设置
@@ -186,12 +186,13 @@ html(lang='zh-CN' data-theme='dark')
             .admin-hint
               | 这里改的是<b>访客能看到的文字</b>（导航、侧栏卡片、文章页、页脚、各类提示…）。
               | 不在这里的两样：<b>按钮上的字</b>，以及首页正中那个大标题「启明」（它是逐笔描边动画，单独维护）。
-              | 侧栏公告正文请去「公告」标签页，文章/页面正文请去「文章」标签页。
+              | 想<b>对着真实页面改</b>（顺带调字形 / 位置）请去「可视化」标签页；侧栏公告正文在那里点开就能富文本编辑。
+              | 文章/页面正文请去「文章 / 页面」标签页。
             .admin-hint
               | 每条都有<b>默认值</b>（灰字占位）：不动它 = 跟着站点/主题配置走，以后改配置这里会自动跟上；
               | 改过 = 固定成你写的值，并写进 <code>source/_data/site_text.yml</code>。
             .admin-hint
-              | <b>省构建额度</b>：不管改多少条，点一次「保存修改」只写这一个文件、只提交一次 = 只让 Cloudflare 重新构建一次。
+              | <b>省构建额度</b>：不管改多少条（文字 + 可视化页的字形/位置规则 + 公告），点一次保存只写这一个文件、只提交一次 = 只让 Cloudflare 重新构建一次。
           .admin-toolbar
             input#texts-filter.admin-input(type='text' placeholder='筛选：输标题 / 键名 / 当前内容…')
             button#btn-texts-reload.admin-btn(type='button')
@@ -203,17 +204,58 @@ html(lang='zh-CN' data-theme='dark')
           #texts-summary.admin-hint 正在读取…
           #texts-groups
 
-        //- ---------- 公告 ----------
-        section#tab-announce.admin-pane
-          .admin-panel
-            .admin-panel-title 侧栏公告内容（支持 HTML）
-            textarea#announce-body.admin-textarea(rows='16' spellcheck='false')
-            .admin-actions
-              button#btn-save-announce.admin-btn.admin-btn-primary(type='button')
-                i.fas.fa-floppy-disk
-                span 保存公告
-              button#btn-reload-announce.admin-btn(type='button') 重新拉取
-            .admin-hint 保存后写入 <code>source/_data/announcement.yml</code>，站点重新构建后生效。
+        //- ---------- 可视化（短文本就地改 + 字形/位置 + 公告所见即所得）----------
+        section#tab-visual.admin-pane
+          .admin-visual
+            .visual-stage
+              .visual-bar
+                label.visual-bar-item
+                  span 页面
+                  select#visual-page.admin-input
+                label.visual-bar-item
+                  span 宽度
+                  select#visual-width.admin-input
+                    option(value='0') 自适应
+                    option(value='1440') 1440（桌面）
+                    option(value='1280') 1280
+                    option(value='1024') 1024
+                    option(value='768') 768（平板）
+                    option(value='390') 390（手机）
+                label.visual-check
+                  input#visual-freeze(type='checkbox' checked)
+                  span 静止预览
+                label.visual-check
+                  input#visual-outline(type='checkbox' checked)
+                  span 标出可改文字
+                button#visual-reload.admin-btn(type='button')
+                  i.fas.fa-rotate
+                  span 重新载入
+                span#visual-status.visual-status 正在准备…
+              .visual-frame-wrap
+                #visual-tip.visual-tip
+                  | 在下面的真实页面上<b>点一段短文字</b>：右侧可以改文字内容、字体、字号、颜色和位置。
+                  | 侧栏公告卡直接点开就能富文本编辑（所见即所得）。文章正文请去「文章 / 页面」页改。
+                  | 画布是<b>真页面</b>（同源 iframe），链接点了不会跳转。
+                .visual-canvas
+                  iframe#visual-frame(title='站点预览画布')
+            aside.visual-side
+              .visual-side-head
+                .visual-side-tabs
+                  button.visual-side-tab.is-active(type='button' data-visual-side='inspect') 选中元素
+                  button.visual-side-tab(type='button' data-visual-side='rules')
+                    | 已改 (
+                    span#visual-rules-count 0
+                    | )
+                button#visual-clear-sel.admin-btn.visual-mini(type='button' title='取消选中') 取消
+              #visual-inspect.visual-side-pane.is-active
+                .visual-empty 还没有选中元素。<br>左边页面上点一下要改的文字。
+              #visual-rules.visual-side-pane
+                .visual-empty 还没有任何样式规则。
+              .visual-side-foot
+                button#btn-visual-save.admin-btn.admin-btn-primary(type='button')
+                  i.fas.fa-floppy-disk
+                  span#btn-visual-save-label 保存到仓库
+                button#btn-visual-revert.admin-btn(type='button') 放弃未保存的改动
 
         //- ---------- 标签 / 分类 ----------
         section#tab-taxonomy.admin-pane
@@ -249,7 +291,7 @@ html(lang='zh-CN' data-theme='dark')
               | 报 401 / 403 / 404 时先查三件事：PAT 是否已过期或撤销、<b>Repository access</b> 是否勾选了本仓库、
               | 分支名是否与仓库默认分支一致。点「测试连接」会逐条列出哪一步不通。
             .admin-hint
-              | 省构建额度：管理页每次提交（存文章 / 改公告 / 改标签）都会让 Cloudflare 重新构建一次；
+              | 省构建额度：管理页每次提交（存文章 / 改文字与公告 / 改标签）都会让 Cloudflare 重新构建一次；
               | 标签重命名目前是逐篇提交，改到 N 篇就是 N 次构建——批量改标签前请先斟酌。
             .admin-row
               .admin-field
@@ -292,4 +334,4 @@ html(lang='zh-CN' data-theme='dark')
     script(src=url_for('/custom/cursor/site-cursor.js'))
     script(src=url_for('/custom/admin/admin-key.js'))
     script(src=url_for('/custom/admin/admin-space.js'))
-    script(src=url_for('/custom/admin/admin.js') + '?v=20260927g')
+    script(src=url_for('/custom/admin/admin.js') + '?v=20260928a')

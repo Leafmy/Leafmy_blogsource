@@ -13,6 +13,39 @@
 const pad2 = n => String(n).padStart(2, '0')
 const siteText = require('./site-text-lib')
 
+/* ============================================================
+   「可视化」标签页的预览页面清单
+   ------------------------------------------------------------
+   管理页把某个页面塞进 iframe 当画布，所以这里给的是**站内相对路径**
+   （与 /admin/ 同源，父页面才能直接读 iframe 的 DOM）。
+   分三类：站点固定页 / 独立页面 / 文章（文章排最前的是置顶与最新）。
+   ============================================================ */
+function buildPreviewPages (pageManifest, postManifest) {
+  const list = []
+  const seen = {}
+  const push = (label, url, kind) => {
+    if (!url || seen[url]) return
+    seen[url] = true
+    list.push({ label, url, kind })
+  }
+  ;[
+    ['首页', '/'],
+    ['归档', '/archives/'],
+    ['文章列表', '/articles/'],
+    ['分类', '/categories/'],
+    ['标签', '/tags/']
+  ].forEach(x => push(x[0], x[1], 'core'))
+  ;(pageManifest || []).forEach(p => {
+    if (!p.path) return
+    push(p.title || p.source, '/' + p.path.replace(/index\.html$/, ''), 'page')
+  })
+  ;(postManifest || []).forEach(p => {
+    if (!p.path) return
+    push(p.title || p.source, '/' + p.path, 'post')
+  })
+  return list
+}
+
 hexo.extend.generator.register('admin', function (locals) {
   const posts = locals.posts.sort('-date')
   const themeCfg = (this.theme && this.theme.config) || {}
@@ -94,6 +127,8 @@ hexo.extend.generator.register('admin', function (locals) {
     keyFile: 'source/custom/admin/admin-key.js',
     // 「文字」标签页的清单：分组 + 每条的默认值与当前生效值（键的说明见 scripts/site-text-catalog.js）
     texts: siteText.meta(this),
+    // 「可视化」标签页的预览页面清单（站内相对路径，与 /admin/ 同源，可塞进 iframe）
+    preview: buildPreviewPages(pageManifest, manifest),
     totals: { posts: posts.length, tags: tags.length, categories: categories.length, pages: pageManifest.length },
     tags,
     categories,
