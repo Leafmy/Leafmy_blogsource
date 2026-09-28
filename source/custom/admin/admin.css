@@ -433,6 +433,51 @@ body.admin-body {
   white-space: nowrap;
 }
 
+/* 「待提交」指示器：写入进合并队列后出现在顶栏，点「立即提交」可跳过窗口期。
+   它存在的意义是把"一次编辑 = 一次构建"这件事摆在用户眼前。 */
+.admin-commit-queue {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #eaf6ff;
+  padding: 5px 8px 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(92, 225, 255, .45);
+  background: rgba(92, 225, 255, .12);
+  box-shadow: 0 0 18px rgba(92, 225, 255, .12);
+  animation: commitQueueIn .18s ease-out;
+}
+
+.admin-commit-queue i {
+  color: var(--adm-accent);
+}
+
+.admin-commit-queue.is-saving {
+  border-color: rgba(255, 214, 102, .5);
+  background: rgba(255, 214, 102, .12);
+}
+
+.admin-commit-queue.is-saving i {
+  color: #ffd666;
+  animation: commitQueueSpin 1s linear infinite;
+}
+
+@keyframes commitQueueIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes commitQueueSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* 「已进提交队列」的按钮：不置灰（还能继续点），只给一点标记 */
+.admin-btn.is-cued:not(:disabled) {
+  border-color: rgba(92, 225, 255, .45);
+  box-shadow: 0 0 0 1px rgba(92, 225, 255, .18) inset;
+}
+
 /* ============================================================
    标签页（分段胶囊）
    ============================================================ */
@@ -1592,6 +1637,8 @@ body.admin-body {
   .admin-app.is-visual { padding: 12px 10px 60px; }
   .admin-row { grid-template-columns: 1fr; }
   .admin-repo { display: none; }
+  .admin-commit-queue { order: -1; }
+  #commit-queue-text { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .admin-tabs { overflow-x: auto; flex-wrap: nowrap; width: 100%; }
   .admin-tab { flex-shrink: 0; }
   .admin-item { flex-wrap: wrap; }

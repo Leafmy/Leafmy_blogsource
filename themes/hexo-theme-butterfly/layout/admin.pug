@@ -36,6 +36,10 @@ html(lang='zh-CN' data-theme='dark')
           span 管理控制台
         .admin-top-actions
           span#admin-repo.admin-repo —
+          span#commit-queue.admin-commit-queue(style='display:none')
+            i.fas.fa-cloud-arrow-up
+            span#commit-queue-text
+            button#btn-commit-now.admin-btn.visual-mini(type='button' title='不等合并窗口，立刻提交') 立即提交
           button#btn-home.admin-btn(type='button' title='返回站点首页')
             i.fas.fa-house
             span 首页
@@ -193,6 +197,7 @@ html(lang='zh-CN' data-theme='dark')
               | 改过 = 固定成你写的值，并写进 <code>source/_data/site_text.yml</code>。
             .admin-hint
               | <b>省构建额度</b>：不管改多少条（文字 + 可视化页的字形/位置规则 + 公告），点一次保存只写这一个文件、只提交一次 = 只让 Cloudflare 重新构建一次。
+              | 连续改、连着点保存也没关系——1.8 秒内的多次保存会<b>自动合并成一次提交</b>（顶栏会显示「已合并 N 项待提交」，也可以点「立即提交」不等）。
           .admin-toolbar
             input#texts-filter.admin-input(type='text' placeholder='筛选：输标题 / 键名 / 当前内容…')
             button#btn-texts-reload.admin-btn(type='button')

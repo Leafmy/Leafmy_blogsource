@@ -302,6 +302,189 @@
     })
   }
 
+  // ==================== 提交合并队列（省构建额度）====================
+  /* ------------------------------------------------------------
+     [为什么要有这一层]
+     管理页每次写入 = 一次 GitHub 提交 = 一次 Cloudflare 构建。改一篇文章点三次
+     保存、连删几篇、标签重命名批量改写……都会摊成好几次构建，而 Cloudflare
+     Pages 一次只跑一个构建，短时间内堆几个就会排队（实测 2026-09-28：11 分钟里
+     6 次提交把 4 个部署卡在 in_progress，线上内容一直停在旧构建）。
+
+     [做法]
+     所有写入先进这张队列：
+       ① 同一个文件的多次保存合并成一次 —— 只留最后内容（中间态没有意义）
+       ② 窗口期内（默认 2.5s）不急着发，攒够一起发（多文件也只按文件数发）
+       ③ 真正发送前**现读 sha**（不在打开文件时锁定），409 自动重读后重试
+     结果：一次连续编辑 = 一次提交 = 一次构建。
+
+     [队列只保证"减少提交次数"，不保证顺序强一致]
+     跨文件没有顺序依赖（每个文件独立 PUT）；同文件只保留最后一次写入。
+     ------------------------------------------------------------ */
+  var COMMIT_WINDOW = 1800
+  var COMMIT_MAX_ATTEMPTS = 3
+
+  var commitQ = (function () {
+    var jobs = {}         // path -> job
+    var order = []
+    var timer = 0
+    var flushing = false
+    var seq = 0
+    var stats = { merged: 0, puts: 0, retried: 0, committed: 0 }
+    var listeners = []
+    var mergedThisFlush = false     // 本轮里有过"同一文件被覆盖"（说明在连点保存）
+    var failedThisFlush = false
+    var lastMessage = ''
+
+    function isFlushing() { return flushing }
+    function pendingCount() { return order.length }
+    function statsSnapshot() {
+      return { merged: stats.merged, puts: stats.puts, retried: stats.retried, committed: stats.committed, pending: order.length, inflight: flushing }
+    }
+    function onChange(fn) { listeners.push(fn); try { fn(statsSnapshot()) } catch (e) {} }
+    function emit() { listeners.forEach(function (fn) { try { fn(statsSnapshot()) } catch (e) {} }) }
+
+    function put(job) {
+      job.id = ++seq
+      job.attempts = 0
+      var prev = jobs[job.path]
+      /* 「刚建好还没提交，又删掉」：仓库里本来就没这个文件 → 两个任务一起取消，
+         一次提交都不发（否则会先建后删，白烧两次构建）。 */
+      if (prev && job.op === 'delete' && prev.op === 'put' && !prev.committed) {
+        delete jobs[job.path]
+        var at = order.indexOf(job.path)
+        if (at > -1) order.splice(at, 1)
+        if (job.onDone) { try { job.onDone({ cancelled: true }) } catch (e) {} }
+        emit()
+        return job.id
+      }
+      if (prev) { stats.merged++; prev.mergedSave = true; mergedThisFlush = true }
+      else order.push(job.path)
+      jobs[job.path] = job
+      emit()
+      schedule()
+      return job.id
+    }
+    // 排障用：控制台里 window.__COMMITQ__.dump() 能看到队列当前收到的是什么
+    try {
+      window.__COMMITQ__ = {
+        dump: function () {
+          return Object.keys(jobs).map(function (p) {
+            return { path: p, chars: (jobs[p].text || '').length, op: jobs[p].op, id: jobs[p].id }
+          })
+        },
+        stats: statsSnapshot,
+        flushNow: function () { return commitQ.flushNow() }
+      }
+    } catch (e) {}
+
+    function schedule() {
+      if (flushing) return       // 正在写：等这轮结束再排
+      clearTimeout(timer)
+      timer = setTimeout(flush, COMMIT_WINDOW)
+    }
+
+    function flush() {
+      if (flushing) return
+      clearTimeout(timer)
+      var paths = order.slice()
+      order = []
+      var batch = paths.map(function (p) { return jobs[p] })
+      paths.forEach(function (p) { delete jobs[p] })
+      if (!batch.length) { emit(); return }
+      flushing = true
+      mergedThisFlush = false
+      failedThisFlush = false
+      emit()
+      var chain = Promise.resolve()
+      batch.forEach(function (job) {
+        chain = chain.then(function () {
+          return commitWithRetry(job).then(function (res) {
+            stats.committed++
+            stats.puts++
+            lastMessage = job.message
+            if (job.onDone) { try { job.onDone(res) } catch (e) { console.warn('[commit] onDone:', e) } }
+          }).catch(function (e) {
+            var why = ((e && e.message) || e)
+            failedThisFlush = true
+            console.warn('[commit] ' + job.path + ' 失败：' + why)
+            toast('提交失败：' + job.path + ' · ' + why, 'err')
+            if (job.onFail) { try { job.onFail(e) } catch (e2) {} }
+          })
+        })
+      })
+      return chain.then(function () {
+        flushing = false
+        if (batch.length && !failedThisFlush) {
+          var n = batch.length
+          toast('已提交 ' + n + ' 个文件 · 触发 ' + n + ' 次构建' +
+            (mergedThisFlush ? '（已把刚连点的几次保存合并成一次提交）' : '') +
+            ' · 构建约 1 分钟后生效', 'ok')
+        }
+        emit()
+        schedule()          // 攒过的新任务接着发
+      })
+    }
+
+    /* 读到的 sha 只用于这一次 PUT；409 = 别人改过 → 重读再试。
+       新建态（文件本来不存在）重试时不带 sha，避免多一次没必要的 GET。 */
+    function commitWithRetry(job) {
+      function attempt() {
+        job.attempts++
+        var msg = (job.attempts > 1) ? (job.message + '（重试 ' + (job.attempts - 1) + '）') : job.message
+        var sha = job.knownMissing ? null : job.sha
+        var op = job.op === 'delete'
+          ? ghDeleteFile(job.path, sha, msg)
+          : ghPutFile(job.path, job.text, msg, sha)
+        return op.then(function (res) {
+          if (res && res.content && res.content.sha) job.sha = res.content.sha
+          job.knownMissing = false
+          job.committed = true
+          return res
+        }).catch(function (e) {
+          if (!/409|文件已变化|sha 冲突/.test(e.message || '') || job.attempts >= COMMIT_MAX_ATTEMPTS) throw e
+          stats.retried++
+          // 重读真实 sha 再试：第一次多半是"新建时文件已存在"（knownMissing 猜错了），
+          // 后面是"别人也改了同一个文件"。重读到 404 才算文件真的不存在。
+          return ghGetFile(job.path).then(function (f) {
+            job.sha = f ? f.sha : null
+            job.knownMissing = !f
+            return attempt()
+          })
+        })
+      }
+      return attempt()
+    }
+
+    return {
+      put: put,
+      isFlushing: isFlushing,
+      pending: pendingCount,
+      stats: statsSnapshot,
+      onChange: onChange,
+      /* 立刻发车（用户点「立即提交」或页面要关时用） */
+      flushNow: function () { clearTimeout(timer); return flush() }
+    }
+  })()
+
+  /* 队列状态 → 顶栏指示器：把"还在攒 / 正在提交"摆在用户眼前，
+     这样"连点保存其实只提交一次"是看得见的，而不是靠文档解释。 */
+  function subscribeCommitUI () {
+    var host = $('#commit-queue')
+    var text = $('#commit-queue-text')
+    if (!host || !text) return
+    commitQ.onChange(function (s) {
+      var busy = s.inflight || s.pending > 0
+      host.style.display = busy ? '' : 'none'
+      host.classList.toggle('is-saving', s.inflight)
+      if (!busy) { text.textContent = ''; return }
+      if (s.inflight) {
+        text.textContent = s.pending > 0 ? ('正在提交，后面还排着 ' + s.pending + ' 项…') : '正在提交…'
+        return
+      }
+      text.textContent = '已合并 ' + s.pending + ' 项待提交（' + (COMMIT_WINDOW / 1000) + 's 后自动发）'
+    })
+  }
+
   // ==================== 卡片光效（一个光源照亮范围内所有卡片）====================
   // 指针是一个"光源"：范围内每张卡片按到指针的距离衰减发光，
   // 近的更亮、远的更淡；卡片内的光斑位置仍跟随指针。
@@ -1330,6 +1513,12 @@
       e.preventDefault()
       e.returnValue = ''
     })
+    // 队列里还攒着待提交的文件时，别让用户以为"点了保存就可以走了"
+    window.addEventListener('beforeunload', function (e) {
+      if (!commitQ.pending() && !commitQ.isFlushing()) return
+      e.preventDefault()
+      e.returnValue = ''
+    })
   }
 
   // ==================== 门禁 ====================
@@ -1670,7 +1859,6 @@
     var got = collectEditor()
     if (!got.data.title) { toast('请填写标题', 'err'); return }
     var btn = $('#btn-save-post')
-    btn.disabled = true
     var content = buildFrontMatter(got.data) + '\n' + got.body.replace(/^\n+/, '')
     var isNew = ed.mode === 'new'
     var isPage = ed.kind === 'page'
@@ -1678,55 +1866,67 @@
       ? (state.meta ? state.meta.postsDir : 'source/_posts') + '/' + slugify(got.data.title) + '.md'
       : ed.path
     var msg = (isNew ? 'admin: 新建文章 ' : (isPage ? 'admin: 更新页面 ' : 'admin: 更新文章 ')) + got.data.title
-    ghPutFile(path, content, msg, isNew ? null : ed.sha).then(function (res) {
-      btn.disabled = false
-      toast('已提交到仓库：' + path + '（站点重新构建后生效）', 'ok')
-      clearDraft()
-      markDirty(false, '✓ 已提交')
-      if (res && res.content) {
-        ed.mode = isPage ? 'page' : 'edit'; ed.path = path; ed.sha = res.content.sha
-        $('#editor-file').textContent = path + (isPage ? ' · 页面' : '')
-        $('#btn-delete-post').style.display = isPage ? 'none' : ''
+    /* 保存按钮**不置灰**：置灰了就没法"改了再存一次"，而合并本身就是队列的活。
+       顶栏的「待提交」指示器负责告诉用户"还在攒 / 正在提交"。 */
+    commitQ.put({
+      path: path, text: content, message: msg, op: 'put',
+      sha: isNew ? null : ed.sha,
+      knownMissing: isNew,
+      onDone: function (res) {
+        if (btn) { btn.disabled = false; btn.classList.remove('is-cued') }
+        clearDraft()
+        markDirty(false, '✓ 已提交')
+        if (res && res.content) {
+          ed.mode = isPage ? 'page' : 'edit'; ed.path = path; ed.sha = res.content.sha
+          $('#editor-file').textContent = path + (isPage ? ' · 页面' : '')
+          $('#btn-delete-post').style.display = isPage ? 'none' : ''
+        }
+        // 本地清单先打补丁，避免"看不到刚改的"
+        var src = path.replace(/^source\//, '')
+        if (isPage) {
+          var pg = state.pages.filter(function (p) { return p.source === src })[0]
+          if (pg) { pg.title = got.data.title; pg.date = got.data.date; pg.updated = fmtDate(new Date()) }
+          renderPages()
+          return
+        }
+        var existing = state.posts.filter(function (p) { return p.source === src })[0]
+        if (existing) {
+          existing.title = got.data.title
+          existing.date = got.data.date
+          existing.categories = got.data.categories
+          existing.tags = got.data.tags
+          existing.sticky = Number(got.data.sticky || 0)
+        } else {
+          state.posts.unshift({
+            source: src, path: '', title: got.data.title, date: got.data.date,
+            updated: '', categories: got.data.categories, tags: got.data.tags,
+            sticky: Number(got.data.sticky || 0), top: false, excerpt: ''
+          })
+        }
+        renderPosts()
+      },
+      onFail: function (e) {
+        if (btn) { btn.disabled = false; btn.classList.remove('is-cued') }
+        toast('保存失败：' + e.message, 'err')
       }
-      // 本地清单先打补丁，避免"看不到刚改的"
-      var src = path.replace(/^source\//, '')
-      if (isPage) {
-        var pg = state.pages.filter(function (p) { return p.source === src })[0]
-        if (pg) { pg.title = got.data.title; pg.date = got.data.date; pg.updated = fmtDate(new Date()) }
-        renderPages()
-        return
-      }
-      var existing = state.posts.filter(function (p) { return p.source === src })[0]
-      if (existing) {
-        existing.title = got.data.title
-        existing.date = got.data.date
-        existing.categories = got.data.categories
-        existing.tags = got.data.tags
-        existing.sticky = Number(got.data.sticky || 0)
-      } else {
-        state.posts.unshift({
-          source: src, path: '', title: got.data.title, date: got.data.date,
-          updated: '', categories: got.data.categories, tags: got.data.tags,
-          sticky: Number(got.data.sticky || 0), top: false, excerpt: ''
-        })
-      }
-      renderPosts()
-    }).catch(function (e) {
-      btn.disabled = false
-      toast('保存失败：' + e.message, 'err')
     })
+    if (btn) btn.classList.add('is-cued')     // 轻微高亮表示"已进队列"，但不拦着继续点
   }
 
   function deletePost() {
     var ed = state.editing
     if (!ed || ed.mode !== 'edit') return
     if (!confirm('确定删除这篇文章？\n' + ed.path + '\n\n（会直接提交到仓库）')) return
-    ghDeleteFile(ed.path, ed.sha, 'admin: 删除文章 ' + ed.path).then(function () {
-      state.posts = state.posts.filter(function (p) { return 'source/' + p.source !== ed.path })
-      toast('已删除：' + ed.path, 'ok')
-      showListView()
-      renderPosts()
-    }).catch(function (e) { toast('删除失败：' + e.message, 'err') })
+    commitQ.put({
+      path: ed.path, message: 'admin: 删除文章 ' + ed.path, op: 'delete', sha: ed.sha,
+      onDone: function () {
+        state.posts = state.posts.filter(function (p) { return 'source/' + p.source !== ed.path })
+        toast('已删除：' + ed.path, 'ok')
+        showListView()
+        renderPosts()
+      },
+      onFail: function (e) { toast('删除失败：' + e.message, 'err') }
+    })
   }
 
   // ==================== 可视化（短文本就地改 + 字形 / 位置）====================
@@ -3038,20 +3238,17 @@
     render($('#tax-cats'), m.categories, 'categories')
   }
 
-  // 批量改写文章 front-matter 里的标签/分类
+  /* 批量改写文章 front-matter 里的标签/分类。
+     注意：这里**不要**变成"N 篇 = N 次构建"——所有写请求都进提交合并队列，
+     队列在窗口期结束后一次性发（4 篇 = 4 次 PUT ≈ 同一批提交）。 */
   function rewriteTerm(kind, oldName, newName) {
     var field = kind === 'tags' ? 'tags' : 'categories'
     var affected = state.posts.filter(function (p) { return (p[field] || []).indexOf(oldName) > -1 })
     if (!affected.length) { toast('没有文章使用「' + oldName + '」', 'err'); return }
-    if (!confirm('将影响 ' + affected.length + ' 篇文章，逐篇提交到仓库。继续？')) return
-    var done = 0, failed = 0
-    function next(i) {
-      if (i >= affected.length) {
-        toast('完成：成功 ' + done + ' 篇' + (failed ? '，失败 ' + failed + ' 篇' : ''), failed ? 'err' : 'ok')
-        reloadManifest(true)
-        return
-      }
-      var p = affected[i]
+    if (!confirm('将影响 ' + affected.length + ' 篇文章，合并成一批提交到仓库。继续？')) return
+    var done = 0, failed = 0, queued = 0
+    toast('开始处理 ' + affected.length + ' 篇…')
+    queueAll(affected, 4, function (p, next) {
       var path = 'source/' + p.source
       ghGetFile(path).then(function (f) {
         if (!f) throw new Error('文件不存在')
@@ -3064,16 +3261,44 @@
         }
         fm.data[field] = arr
         var out = buildFrontMatter(fm.data) + '\n' + fm.body.replace(/^\n+/, '')
-        return ghPutFile(path, out, 'admin: ' + (newName ? '重命名' : '移除') + ' ' + (kind === 'tags' ? '标签' : '分类') + ' ' + oldName, f.sha)
-      }).then(function () {
-        done++
+        var msg = 'admin: ' + (newName ? '重命名' : '移除') + ' ' + (kind === 'tags' ? '标签' : '分类') + ' ' + oldName
+        commitQ.put({
+          path: path, text: out, message: msg, op: 'put', sha: f.sha,
+          onDone: function () { done++ },
+          onFail: function () { failed++ }
+        })
+        queued++
       }).catch(function (e) {
         failed++
-        console.warn('[admin] ' + p.source + ' 失败：' + e.message)
-      }).then(function () { next(i + 1) })
+        console.warn('[admin] ' + p.source + ' 失败：' + (e && e.message))
+      }).then(next)
+    }, function () {
+      toast('已排队 ' + queued + ' 篇' + (failed ? '（' + failed + ' 篇读失败）' : '') +
+        ' · 窗口期后自动提交，构建约 1 分钟后生效', 'ok')
+      reloadManifest(true)
+    })
+  }
+
+  /* 简易并发池：把 tasks 按 concurrency 并发跑完，结束后回调 done */
+  function queueAll (items, concurrency, worker, done) {
+    var i = 0, running = 0, finished = 0
+    if (!items.length) { if (done) done(); return }
+    function pump () {
+      while (running < concurrency && i < items.length) {
+        var item = items[i++]
+        running++
+        var released = false
+        worker(item, function () {
+          if (released) return
+          released = true
+          running--
+          finished++
+          if (finished >= items.length) { if (done) done(); return }
+          pump()
+        })
+      }
     }
-    toast('开始处理 ' + affected.length + ' 篇…')
-    next(0)
+    pump()
   }
 
   // ==================== 归档 ====================
@@ -3468,34 +3693,43 @@
     var map = collectTexts()
     var text = buildSiteTextYaml(map)
     var file = textFile()
+    var nText = Object.keys(map).length
+    var nRules = visualState.rules.length
     var btn = $('#btn-save-texts')
     var btn2 = $('#btn-visual-save')
-    if (btn) btn.disabled = true
-    if (btn2) btn2.disabled = true
-    var msg = 'admin: 更新站点文字（' + Object.keys(map).length + ' 条文字' +
-      (visualState.rules.length ? ' / ' + visualState.rules.length + ' 条字形·位置规则' : '') + '）'
-    ghGetFile(file).then(function (f) {
-      return ghPutFile(file, text, msg, f ? f.sha : null)
-    }).then(function () {
-      if (btn) btn.disabled = false
-      if (btn2) btn2.disabled = false
-      textState.items.forEach(function (it) {
-        it.saved = it.val
-        if (textRowEl(it.key)) updateRowState(it)
+    function markCued (on) {
+      ;[btn, btn2].forEach(function (b) {
+        if (!b) return
+        b.disabled = !!on
+        b.classList.toggle('is-cued', !!on)
       })
-      textState.savedStyles = JSON.parse(JSON.stringify(visualState.rules.map(function (r) {
-        return { sel: r.sel, note: r.note, css: visualFileCss(r), important: !!r.important, decls: r.decls }
-      })))
-      visualState.savedRules = JSON.parse(JSON.stringify(visualState.rules))
-      textState.fileMissing = false
-      updateTextSummary()
-      visualRefreshRules()
-      toast('已提交 ' + file + '（' + Object.keys(map).length + ' 条文字 · ' + visualState.rules.length +
-        ' 条规则）· 站点重新构建后生效', 'ok')
-    }).catch(function (e) {
-      if (btn) btn.disabled = false
-      if (btn2) btn2.disabled = false
-      toast('保存失败：' + e.message, 'err')
+    }
+    var msg = 'admin: 更新站点文字（' + nText + ' 条文字' +
+      (nRules ? ' / ' + nRules + ' 条字形·位置规则' : '') + '）'
+    // 同一个文件的连续保存会被队列合并 → 只提交一次、只构建一次
+    markCued(true)
+    commitQ.put({
+      path: file, text: text, message: msg, op: 'put',
+      sha: textState.fileSha, knownMissing: !!textState.fileMissing,
+      onDone: function (res) {
+        markCued(false)
+        if (btn) btn.classList.remove('is-cued')
+        if (res && res.content && res.content.sha) textState.fileSha = res.content.sha
+        textState.items.forEach(function (it) {
+          it.saved = it.val
+          if (textRowEl(it.key)) updateRowState(it)
+        })
+        textState.savedStyles = JSON.parse(JSON.stringify(visualState.rules.map(function (r) {
+          return { sel: r.sel, note: r.note, css: visualFileCss(r), important: !!r.important, decls: r.decls }
+        })))
+        visualState.savedRules = JSON.parse(JSON.stringify(visualState.rules))
+        textState.fileMissing = false
+        updateTextSummary()
+        visualRefreshRules()
+      },
+      onFail: function (e) {
+        markCued(false)
+      }
     })
   }
 
@@ -3678,6 +3912,9 @@
     $('#btn-test-gh').addEventListener('click', diagnose)
     $('#btn-clear-gh').addEventListener('click', clearCredentials)
     $('#btn-save-admin-key').addEventListener('click', changeAdminKey)
+    subscribeCommitUI()
+    var commitNow = $('#btn-commit-now')
+    if (commitNow) commitNow.addEventListener('click', function () { commitQ.flushNow() })
 
     initEditorUI()
     decorateCards()
